@@ -146,6 +146,63 @@
   function lines(body) { return String(body || '').split('\n').map(function (l) { return l.trim().replace(/^[-•*·]\s*/, ''); }).filter(Boolean); }
   function inl(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'); }
 
+  // ---------- 오늘의 성경읽기 ----------
+  // 본문은 저작권이 있어 넣지 않고, 대한성서공회 온라인 성경(개역개정)으로 연결만 함
+  var BOOKS = ('창세기 창 gen|출애굽기 출 exo|레위기 레 lev|민수기 민 num|신명기 신 deu|여호수아 수 jos|사사기 삿 jdg|룻기 룻 rut|사무엘상 삼상 1sa|사무엘하 삼하 2sa|' +
+    '열왕기상 왕상 1ki|열왕기하 왕하 2ki|역대상 대상 1ch|역대하 대하 2ch|에스라 스 ezr|느헤미야 느 neh|에스더 에 est|욥기 욥 job|시편 시 psa|잠언 잠 pro|전도서 전 ecc|아가 아 sng|' +
+    '이사야 사 isa|예레미야 렘 jer|예레미야애가 애 lam|에스겔 겔 ezk|다니엘 단 dan|호세아 호 hos|요엘 욜 jol|아모스 암 amo|오바댜 옵 oba|요나 욘 jnh|미가 미 mic|나훔 나 nam|하박국 합 hab|' +
+    '스바냐 습 zep|학개 학 hag|스가랴 슥 zec|말라기 말 mal|마태복음 마 mat|마가복음 막 mrk|누가복음 눅 luk|요한복음 요 jhn|사도행전 행 act|로마서 롬 rom|고린도전서 고전 1co|고린도후서 고후 2co|' +
+    '갈라디아서 갈 gal|에베소서 엡 eph|빌립보서 빌 php|골로새서 골 col|데살로니가전서 살전 1th|데살로니가후서 살후 2th|디모데전서 딤전 1ti|디모데후서 딤후 2ti|디도서 딛 tit|빌레몬서 몬 phm|' +
+    '히브리서 히 heb|야고보서 약 jas|베드로전서 벧전 1pe|베드로후서 벧후 2pe|요한일서 요일 1jn|요한이서 요이 2jn|요한삼서 요삼 3jn|유다서 유 jud|요한계시록 계 rev').split('|').map(function (b) { return b.split(' '); });
+  function findBook(name) {
+    return BOOKS.filter(function (b) { return b[0] === name || b[1] === name; })[0] || BOOKS.filter(function (b) { return b[0].indexOf(name) === 0; })[0];
+  }
+  // "요10-11", "눅 21-22", "요한복음 20-21장" → { name, code, from, to }
+  function parseRange(text) {
+    var m = String(text || '').replace(/\s+/g, '').match(/^([가-힣]+?)(\d+)(?:장)?(?:[-~](\d+))?장?$/);
+    var b = m && findBook(m[1]);
+    if (!b) return null;
+    return { name: b[0], code: b[2], from: Number(m[2]), to: Number(m[3] || m[2]) };
+  }
+  function bibleUrl(code, chap) { return 'https://www.bskorea.or.kr/bible/korbibReadpage.php?version=GAE&book=' + code + '&chap=' + chap; }
+  // 오늘 읽을 곳: 주보 진도(주일부터 7일) → 없으면 오늘 올라온 성경통독 영상
+  function todayReading() {
+    var now = new Date(), today = dayKey(now);
+    for (var i = 0; i < BULLETINS.length; i++) {
+      var b = BULLETINS[i], start = new Date(b.date + 'T00:00:00');
+      var idx = Math.floor((new Date(today + 'T00:00:00') - start) / 864e5);
+      if (b.reading && idx >= 0 && idx < 7 && b.reading[idx]) return { text: b.reading[idx], from: '주보 성경읽기 진도' };
+    }
+    var v = (MEDIA.reading || []).filter(function (x) { return x.date === today; })[0];
+    if (v) return { text: v.passage, from: esc(v.title) + ' 영상', video: v.videoId };
+    return null;
+  }
+  function readingCard() {
+    var r = todayReading(), now = new Date(), today = dayKey(now);
+    if (!r) return '';
+    var p = parseRange(r.text), done = !!(S.readDone && S.readDone[today]);
+    var video = r.video || ((MEDIA.reading || []).filter(function (x) { return x.date === today; })[0] || {}).videoId;
+    var chips = '';
+    if (p) for (var c = p.from; c <= p.to && c - p.from < 10; c++) chips += '<a class="chip" href="' + bibleUrl(p.code, c) + '" target="_blank" rel="noopener">' + c + '장</a>';
+    return '<div class="card"><div class="sec-title" style="margin:0 0 6px"><b>📖 오늘의 성경읽기</b><span class="sub">' + (now.getMonth() + 1) + '월 ' + now.getDate() + '일 ' + WEEK[now.getDay()] + '</span></div>' +
+      '<div class="h1" style="font-size:1.35rem;color:var(--green-d)">' + (p ? esc(p.name) + ' ' + p.from + (p.to > p.from ? '-' + p.to : '') + '장' : esc(r.text)) + '</div>' +
+      '<div class="sub" style="margin-bottom:10px">' + r.from + '</div>' +
+      (chips ? '<div class="chips" style="margin-bottom:10px">' + chips + '</div>' : '') +
+      '<div class="row">' + (video ? '<a class="btn small ghost" href="#/sermons?kind=reading&v=' + video + '">▶ 통독 영상</a>' : '') +
+        '<button class="btn small' + (done ? '' : ' ghost') + '" data-readdone>' + (done ? '다 읽었어요 ✓' : '다 읽었어요') + '</button></div>' +
+      (p ? '<p class="sub" style="margin-top:8px;font-size:.78rem">장을 누르면 대한성서공회 개역개정 성경이 열려요.</p>' : '') + '</div>';
+  }
+  function bindHome() {
+    var b = $('[data-readdone]');
+    if (b) b.onclick = function () {
+      var k = dayKey(new Date());
+      S.readDone = S.readDone || {};
+      if (S.readDone[k]) delete S.readDone[k]; else S.readDone[k] = true;
+      save(); route();
+      if (S.readDone[k]) toast('오늘 성경읽기를 마쳤어요 📖');
+    };
+  }
+
   function home() {
     renderTop({ brand: true, bell: true });
     var s = (MEDIA.sunday || [])[0];
@@ -158,6 +215,7 @@
     }).join('');
     return (s ? '<a class="card hero" href="#/sermons?v=' + s.videoId + '"><div class="thumb" style="background-image:url(' + thumb(s.videoId) + ')"><span class="play"></span></div>' +
         '<div class="txt"><div class="label">이번 주 말씀</div><div class="h1">' + esc(s.title) + '</div><div class="sub">' + [md(s.date), s.passage, s.preacher].filter(Boolean).map(esc).join(' · ') + '</div></div></a>' : '') +
+      readingCard() +
       '<div class="quick"><a href="#/worship"><i>⛪</i>예배 시간</a><a href="#/visit"><i>📍</i>오시는 길</a><a href="#/newcomer"><i>👋</i>처음 오셨나요</a></div>' +
       '<div class="card"><div class="h2" style="margin-bottom:4px">다가오는 일정</div>' + (ev || '<p class="sub">다가오는 일정이 없어요.</p>') + '</div>' +
       (news ? '<div class="card"><div class="sec-title" style="margin:0 0 4px"><b>교회 소식</b><a href="#/news">전체</a></div>' + news + '</div>' : '') +
@@ -635,7 +693,7 @@
     var r = parse(), p = r.parts, html = '', tab = 0, after = null;
     $('#app').classList.remove('no-tabs');
     switch (p[0] || 'home') {
-      case 'home': html = home(); tab = 0; break;
+      case 'home': html = home(); tab = 0; after = bindHome; break;
       case 'sermons': html = sermons(r.q); tab = 1; after = bindSermons; break;
       case 'news': tab = 2; html = p[1] != null ? newsDetail(Number(p[1])) : news(r.q); break;
       case 'talk': tab = 3; html = talk(p[1], r.q); after = function () { bindGate(); bindTalk(); }; break;
