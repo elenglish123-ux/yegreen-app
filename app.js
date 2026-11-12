@@ -4,7 +4,7 @@
   var KEY = 'yegreen-app-v1';
   var MEDIA = (window.MEDIA && window.MEDIA.lists) || {};
   var BULLETINS = window.BULLETINS || [];
-  var DATA_ROOT = 'data/';
+  var DATA_ROOT = 'https://elenglish123-ux.github.io/yegreen-site/';
   var KINDS = [['sunday', '주일설교'], ['dawn', '새벽예배'], ['reading', '성경통독'], ['study', '성경공부']];
   var CATS = { thanks: '감사', pray: '기도제목', group: '목장 이야기' };
   var SCOPES = { pastor: '목사님께만', group: '우리 목장', all: '교회 전체', me: '나만 보기' };
