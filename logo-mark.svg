@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 130">
+  <g fill="none" stroke-linecap="round">
+    <!-- 물방울 왼쪽: 초록 -->
+    <path d="M57 2 C51 30, 29 58, 30 84 C31 98, 40 106, 51 107" stroke="#7ab648" stroke-width="3.5"/>
+    <!-- 물방울 오른쪽(십자가 세로): 파랑 -->
+    <path d="M58 40 C66 52, 79 68, 77 87 C75 100, 65 107, 53 107" stroke="#2b86c5" stroke-width="6.5"/>
+    <!-- 십자가 가로 -->
+    <path d="M38 67 C52 66, 67 59, 81 45" stroke="#2b86c5" stroke-width="5"/>
+    <!-- 물결 -->
+    <path d="M12 116 C30 110, 70 110, 88 116" stroke="#2b86c5" stroke-width="2.4"/>
+    <path d="M24 123 C40 118, 60 118, 76 123" stroke="#7ab648" stroke-width="2.4"/>
+  </g>
+</svg>

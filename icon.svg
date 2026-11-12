@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#ffffff"/>
+  <!-- logo-mark.svg를 앱 아이콘 안전 영역에 맞춰 배치 -->
+  <g transform="translate(131 76) scale(2.5)" fill="none" stroke-linecap="round">
+    <path d="M57 2 C51 30, 29 58, 30 84 C31 98, 40 106, 51 107" stroke="#7ab648" stroke-width="3.5"/>
+    <path d="M58 40 C66 52, 79 68, 77 87 C75 100, 65 107, 53 107" stroke="#2b86c5" stroke-width="6.5"/>
+    <path d="M38 67 C52 66, 67 59, 81 45" stroke="#2b86c5" stroke-width="5"/>
+    <path d="M12 116 C30 110, 70 110, 88 116" stroke="#2b86c5" stroke-width="2.4"/>
+    <path d="M24 123 C40 118, 60 118, 76 123" stroke="#7ab648" stroke-width="2.4"/>
+  </g>
+</svg>
