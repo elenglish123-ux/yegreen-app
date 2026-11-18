@@ -6,7 +6,17 @@
   var BULLETINS = window.BULLETINS || [];
   var DATA_ROOT = 'https://elenglish123-ux.github.io/yegreen-site/';
   var KINDS = [['sunday', '주일설교'], ['dawn', '새벽예배'], ['reading', '성경통독'], ['study', '성경공부']];
-  var CATS = { thanks: '감사', pray: '기도제목', group: '목장 이야기' };
+  var CATS = { grace: '말씀 은혜', thanks: '감사', pray: '기도제목', group: '목장 이야기' };
+  // 목사님 결정(2026-11-18): 등록 교인만, 가입 승인은 정하람 간사
+  var APPROVER = '정하람 간사님';
+  var SENTENCE = '죄에서 멀어져 자유케 되는 교회';
+  // 감사 챌린지는 기간 동안만 열림 — 새 챌린지는 여기에 한 줄 추가
+  var CHALLENGES = [{ title: '추수감사 감사 챌린지', from: '2026-11-09', to: '2026-11-22' }];
+  // 선교 소식 (앱에서만, 나라 이름만 — 선교사 이름은 안전 때문에 쓰지 않음)
+  var MISSIONS = [
+    ['인도', '선교사 후원'], ['필리핀', '선교사 후원'], ['파푸아뉴기니', '선교사 후원'], ['일본', '선교사 후원'],
+    ['북한', '한국성결교회와 협력'], ['오픈도어선교회', '박해받는 교회 후원'],
+  ];
   var SCOPES = { pastor: '목사님께만', group: '우리 목장', all: '교회 전체', me: '나만 보기' };
   var ALERT_KINDS = [['notice', '교회 공지'], ['event', '예배·행사 안내'], ['sermon', '새 설교'], ['talk', '나눔 댓글 · 새 기도제목'], ['group', '목장 공지 · 모임']];
   var COLORS = ['#7ab648', '#2b86c5', '#c9a45c', '#d9776a', '#8a6fc4', '#3f9e8f'];
@@ -103,6 +113,17 @@
     });
   }
 
+  function challengeNow() {
+    var t = dayKey(new Date());
+    return CHALLENGES.filter(function (c) { return t >= c.from && t <= c.to; })[0] || null;
+  }
+  // 오늘 함께 읽은 사람 수 (시안: 날짜로 정한 예시 숫자 + 나) — 서버 연결 후 실제 수로 바뀜
+  function readCount(done) {
+    var k = dayKey(new Date()), h = 0;
+    for (var i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) % 997;
+    return 18 + h % 25 + (done ? 1 : 0);
+  }
+
   // ---------- 화면 위·아래 ----------
   var TABS = [['home', '홈', '#/'], ['play', '말씀', '#/sermons'], ['news', '소식', '#/news'], ['talk', '나눔', '#/talk'], ['more', '더보기', '#/more']];
   var current = { tab: 0, top: null };
@@ -190,6 +211,7 @@
       (chips ? '<div class="chips" style="margin-bottom:10px">' + chips + '</div>' : '') +
       '<div class="row">' + (video ? '<a class="btn small ghost" href="#/sermons?kind=reading&v=' + video + '">▶ 통독 영상</a>' : '') +
         '<button class="btn small' + (done ? '' : ' ghost') + '" data-readdone>' + (done ? '다 읽었어요 ✓' : '다 읽었어요') + '</button></div>' +
+      '<div class="together"><b>' + readCount(done) + '명</b><span>오늘 함께 읽었어요<small>이름 없이 숫자만 보여요 · 시안 숫자</small></span></div>' +
       (p ? '<p class="sub" style="margin-top:8px;font-size:.78rem">장을 누르면 대한성서공회 개역개정 성경이 열려요.</p>' : '') + '</div>';
   }
   function bindHome() {
@@ -216,10 +238,10 @@
     return (s ? '<a class="card hero" href="#/sermons?v=' + s.videoId + '"><div class="thumb" style="background-image:url(' + thumb(s.videoId) + ')"><span class="play"></span></div>' +
         '<div class="txt"><div class="label">이번 주 말씀</div><div class="h1">' + esc(s.title) + '</div><div class="sub">' + [md(s.date), s.passage, s.preacher].filter(Boolean).map(esc).join(' · ') + '</div></div></a>' : '') +
       readingCard() +
-      '<div class="quick"><a href="#/worship"><i>⛪</i>예배 시간</a><a href="#/visit"><i>📍</i>오시는 길</a><a href="#/newcomer"><i>👋</i>처음 오셨나요</a></div>' +
+      '<div class="quick"><a href="#/worship"><i>⛪</i>예배 시간</a><a href="#/visit"><i>📍</i>오시는 길</a><a href="#/mission"><i>🌏</i>선교 소식</a></div>' +
       '<div class="card"><div class="h2" style="margin-bottom:4px">다가오는 일정</div>' + (ev || '<p class="sub">다가오는 일정이 없어요.</p>') + '</div>' +
       (news ? '<div class="card"><div class="sec-title" style="margin:0 0 4px"><b>교회 소식</b><a href="#/news">전체</a></div>' + news + '</div>' : '') +
-      (S.me && S.me.approved ? '<a class="card green" href="#/talk/diary" style="display:flex;align-items:center;gap:12px"><span style="font-size:1.6rem">🌱</span><div><b>오늘의 감사를 적어 보세요</b><div class="sub" style="color:#55705f">' + (S.diary[dayKey(new Date())] ? '오늘 감사일기를 썼어요 ✓' : '감사일기 · 감사주간 챌린지') + '</div></div></a>' : '');
+      (S.me && S.me.approved && challengeNow() ? '<a class="card green" href="#/talk/diary" style="display:flex;align-items:center;gap:12px"><span style="font-size:1.6rem">🌱</span><div><b>오늘의 감사를 적어 보세요</b><div class="sub" style="color:#55705f">' + (S.diary[dayKey(new Date())] ? '오늘 감사일기를 썼어요 ✓' : challengeNow().title + ' · ' + md(challengeNow().to) + '까지') + '</div></div></a>' : '');
   }
 
   // ---------- 말씀 ----------
@@ -269,7 +291,7 @@
         b.images.map(function (src, i) { return '<a href="' + esc(DATA_ROOT + src) + '" target="_blank" rel="noopener"><img src="' + esc(DATA_ROOT + src) + '" alt="주보 ' + (i + 1) + '면" loading="lazy"></a>'; }).join('') + '</div><p class="sub">사진을 누르면 크게 보여요.</p></div>'
         : '<p class="empty">아직 올라온 주보가 없어요.</p>';
     } else {
-      html += '<div class="card" style="text-align:center;padding:30px 20px"><div style="font-size:2rem">📷</div><b>사진 준비 중</b><p class="sub">교회가 공개를 허락한 사진만 올라와요.</p></div>';
+      html += '<a class="card" href="https://elenglish123-ux.github.io/yegreen-site/gallery.html" target="_blank" rel="noopener" style="display:block;text-align:center;padding:30px 20px"><div style="font-size:2rem">📷</div><b>사진첩은 홈페이지에 있어요</b><p class="sub">한 달에 한 번, 예배와 행사 사진을 골라 올려요. 눌러서 보기</p></a>';
     }
     if (!S.alerts.notice) html += '<button class="card green" data-toggle-alert="notice" style="display:flex;justify-content:space-between;align-items:center;width:100%"><b style="color:var(--green-d)">🔔 새 소식 알림 받기</b><span class="tg"></span></button>';
     return html;
@@ -283,13 +305,13 @@
 
   // ---------- 나눔 ----------
   function gate() {
-    renderTop({ title: '나눔' });
+    renderTop({ brand: true });
     if (S.me && !S.me.approved) {
-      return '<div class="card green" style="text-align:center;padding:26px 18px"><div style="font-size:2.2rem">⏳</div><div class="h2" style="color:var(--green-d)">승인을 기다리고 있어요</div><p class="sub" style="color:#55705f;margin-top:4px">' + esc(S.me.name) + '님, 교회에서 확인하면 알림으로 알려 드릴게요.</p></div>' +
-        '<div class="note"><b>시안 안내</b> 실제로는 운영자가 승인해요. 지금은 아래 버튼으로 바로 승인해 볼 수 있어요.</div>' +
+      return '<div class="card green" style="text-align:center;padding:26px 18px"><div style="font-size:2.2rem">⏳</div><div class="h2" style="color:var(--green-d)">승인을 기다리고 있어요</div><p class="sub" style="color:#55705f;margin-top:4px">' + esc(S.me.name) + '님, ' + APPROVER + '이 등록 교인인지 확인하면 알림으로 알려 드릴게요.</p></div>' +
+        '<div class="note"><b>시안 안내</b> 실제로는 ' + APPROVER + '이 승인해요. 지금은 아래 버튼으로 바로 승인해 볼 수 있어요.</div>' +
         '<button class="btn" data-approve>시안: 바로 승인하기</button><button class="btn ghost" data-logout>처음부터 다시</button>';
     }
-    return '<div class="card green" style="text-align:center;padding:20px"><img src="logo-mark.svg" alt="" style="height:46px;margin:0 auto 8px"><div class="h2" style="color:var(--green-d)">성도 확인 후 들어올 수 있어요</div><div class="sub" style="color:#55705f">감사와 기도제목을 나누는 우리 교회 공간</div></div>' +
+    return '<div class="card green" style="text-align:center;padding:20px"><img src="logo-mark.svg" alt="" style="height:46px;margin:0 auto 8px"><div class="slogan">' + SENTENCE + '</div><div class="h2" style="color:var(--green-d)">등록 교인만 쓰는 예그린교회 앱이에요</div><div class="sub" style="color:#55705f">가입하면 ' + APPROVER + '이 확인한 뒤 열려요</div></div>' +
       '<div id="loginBtns" style="display:flex;flex-direction:column;gap:10px"><button class="btn kakao" data-login>카카오로 시작하기</button><button class="btn ghost" data-login>휴대폰 번호로 시작하기</button><p class="sub" style="text-align:center">시안에서는 어느 쪽을 눌러도 같아요. 실제 로그인 방식은 교회가 정해요.</p></div>' +
       '<form id="joinForm" class="card" style="display:none;flex-direction:column;gap:12px">' +
         '<div class="h2">처음 한 번만 입력해요</div>' +
@@ -312,7 +334,8 @@
     var a = $('[data-approve]');
     if (a) a.onclick = function () {
       S.me.approved = true; save();
-      receive({ kind: 'notice', title: '나눔에 들어올 수 있어요', body: S.me.name + '님, 승인되었어요. 환영합니다!', url: '#/talk' });
+      location.hash = '#/';
+      receive({ kind: 'notice', title: '예그린교회 앱이 열렸어요', body: S.me.name + '님, 승인되었어요. 환영합니다!', url: '#/' });
       route();
     };
   }
@@ -331,7 +354,7 @@
       '<span class="rx' + (p.reacted ? ' on' : '') + '" data-react="' + p.id + '">' + (p.cat === 'pray' ? '🙏 기도했어요' : '🙌 아멘') + ' ' + p.count + '</span> <span class="rx">💬 ' + p.comments.length + '</span>') + '</a>';
   }
   function segs(on) {
-    return '<div class="seg">' + [['church', '교회 나눔'], ['group', '목장방'], ['diary', '감사일기']].map(function (s) { return '<a href="#/talk/' + s[0] + '"' + (s[0] === on ? ' class="on"' : '') + '>' + s[1] + '</a>'; }).join('') + '</div>';
+    return '<div class="seg">' + [['church', '교회 나눔'], ['group', '목장방'], ['diary', '감사 챌린지']].map(function (s) { return '<a href="#/talk/' + s[0] + '"' + (s[0] === on ? ' class="on"' : '') + '>' + s[1] + '</a>'; }).join('') + '</div>';
   }
   function talk(sub, q) {
     if (!S.me || !S.me.approved) return gate();
@@ -342,8 +365,10 @@
     var f = q.cat || 'all';
     var list = S.posts.filter(function (p) { return p.scope !== 'group' && canSee(p) && (f === 'all' || p.cat === f || p.notice); });
     list.sort(function (a, b) { return (b.notice ? 1 : 0) - (a.notice ? 1 : 0); });
-    return segs(sub) + '<div class="chips">' + [['all', '전체'], ['thanks', '감사'], ['pray', '기도제목']].map(function (c) { return '<a class="chip' + (c[0] === f ? ' on' : '') + '" href="#/talk/church?cat=' + c[0] + '">' + c[1] + '</a>'; }).join('') + '</div>' +
-      (list.map(function (p) { return postCard(p, true); }).join('') || '<p class="empty">아직 글이 없어요.</p>');
+    var ser = (MEDIA.sunday || [])[0];
+    var graceTop = ser && (f === 'all' || f === 'grace') ? '<a class="card grace" href="#/write?to=all&cat=grace"><div class="label" style="color:#cfe3d6">이번 주 설교 · ' + md(ser.date) + '</div><b>' + esc(ser.title) + '</b><div style="font-size:.88rem;opacity:.85;margin-top:4px">이 말씀으로 받은 은혜와 이번 주 적용을 나눠 주세요 ✎</div></a>' : '';
+    return segs(sub) + '<div class="chips">' + [['all', '전체'], ['grace', '말씀 은혜'], ['thanks', '감사'], ['pray', '기도제목']].map(function (c) { return '<a class="chip' + (c[0] === f ? ' on' : '') + '" href="#/talk/church?cat=' + c[0] + '">' + c[1] + '</a>'; }).join('') + '</div>' +
+      graceTop + (list.map(function (p) { return postCard(p, true); }).join('') || '<p class="empty">아직 글이 없어요.</p>');
   }
   function groupRoom() {
     if (!S.me.group) {
@@ -382,10 +407,10 @@
     var to = q.to === 'group' ? 'group' : 'all';
     renderTop({ back: '취소', white: true, right: '<button class="pill-btn" id="postBtn" disabled>올리기</button>' });
     return '<div><div class="sub" style="font-weight:700;margin-bottom:6px">어떤 글인가요?</div><div class="chips" id="catPick">' +
-        Object.keys(CATS).map(function (k, i) { return '<button class="chip' + (i === 0 ? ' on' : '') + '" data-v="' + k + '">' + CATS[k] + '</button>'; }).join('') + '</div></div>' +
+        Object.keys(CATS).map(function (k, i) { return '<button class="chip' + ((q.cat ? k === q.cat : i === 1) ? ' on' : '') + '" data-v="' + k + '">' + CATS[k] + '</button>'; }).join('') + '</div></div>' +
       '<div><div class="sub" style="font-weight:700;margin-bottom:6px">누구에게 보일까요?</div><div class="chips" id="scopePick">' +
         ['pastor', 'group', 'all'].map(function (k) { return '<button class="chip' + (k === to ? ' on' : '') + '" data-v="' + k + '">' + (k === 'pastor' ? '🔒 ' : '') + SCOPES[k] + '</button>'; }).join('') + '</div></div>' +
-      '<textarea id="wText" rows="9" maxlength="1000" placeholder="오늘 감사한 일이나 함께 기도하고 싶은 내용을 적어 주세요."></textarea><div class="counter"><span id="wCount">0</span> / 1000</div>' +
+      '<textarea id="wText" rows="9" maxlength="1000" placeholder="' + (q.cat === 'grace' ? '설교 말씀으로 받은 은혜와 이번 주 적용을 짧게 적어 주세요.' : '오늘 감사한 일이나 함께 기도하고 싶은 내용을 적어 주세요.') + '"></textarea><div class="counter"><span id="wCount">0</span> / 1000</div>' +
       '<div class="card green sub" style="color:#55705f">💡 다른 사람의 이름이나 사정은 허락을 받고 적어 주세요.</div>';
   }
   function bindWrite() {
@@ -459,6 +484,12 @@
     return n;
   }
   function diary() {
+    var ch = challengeNow();
+    if (!ch) {
+      var past0 = Object.keys(S.diary).sort().reverse().slice(0, 10);
+      return '<div class="card" style="text-align:center;padding:28px 18px"><div style="font-size:2rem">🌱</div><div class="h2">지금은 감사 챌린지 기간이 아니에요</div><p class="sub" style="margin-top:4px">교회가 챌린지를 열면 이곳이 열리고 알림으로 알려 드려요.</p></div>' +
+        (past0.length ? '<div class="sec-title"><b>지난 감사</b></div>' + past0.map(function (k) { var x = S.diary[k]; return '<div class="card past"><b>' + md(k) + '</b><ol>' + x.items.filter(Boolean).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ol></div>'; }).join('') : '');
+    }
     var now = new Date(), today = dayKey(now), e = S.diary[today] || { items: ['', '', ''], scope: 'me' };
     var first = new Date(now.getFullYear(), now.getMonth(), 1).getDay(), days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     var cal = WEEK.split('').map(function (w) { return '<span>' + w + '</span>'; }).join('');
@@ -469,7 +500,8 @@
     }
     var s = streak();
     var past = Object.keys(S.diary).filter(function (k) { return k !== today; }).sort().reverse().slice(0, 10);
-    return '<div class="card"><div class="sec-title" style="margin:0 0 10px"><b>' + (now.getMonth() + 1) + '월의 감사</b><span style="font-size:.88rem;font-weight:800;color:var(--green)">' + (s ? '🌱 연속 ' + s + '일째' : '🌱 오늘 시작해요') + '</span></div><div class="cal">' + cal + '</div></div>' +
+    return '<div class="card green" style="padding:12px 15px"><b style="color:var(--green-d)">🌾 ' + esc(ch.title) + '</b><div class="sub" style="color:#55705f">' + md(ch.from) + ' ~ ' + md(ch.to) + ' · 기간 동안만 열려요</div></div>' +
+      '<div class="card"><div class="sec-title" style="margin:0 0 10px"><b>' + (now.getMonth() + 1) + '월의 감사</b><span style="font-size:.88rem;font-weight:800;color:var(--green)">' + (s ? '🌱 연속 ' + s + '일째' : '🌱 오늘 시작해요') + '</span></div><div class="cal">' + cal + '</div></div>' +
       '<form class="card" id="diaryForm" style="display:flex;flex-direction:column;gap:9px"><div class="sec-title" style="margin:0"><b>오늘의 감사</b><span class="sub">' + (now.getMonth() + 1) + '월 ' + now.getDate() + '일 ' + WEEK[now.getDay()] + '요일</span></div>' +
         [0, 1, 2].map(function (i) { return '<label class="num"><b>' + (i + 1) + '</b><input maxlength="200" ' + (i === 0 ? 'required ' : '') + 'placeholder="감사한 일' + (i === 2 ? ' (선택)' : '') + '" value="' + esc(e.items[i] || '') + '"></label>'; }).join('') +
         '<div class="row"><select name="scope" aria-label="공개 범위" style="flex:1.2">' + ['me', 'group', 'all'].map(function (k) { return '<option value="' + k + '"' + (e.scope === k ? ' selected' : '') + '>' + (k === 'me' ? '🔒 ' : '') + SCOPES[k] + '</option>'; }).join('') + '</select><button class="btn">' + (S.diary[today] ? '고치기' : '저장') + '</button></div>' +
@@ -509,11 +541,11 @@
   function more() {
     renderTop({ title: '더보기', bell: true });
     return (S.me ? '<div class="card" style="display:flex;align-items:center;gap:12px">' + av(S.me.name, 50) + '<div style="flex:1"><b style="font-size:1.1rem">' + esc(S.me.name) + '</b><div class="sub">' + esc(S.me.group || '목장 없음') + ' · ' + (S.me.approved ? (S.admin ? '운영자' : '성도') : '승인 대기') + '</div></div><button class="btn small ghost" data-logout>로그아웃</button></div>' :
-        '<a class="card green" href="#/talk" style="display:flex;align-items:center;gap:12px"><span style="font-size:1.6rem">🙋</span><div><b>성도 로그인</b><div class="sub" style="color:#55705f">나눔·목장방·감사일기를 쓰려면</div></div></a>') +
+        '') +
       '<div class="card list" style="padding:2px 16px">' +
         '<a href="#/about"><span class="ico">⛪</span>교회 소개</a>' +
         '<a href="#/worship"><span class="ico">🕊</span>예배·모임 안내</a>' +
-        '<a href="#/newcomer"><span class="ico">👋</span>처음 오셨나요 · 새가족 등록</a>' +
+        '<a href="#/mission"><span class="ico">🌏</span>선교 소식 · 기도제목</a>' +
         '<a href="#/visit"><span class="ico">📍</span>오시는 길 · 헌금 안내</a></div>' +
       '<div class="card list" style="padding:2px 16px">' +
         '<a href="#/alerts"><span class="ico">🔔</span>알림함 · 알림 설정</a>' +
@@ -533,7 +565,7 @@
     if (r) r.onclick = function () { if (confirm('시안에 적은 글과 감사일기를 모두 지우고 처음으로 돌아갈까요?')) { S = sample(); S.firstRun = false; save(); applyBig(); location.hash = '#/'; route(); } };
   }
   document.addEventListener('click', function (e) {
-    if (e.target.closest('[data-logout]')) { S.me = null; S.admin = false; save(); location.hash = '#/talk'; route(); }
+    if (e.target.closest('[data-logout]')) { S.me = null; S.admin = false; save(); location.hash = '#/'; route(); }
     var t = e.target.closest('[data-toggle-alert]');
     if (t) { S.alerts[t.dataset.toggleAlert] = true; save(); toast('새 소식 알림을 켰어요.'); route(); }
   });
@@ -548,6 +580,15 @@
         [['W', '예배하는 교회'], ['O', '기도하는 목장 교회'], ['R', '구제·봉사하는 교회'], ['L', '선교·전도하는 교회'], ['D', '제자 삼는 교회']].map(function (r) { return '<tr><td><b style="color:var(--gold);font-size:1.2rem;margin-right:10px">' + r[0] + '</b>' + r[1] + '</td><td></td></tr>'; }).join('') + '</table></div>' +
       '<div class="card"><div class="h2" style="margin-bottom:8px">섬기는 사람들</div><table class="wt"><tr><td>고용진 목사</td><td>담임목사</td></tr><tr><td>정하람 간사</td><td>간사</td></tr></table></div>' +
       '<div class="card"><div class="h2" style="margin-bottom:6px">함께하는 선교</div><p class="sub" style="font-size:.95rem">인도 · 필리핀 · 파푸아뉴기니 · 일본 · 북한(한국성결교회 협력) · 오픈도어선교회</p></div>';
+  }
+  function mission() {
+    renderTop({ back: '뒤로', white: true });
+    return '<div class="card green"><div class="h2" style="color:var(--green-d)">함께하는 선교</div><p class="sub" style="color:#55705f;margin-top:4px">선교지 소식과 기도제목은 등록 교인만 보는 앱에만 올려요. 안전을 위해 선교사님 이름은 쓰지 않아요.</p></div>' +
+      MISSIONS.map(function (m) {
+        return '<div class="card"><div class="sec-title" style="margin:0 0 6px"><b>🌏 ' + esc(m[0]) + '</b><span class="sub">' + esc(m[1]) + '</span></div>' +
+          '<p class="sub">(예시) 선교지에서 소식이 오면 교회가 이곳에 올리고, 기도제목을 함께 나눠요.</p>' +
+          '<span class="rx">🙏 기도할게요</span></div>';
+      }).join('');
   }
   function worship() {
     renderTop({ back: '뒤로', white: true });
@@ -664,11 +705,11 @@
 
   // 첫 실행 안내
   function firstRun() {
-    if (!S.firstRun) return;
+    if (!S.firstRun || document.querySelector('.sheet')) return;
     var dim = document.createElement('div'); dim.className = 'dim';
     var sh = document.createElement('div'); sh.className = 'sheet';
     sh.innerHTML = '<div class="grab"></div>' +
-      '<div style="display:flex;gap:14px;align-items:center"><img src="icon-192.png" alt="" style="width:58px;height:58px;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.15)"><div><div class="h1">예그린교회 앱에 오신 것을 환영해요</div><div class="sub">예배와 말씀, 교회 소식을 한곳에서</div></div></div>' +
+      '<div style="display:flex;gap:14px;align-items:center"><img src="icon-192.png" alt="" style="width:58px;height:58px;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.15)"><div><div class="h1">예그린교회 앱에 오신 것을 환영해요</div><div class="sub">' + SENTENCE + '</div></div></div>' +
       '<div class="card green" style="display:flex;gap:12px;align-items:center"><span style="font-size:1.6rem">🔔</span><div><b>교회 소식 알림을 받을까요?</b><div class="sub" style="color:#55705f">예배 변경, 행사, 새 설교를 알려 드려요. 언제든 끌 수 있어요.</div></div></div>' +
       '<div class="row"><button class="btn ghost" data-close>나중에</button><button class="btn" data-yes>알림 받기</button></div>' +
       '<button class="sub" data-bigtext style="text-decoration:underline">글씨가 작게 보이세요? <b style="color:var(--green)">큰 글씨로 보기</b></button>';
@@ -692,7 +733,9 @@
   function route() {
     var r = parse(), p = r.parts, html = '', tab = 0, after = null;
     $('#app').classList.remove('no-tabs');
-    switch (p[0] || 'home') {
+    var member = S.me && S.me.approved;
+    switch (member ? (p[0] || 'home') : 'gate') {
+      case 'gate': html = gate(); tab = -1; after = bindGate; break;
       case 'home': html = home(); tab = 0; after = bindHome; break;
       case 'sermons': html = sermons(r.q); tab = 1; after = bindSermons; break;
       case 'news': tab = 2; html = p[1] != null ? newsDetail(Number(p[1])) : news(r.q); break;
@@ -702,6 +745,7 @@
       case 'more': tab = 4; html = more(); after = bindMore; break;
       case 'about': tab = 4; html = about(); break;
       case 'worship': tab = 4; html = worship(); break;
+      case 'mission': tab = 4; html = mission(); break;
       case 'visit': tab = 4; html = visit(); break;
       case 'newcomer': tab = 4; html = newcomer(); after = bindNewcomer; break;
       case 'alerts': tab = -1; html = alerts(); after = bindAlerts; break;
@@ -715,11 +759,11 @@
     var path = p.join('/');
     if (path !== lastPath) window.scrollTo(0, 0);
     lastPath = path;
+    if (member && S.firstRun) firstRun();
   }
   window.addEventListener('hashchange', route);
 
   applyBig();
   route();
-  firstRun();
   if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('sw.js');
 })();

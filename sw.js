@@ -1,5 +1,5 @@
 // 앱 서비스워커: 항상 최신 내용을 먼저 받고, 안 되면 저장본을 보여 줌
-const CACHE = 'yegreen-app-v1';
+const CACHE = 'yegreen-app-v2';
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', 'index.html', 'app.css', 'app.js', 'manifest.json', 'logo-mark.svg', 'icon-192.png', 'icon-512.png'])));

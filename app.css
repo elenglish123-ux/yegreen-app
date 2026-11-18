@@ -196,3 +196,12 @@ textarea { resize: none; line-height: 1.55; }
 .menu-pop button { display: block; width: 100%; text-align: left; padding: 14px 18px; font-weight: 700; }
 .menu-pop button + button { border-top: 1px solid var(--line); }
 .menu-pop .danger { color: var(--red); }
+
+/* 2026-11-18 목사님 결정 반영 */
+.together { margin-top: 12px; background: var(--green-l); border-radius: 12px; padding: 11px 14px; display: flex; align-items: center; gap: 12px; }
+.together b { font-size: 1.7rem; color: var(--green); line-height: 1; }
+.together span { font-size: .9rem; color: #3c4a42; display: flex; flex-direction: column; }
+.together small { font-size: .72rem; color: #888; }
+.card.grace { display: block; background: var(--green); color: #fff; }
+.card.grace b { font-size: 1.08rem; }
+.slogan { font-family: "Noto Serif KR", serif; font-weight: 700; font-size: 1.15rem; color: var(--green-d); margin: 4px 0 10px; }
