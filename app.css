@@ -227,3 +227,19 @@ textarea { resize: none; line-height: 1.55; }
 .bars i { width: 100%; background: #cfe3d6; border-radius: 5px 5px 0 0; min-height: 4px; }
 .bars i.t { background: var(--green); }
 .bars small { font-size: .72rem; color: var(--muted); }
+/* 목장 영상 (2026-11-18) */
+.card.gv { border: 1.5px solid #d7e6dc; }
+.gv-head { display: flex; justify-content: space-between; font-size: .8rem; font-weight: 800; color: var(--green); margin-bottom: 10px; }
+.gv-body { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.gv-thumb { width: 96px; aspect-ratio: 16/9; border-radius: 10px; background: linear-gradient(140deg, #1f4a37, #3d7a5c 60%, #c9a45c); color: #fff; display: flex; align-items: center; justify-content: center; position: relative; flex: none; }
+.gv-thumb small { position: absolute; right: 5px; bottom: 3px; font-size: .68rem; background: rgba(0,0,0,.5); border-radius: 4px; padding: 0 4px; }
+.gv-title { font-size: 1.02rem; display: block; line-height: 1.35; }
+.gv-tip { font-size: .8rem; color: var(--muted); margin: 8px 2px 0; }
+.gv-qs { background: var(--gold-l); border-radius: 12px; padding: 11px 14px; margin-top: 10px; }
+.gv-qs b { font-size: .85rem; color: #8a6a2a; }
+.gv-qs ol { margin: 4px 0 0 18px; font-size: .93rem; }
+.gv-qs li { margin: 3px 0; }
+.rn-steps { list-style: none; display: grid; gap: 10px; margin: 6px 0; }
+.rn-steps li { display: flex; gap: 12px; align-items: flex-start; }
+.rn-steps li > b { width: 28px; height: 28px; border-radius: 50%; background: var(--green); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
+.rn-steps span { display: block; font-size: .8rem; color: var(--muted); }

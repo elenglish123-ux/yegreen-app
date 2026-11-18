@@ -22,6 +22,7 @@
     ['mission', '🌏', '선교 소식', ['pastor', 'admin'], '소식'],
     ['challenge', '🌾', '감사 챌린지', ['pastor', 'admin'], '나눔'],
     ['reports', '🚩', '나눔 관리', ['pastor', 'admin'], '나눔'],
+    ['gvideo', '🎬', '목장 영상', ['pastor', 'admin', 'leader'], '나눔'],
     ['reading', '📖', '성경읽기 현황', ['pastor', 'admin', 'leader'], '나눔'],
   ];
 
@@ -49,7 +50,18 @@
     if (!S.missionNews) S.missionNews = [];
     if (!S.adminRole) S.adminRole = 'admin';
     if (S.juboOpen == null) S.juboOpen = true;
+    gvSeed();
   }
+  // 목장 영상 (라잇나우미디어 등 링크) — 2026-11-18 시안
+  var RN_HOME = 'https://app.rightnowmedia.org/ko/library/default';
+  function gvSeed() {
+    if (!S.groupVideos) S.groupVideos = [{
+      id: 'v1', week: '2026-11-22', title: '우리는 왜 교회에 가는가?', series: 'Essentials of Faith · 1세션', speaker: 'BEN STUART', mins: 12,
+      url: RN_HOME, target: '전체 목장', sample: true,
+      qs: ['내가 교회에 오는 가장 큰 이유는 무엇인가요?', '영상에서 마음에 남은 한 문장은?', '이번 주 우리 목장이 서로를 위해 할 수 있는 일 한 가지'],
+    }];
+  }
+
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
   load();
   // 앱을 다른 탭에서 쓰면 바로 다시 읽기
@@ -201,7 +213,23 @@
         '<p style="color:var(--muted);font-size:13px;margin-top:10px">시안 숫자예요. 서버를 연결하면 실제 수가 나와요. 관리자 화면에도 이름은 보이지 않고 숫자만 보여요.</p></div>';
   }
 
-  var VIEWS = { '': dashboard, members: members, people: people, groups: groups, send: send, jubo: jubo, mission: mission, challenge: challenge, reports: reports, reading: reading };
+  function nextSunday() { var d = new Date(); d.setDate(d.getDate() + ((7 - d.getDay()) % 7 || 7)); return dayKey(d); }
+  function gvideo() {
+    var leader = S.adminRole === 'leader';
+    var targets = leader ? ['기쁨목장'] : ['전체 목장'].concat(S.groups.map(function (g) { return g.name; }));
+    return '<div class="grid g2"><div class="card"><h2>이번 주 목장 영상 올리기</h2><form class="form" id="gvForm">' +
+        '<label class="f">영상 링크 (라잇나우미디어에서 「공유」 → 링크 복사)<input name="url" type="url" required placeholder="https://app.rightnowmedia.org/..."></label>' +
+        '<div class="row"><label class="f">제목<input name="title" required maxlength="40"></label><label class="f">시리즈 · 회차<input name="series" maxlength="40"></label></div>' +
+        '<div class="row"><label class="f">강사<input name="speaker" maxlength="30"></label><label class="f">길이(분)<input name="mins" type="number" min="1" max="120" value="12"></label></div>' +
+        '<label class="f">나눔 질문 1<input name="q1" required maxlength="80"></label><label class="f">나눔 질문 2<input name="q2" maxlength="80"></label><label class="f">나눔 질문 3<input name="q3" maxlength="80"></label>' +
+        '<div class="row"><label class="f">모임 날짜<input name="week" type="date" required value="' + nextSunday() + '"></label><label class="f">보여 줄 목장<select name="target">' + targets.map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('') + '</select></label></div>' +
+        '<label style="font-size:14px"><input type="checkbox" name="push" checked style="width:auto"> 목장 식구에게 알림 보내기</label><button class="btn" style="justify-self:start">올리기</button></form></div>' +
+      '<div class="grid" style="align-content:start"><div class="card"><h2>올린 영상</h2><table>' + S.groupVideos.map(function (v, i) {
+          return '<tr><td><b>' + esc(v.title) + '</b>' + (v.sample ? ' <span class="tag gold">예시</span>' : '') + '<div style="color:var(--muted);font-size:13px">' + md(v.week) + ' · ' + esc(v.target) + ' · ' + esc(v.series) + '</div></td><td style="width:70px"><button class="btn ghost sm" data-gvdel="' + i + '">지우기</button></td></tr>';
+        }).join('') + '</table></div>' +
+        '<div class="card"><h2>성도는 이렇게 봐요</h2><ol style="margin-left:18px;color:var(--muted);font-size:14px"><li>앱 › 나눔 › 목장방 맨 위에 「이번 주 목장 영상」 카드</li><li>모임 때 목자님이 함께 틀기 (성도 로그인 없이)</li><li>혼자 볼 때는 처음 한 번 라잇나우미디어 로그인 안내</li></ol></div></div></div>';
+  }
+  var VIEWS = { '': dashboard, members: members, people: people, groups: groups, send: send, jubo: jubo, mission: mission, challenge: challenge, reports: reports, reading: reading, gvideo: gvideo };
 
   // ---------- 화면 전환 ----------
   function route() {
@@ -269,6 +297,16 @@
       if (cf.push.checked && cf.from.value <= dayKey(new Date())) deliver({ kind: 'notice', title: cf.title.value.trim() + '가 시작됐어요', body: md(cf.from.value) + ' ~ ' + md(cf.to.value) + ' · 나눔에서 오늘의 감사를 적어 보세요', url: '#/talk/diary' });
       save(); toast('챌린지를 만들었어요'); route();
     };
+    var gvf = $('#gvForm');
+    if (gvf) gvf.onsubmit = function (e) {
+      e.preventDefault();
+      var v = { id: 'v' + Date.now(), week: gvf.week.value, title: gvf.title.value.trim(), series: gvf.series.value.trim(), speaker: gvf.speaker.value.trim(), mins: Number(gvf.mins.value) || 0,
+        url: gvf.url.value.trim(), target: gvf.target.value, qs: [gvf.q1.value.trim(), gvf.q2.value.trim(), gvf.q3.value.trim()] };
+      S.groupVideos.unshift(v);
+      if (gvf.push.checked) deliver({ kind: 'group', title: '이번 주 목장 영상이 올라왔어요', body: v.title + ' · ' + md(v.week) + ' 모임', url: '#/talk/group' });
+      save(); toast('목장 영상을 올렸어요'); route();
+    };
+    on('[data-gvdel]', function (b) { if (!confirm('이 영상을 지울까요?')) return; S.groupVideos.splice(Number(b.dataset.gvdel), 1); save(); route(); });
     on('[data-restore]', function (b) { S.posts.forEach(function (p) { if (p.id === b.dataset.restore) p.hidden = false; }); save(); toast('다시 보이게 했어요'); route(); });
     on('[data-remove]', function (b) { if (!confirm('이 글을 지울까요? 되돌릴 수 없어요.')) return; S.posts = S.posts.filter(function (p) { return p.id !== b.dataset.remove; }); save(); route(); });
   }
