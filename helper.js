@@ -86,7 +86,7 @@
     var a = answer(q);
     setTimeout(function () {
       if (a) add('bot', esc(a[1]) + (a[2] ? '<br><a href="' + a[2] + '" data-go>' + esc(a[3]) + ' ›</a>' : ''));
-      else add('bot', '아직 그 질문에는 답을 몰라요. 🙏\n' + CONTACT + '께 물어봐 주세요.\n\n(시안이라 정해 둔 답만 해요. 실제로는 AI가 교회 자료를 보고 답해 드려요.)');
+      else add('bot', '아직 그 질문에는 답을 몰라요. 🙏\n정하람 간사님께 물어봐 주세요. (교회 032-561-0623)\n\n(시안이라 정해 둔 답만 해요. 실제로는 AI가 교회 자료를 보고 답해 드려요.)');
     }, 350);
   }
   function open() {
