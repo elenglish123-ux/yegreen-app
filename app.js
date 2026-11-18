@@ -115,13 +115,15 @@
 
   function challengeNow() {
     var t = dayKey(new Date());
-    return CHALLENGES.filter(function (c) { return t >= c.from && t <= c.to; })[0] || null;
+    return (S.challenges || CHALLENGES).filter(function (c) { return t >= c.from && t <= c.to && !c.closed; })[0] || null;
   }
   // 오늘 함께 읽은 사람 수 (시안: 날짜로 정한 예시 숫자 + 나) — 서버 연결 후 실제 수로 바뀜
   function readCount(done) {
-    var k = dayKey(new Date()), h = 0;
-    for (var i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) % 997;
-    return 18 + h % 25 + (done ? 1 : 0);
+    return seedCount(dayKey(new Date())) + (done ? 1 : 0);
+  }
+  function seedCount(k) {
+    var n = Math.floor(new Date(k + 'T00:00:00') / 864e5);
+    return 24 + (n * 7919) % 13 - (new Date(k + 'T00:00:00').getDay() === 0 ? 6 : 0);
   }
 
   // ---------- 화면 위·아래 ----------
@@ -580,7 +582,7 @@
   // ---------- 더보기 ----------
   function more() {
     renderTop({ title: '더보기', bell: true });
-    return (S.me ? '<div class="card" style="display:flex;align-items:center;gap:12px">' + av(S.me.name, 50) + '<div style="flex:1"><b style="font-size:1.1rem">' + esc(S.me.name) + '</b><div class="sub">' + esc(S.me.group || '목장 없음') + ' · ' + (S.me.approved ? (S.admin ? '운영자' : '성도') : '승인 대기') + '</div></div><button class="btn small ghost" data-logout>로그아웃</button></div>' :
+    return (S.me ? '<div class="card" style="display:flex;align-items:center;gap:12px">' + av(S.me.name, 50) + '<div style="flex:1"><b style="font-size:1.1rem">' + esc(S.me.name) + '</b><div class="sub">' + esc(S.me.group || '목장 없음') + ' · ' + (S.me.approved ? (S.admin ? ROLES[S.adminRole || 'admin'] : '성도') : '승인 대기') + '</div></div><button class="btn small ghost" data-logout>로그아웃</button></div>' :
         '') +
       '<div class="card list" style="padding:2px 16px">' +
         '<a href="#/about"><span class="ico">⛪</span>교회 소개</a>' +
@@ -591,7 +593,7 @@
         '<a href="#/alerts"><span class="ico">🔔</span>알림함 · 알림 설정</a>' +
         '<button data-big><span class="ico">🔠</span>큰 글씨로 보기<span class="tg right' + (S.big ? ' on' : '') + '"></span></button>' +
         '<button data-admin><span class="ico" style="background:var(--yellow)">🛠</span>운영자 메뉴 보기 (시안)<span class="tg right' + (S.admin ? ' on' : '') + '"></span></button>' +
-        (S.admin ? '<a href="#/admin/send"><span class="ico" style="background:var(--yellow)">📣</span>알림 보내기</a>' : '') + '</div>' +
+        (S.admin ? '<a href="#/admin"><span class="ico" style="background:var(--yellow)">🛠</span>관리자 화면' + (adminTodo() ? ' <span class="badge-inline">' + adminTodo() + '</span>' : '') + '</a>' : '') + '</div>' +
       '<div class="note"><b>시안 안내</b> 지금은 이 휴대폰에만 저장되고 다른 성도에게 보이지 않아요. 예시 글·이름은 실제 성도가 아니에요.</div>' +
       '<button class="btn ghost" data-reset>시안 처음 상태로 되돌리기</button>' +
       '<p class="sub" style="text-align:center">예그린교회 앱 · 시안 0.1</p>';
@@ -626,7 +628,11 @@
     return '<div class="card green"><div class="h2" style="color:var(--green-d)">함께하는 선교</div><p class="sub" style="color:#55705f;margin-top:4px">선교지 소식과 기도제목은 등록 교인만 보는 앱에만 올려요. 안전을 위해 선교사님 이름은 쓰지 않아요.</p></div>' +
       MISSIONS.map(function (m) {
         return '<div class="card"><div class="sec-title" style="margin:0 0 6px"><b>🌏 ' + esc(m[0]) + '</b><span class="sub">' + esc(m[1]) + '</span></div>' +
-          '<p class="sub">(예시) 선교지에서 소식이 오면 교회가 이곳에 올리고, 기도제목을 함께 나눠요.</p>' +
+          (function () {
+            var ns = (S.missionNews || []).filter(function (n) { return n.country === m[0]; });
+            return ns.length ? ns.map(function (n) { return '<div class="mnews"><div class="sub" style="font-size:.75rem">' + esc(n.at) + (n.kind === 'pray' ? ' · 🙏 기도제목' : ' · 📮 소식') + '</div><p>' + esc(n.text) + '</p></div>'; }).join('')
+              : '<p class="sub">(예시) 선교지에서 소식이 오면 교회가 이곳에 올리고, 기도제목을 함께 나눠요.</p>';
+          })() +
           '<span class="rx">🙏 기도할게요</span></div>';
       }).join('');
   }
@@ -699,6 +705,227 @@
     if (p) p.onclick = askPermission;
   }
 
+  // ================= 관리자 화면 (시안, 2026-11-18) =================
+  // 권한(안) — 2차 미팅에서 목사님과 정함. 표의 값만 바꾸면 메뉴가 바뀜
+  var ROLES = { pastor: '담임목사', admin: '관리자(간사)', leader: '목자' };
+  var ADMIN_MENUS = [
+    ['members', '👤', '가입 승인', '가입 신청을 확인하고 목장을 정해요', ['pastor', 'admin']],
+    ['send', '📣', '알림 보내기', '공지·긴급 알림, 목장 알림', ['pastor', 'admin', 'leader']],
+    ['jubo', '📰', '주보·광고', '주보 프로그램에서 온 주보를 앱에 공개', ['pastor', 'admin']],
+    ['challenge', '🌾', '감사 챌린지', '챌린지 이름과 기간을 정해 열고 닫기', ['pastor', 'admin']],
+    ['mission', '🌏', '선교 소식', '나라별 소식·기도제목 올리기', ['pastor', 'admin']],
+    ['groups', '🏠', '목장 관리', '목장 만들기, 목자 정하기, 식구 배정', ['pastor', 'admin']],
+    ['reports', '🚩', '나눔 관리', '신고된 글 확인 · 숨기기 · 지우기', ['pastor', 'admin']],
+    ['reading', '📖', '성경읽기 현황', '이번 주 함께 읽은 사람 수', ['pastor', 'admin', 'leader']],
+    ['people', '👥', '교인 · 권한', '교인 목록, 성도·목자·관리자 권한', ['pastor']],
+  ];
+  function adminSeed() {
+    if (!S.pending) S.pending = [
+      { id: 'a1', name: '예시 신청자 1', group: '', at: '11월 17일', memo: '11월 첫 주부터 출석 · 김○○ 집사 소개' },
+      { id: 'a2', name: '예시 신청자 2', group: '소망목장', at: '11월 16일', memo: '청년부' },
+    ];
+    if (!S.groups) S.groups = [
+      { name: '기쁨목장', leader: '예시 목자 1', count: 8 }, { name: '소망목장', leader: '예시 목자 2', count: 7 },
+      { name: '사랑목장', leader: '예시 목자 3', count: 9 }, { name: '청년목장', leader: '', count: 5 },
+    ];
+    if (!S.people) S.people = [
+      { name: '고용진', role: 'pastor', group: '' }, { name: '정하람', role: 'admin', group: '' },
+      { name: '예시 목자 1', role: 'leader', group: '기쁨목장' }, { name: '예시 목자 2', role: 'leader', group: '소망목장' }, { name: '예시 목자 3', role: 'leader', group: '사랑목장' },
+      { name: '예시 성도 1', role: 'member', group: '기쁨목장' }, { name: '예시 성도 2', role: 'member', group: '사랑목장' },
+    ];
+    if (!S.challenges) S.challenges = CHALLENGES.map(function (c) { return { title: c.title, from: c.from, to: c.to }; });
+    if (!S.missionNews) S.missionNews = [];
+    if (!S.adminRole) S.adminRole = 'admin';
+    if (S.juboOpen == null) S.juboOpen = true;
+  }
+  function adminTodo() { adminSeed(); return S.pending.length + S.posts.filter(function (p) { return p.hidden; }).length; }
+  function can(menu) { var m = ADMIN_MENUS.filter(function (x) { return x[0] === menu; })[0]; return m && m[4].indexOf(S.adminRole) >= 0; }
+  function adminTop(title) { renderTop({ back: title ? '관리' : '더보기', white: true }); }
+  function opt(list, v) { return list.map(function (x) { return '<option' + (x === v ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join(''); }
+
+  function adminHome() {
+    adminTop();
+    var counts = { members: S.pending.length, reports: S.posts.filter(function (p) { return p.hidden; }).length };
+    return '<div class="card admin-head"><div class="sub" style="color:#cfe3d6">예그린교회 앱 관리</div><div class="h1" style="color:#fff">관리자 화면</div>' +
+        '<div class="sub" style="color:#cfe3d6;margin:8px 0 6px">시안: 어떤 역할로 볼까요?</div><div class="chips" id="rolePick">' +
+        Object.keys(ROLES).map(function (k) { return '<button class="chip' + (S.adminRole === k ? ' on' : '') + '" data-role="' + k + '">' + ROLES[k] + '</button>'; }).join('') + '</div></div>' +
+      '<div class="card list" style="padding:2px 16px">' + ADMIN_MENUS.map(function (m) {
+        var ok = m[4].indexOf(S.adminRole) >= 0, n = counts[m[0]];
+        return ok ? '<a href="#/admin/' + m[0] + '"><span class="ico">' + m[1] + '</span><span style="flex:1"><b style="display:block">' + m[2] + (n ? ' <span class="badge-inline">' + n + '</span>' : '') + '</b><span class="sub" style="font-weight:500;font-size:.8rem">' + m[3] + '</span></span></a>'
+          : '<div class="it locked"><span class="ico">🔒</span><span style="flex:1"><b style="display:block">' + m[2] + '</b><span class="sub" style="font-weight:500;font-size:.8rem">' + ROLES[S.adminRole] + '은(는) 쓸 수 없어요</span></span></div>';
+      }).join('') + '</div>' +
+      '<div class="note"><b>권한은 아직 안(案)이에요.</b> 누가 어떤 메뉴를 쓸지는 2차 미팅에서 목사님과 정해요. 위에서 역할을 바꾸면 그 사람에게 보이는 메뉴가 달라져요.</div>' +
+      '<div class="card flat"><b>🔒 관리자도 볼 수 없는 것</b><p class="sub" style="margin-top:4px">나만의 기도 공간, 「나만 보기」 감사일기는 휴대폰 안에만 있어서 관리자 화면에 나오지 않아요.</p></div>';
+  }
+
+  function adminMembers() {
+    adminTop(1);
+    var groups = [''].concat(S.groups.map(function (g) { return g.name; }));
+    return '<div class="sec-title"><b>가입 신청 ' + S.pending.length + '</b></div>' +
+      (S.pending.map(function (a) {
+        return '<div class="card"><div class="who">' + av(a.name) + '<div><b>' + esc(a.name) + '</b><div class="sub">' + esc(a.at) + ' 신청 · ' + esc(a.memo) + '</div></div></div>' +
+          '<label class="field" style="margin:10px 0"><span>목장 배정</span><select data-pg="' + a.id + '">' + groups.map(function (g) { return '<option value="' + esc(g) + '"' + (g === a.group ? ' selected' : '') + '>' + (g || '나중에 정하기') + '</option>'; }).join('') + '</select></label>' +
+          '<div class="row"><button class="btn small ghost" data-deny="' + a.id + '">교인 아님</button><button class="btn small" data-ok="' + a.id + '">승인</button></div></div>';
+      }).join('') || '<p class="empty">기다리는 가입 신청이 없어요.</p>') +
+      '<p class="sub">승인하면 신청한 분에게 "앱이 열렸어요" 알림이 가요. 교인이 아니면 정중한 안내 알림이 가요.</p>';
+  }
+
+  function adminJubo() {
+    adminTop(1);
+    var b = BULLETINS[0];
+    return '<div class="card">' + (b ? '<div class="h2">' + md(b.date) + ' 주보</div><div class="sub">' + [b.title, b.verseRef].filter(Boolean).map(esc).join(' · ') + '</div>' +
+        '<div class="jubo" style="margin:10px 0">' + b.images.map(function (src) { return '<img src="' + esc(DATA_ROOT + src) + '" alt="" loading="lazy">'; }).join('') + '</div>' +
+        '<div class="list"><button data-jubo>앱에 공개<span class="tg right' + (S.juboOpen ? ' on' : '') + '"></span></button></div>'
+        : '<p class="empty">아직 받은 주보가 없어요.</p>') + '</div>' +
+      '<div class="card flat"><b>주보는 어떻게 들어오나요?</b><ol class="steps-ol"><li>주보 만들기 프로그램에서 주보 작성</li><li>「홈페이지로 보내기」를 누르면 앱으로도 들어옴</li><li>여기서 확인하고 공개 → 성도에게 "이번 주 주보" 알림</li></ol></div>' +
+      '<button class="btn" data-jubo-push>이번 주 주보 알림 보내기</button>';
+  }
+
+  function adminChallenge() {
+    adminTop(1);
+    var t = dayKey(new Date());
+    return '<div class="sec-title"><b>챌린지 목록</b></div>' + S.challenges.map(function (c, i) {
+        var st = c.closed ? '닫음' : t < c.from ? '예정' : t > c.to ? '끝남' : '진행 중';
+        return '<div class="card"><div class="sec-title" style="margin:0 0 4px"><b>🌾 ' + esc(c.title) + '</b><span class="tag' + (st === '진행 중' ? '' : ' gold') + '">' + st + '</span></div><div class="sub">' + md(c.from) + ' ~ ' + md(c.to) + '</div>' +
+          (st === '진행 중' ? '<button class="btn small ghost" style="margin-top:8px" data-close-ch="' + i + '">지금 닫기</button>' : '') + '</div>';
+      }).join('') +
+      '<form class="card" id="chForm" style="display:flex;flex-direction:column;gap:10px"><b>새 챌린지 열기</b>' +
+        '<label class="field"><span>이름</span><input name="title" required maxlength="30" placeholder="예: 성탄 감사 챌린지"></label>' +
+        '<div class="row"><label class="field"><span>시작</span><input name="from" type="date" required value="' + t + '"></label><label class="field"><span>끝</span><input name="to" type="date" required></label></div>' +
+        '<label class="check"><input type="checkbox" name="push" checked>열 때 성도에게 알림 보내기</label>' +
+        '<button class="btn">챌린지 만들기</button></form>' +
+      '<p class="sub">챌린지 기간에만 나눔 › 감사 챌린지 칸이 열려요.</p>';
+  }
+
+  function adminMission() {
+    adminTop(1);
+    return '<form class="card" id="mnForm" style="display:flex;flex-direction:column;gap:10px"><b>선교지 소식 올리기</b>' +
+        '<label class="field"><span>나라</span><select name="country">' + opt(MISSIONS.map(function (m) { return m[0]; })) + '</select></label>' +
+        '<div class="chips" id="mnKind"><button type="button" class="chip on" data-v="news">📮 소식</button><button type="button" class="chip" data-v="pray">🙏 기도제목</button></div>' +
+        '<textarea name="text" rows="4" maxlength="500" required placeholder="선교사님께 받은 소식이나 기도제목을 적어 주세요."></textarea>' +
+        '<div class="note">⚠ 안전을 위해 선교사님 이름, 사진, 사는 도시는 적지 마세요.</div>' +
+        '<button class="btn">올리기</button></form>' +
+      (S.missionNews.length ? '<div class="sec-title"><b>올린 소식</b></div>' + S.missionNews.map(function (n, i) {
+        return '<div class="card"><div class="sub">' + esc(n.country) + ' · ' + esc(n.at) + (n.kind === 'pray' ? ' · 🙏 기도제목' : ' · 📮 소식') + '</div><p style="margin:4px 0 8px">' + esc(n.text) + '</p><button class="btn small ghost" data-mdel="' + i + '">지우기</button></div>';
+      }).join('') : '');
+  }
+
+  function adminGroups() {
+    adminTop(1);
+    var leaders = [''].concat(S.people.filter(function (x) { return x.role === 'leader'; }).map(function (x) { return x.name; }));
+    return '<div class="sec-title"><b>목장 ' + S.groups.length + '개</b></div>' + S.groups.map(function (g, i) {
+        return '<div class="card"><div class="sec-title" style="margin:0 0 8px"><b>🏠 ' + esc(g.name) + '</b><span class="sub">식구 ' + g.count + '명</span></div>' +
+          '<label class="field"><span>목자</span><select data-leader="' + i + '">' + leaders.map(function (l) { return '<option value="' + esc(l) + '"' + (l === g.leader ? ' selected' : '') + '>' + (l || '아직 없음') + '</option>'; }).join('') + '</select></label></div>';
+      }).join('') +
+      '<form class="card row" id="gForm" style="align-items:center"><input name="g" required maxlength="12" placeholder="새 목장 이름"><button class="btn small" style="flex:0 0 auto">만들기</button></form>' +
+      '<p class="sub">목자로 정한 분은 목장방에서 모임 공지를 올리고 목장 식구에게 알림을 보낼 수 있어요(안).</p>';
+  }
+
+  function adminReports() {
+    adminTop(1);
+    var hidden = S.posts.filter(function (p) { return p.hidden; });
+    return '<div class="sec-title"><b>신고된 글 ' + hidden.length + '</b></div>' +
+      (hidden.map(function (p) {
+        return '<div class="card"><div class="sub">' + esc(p.author) + ' · ' + CATS[p.cat] + ' · ' + esc(p.at) + '</div><p style="margin:6px 0 10px">' + esc(p.text) + '</p>' +
+          '<div class="row"><button class="btn small ghost" data-restore="' + p.id + '">문제없음 · 다시 보이기</button><button class="btn small" style="background:var(--red)" data-remove="' + p.id + '">지우기</button></div></div>';
+      }).join('') || '<div class="card" style="text-align:center"><div style="font-size:1.8rem">🕊</div><b>신고된 글이 없어요</b><p class="sub">성도가 글에서 「신고하기」를 누르면 그 글은 숨겨지고 여기에 모여요.</p></div>') +
+      '<div class="card flat"><b>나눔 원칙(안)</b><ul class="steps-ol"><li>다른 사람 이름·사정은 허락받고 쓰기</li><li>신고된 글은 관리자가 볼 때까지 숨김</li><li>「목사님께만」 글은 담임목사님만 봄</li></ul></div>';
+  }
+
+  function adminReading() {
+    adminTop(1);
+    var days = [], max = 0;
+    for (var i = 6; i >= 0; i--) {
+      var d = new Date(); d.setDate(d.getDate() - i);
+      var k = dayKey(d);
+      var n = seedCount(k) + (S.readDone && S.readDone[k] ? 1 : 0);
+      days.push([WEEK[d.getDay()], n, i === 0]); if (n > max) max = n;
+    }
+    var avg = Math.round(days.reduce(function (a, x) { return a + x[1]; }, 0) / 7);
+    return '<div class="card"><div class="sec-title" style="margin:0 0 10px"><b>이번 주 함께 읽은 사람</b><span class="sub">하루 평균 ' + avg + '명</span></div>' +
+        '<div class="bars">' + days.map(function (x) { return '<div><span>' + x[1] + '</span><i style="height:' + Math.round(x[1] / max * 100) + '%"' + (x[2] ? ' class="t"' : '') + '></i><small>' + (x[2] ? '오늘' : x[0]) + '</small></div>'; }).join('') + '</div>' +
+        '<p class="sub" style="margin-top:8px">시안 숫자예요. 서버를 연결하면 실제 수가 나와요.</p></div>' +
+      '<div class="card flat"><b>이름은 보이지 않아요</b><p class="sub" style="margin-top:4px">관리자 화면에도 숫자만 보여요. 누가 읽었는지 보여 줄지는 2차 미팅에서 정해요.</p></div>';
+  }
+
+  function adminPeople() {
+    adminTop(1);
+    var roleName = { pastor: '담임목사', admin: '관리자', leader: '목자', member: '성도' };
+    return '<input id="pq" placeholder="이름으로 찾기">' +
+      '<div class="card list" style="padding:2px 16px">' + S.people.map(function (x, i) {
+        return '<div class="it" data-pname="' + esc(x.name) + '">' + av(x.name, 34) + '<span style="flex:1"><b style="display:block">' + esc(x.name) + '</b><span class="sub" style="font-weight:500;font-size:.8rem">' + esc(x.group || '목장 없음') + '</span></span>' +
+          '<select data-prole="' + i + '" style="width:auto"' + (x.role === 'pastor' ? ' disabled' : '') + '>' + Object.keys(roleName).map(function (k) { return '<option value="' + k + '"' + (k === x.role ? ' selected' : '') + '>' + roleName[k] + '</option>'; }).join('') + '</select></div>';
+      }).join('') + '</div>' +
+      '<p class="sub">연락처·생일 같은 개인정보를 관리자 화면에 둘지는 2차 미팅에서 정해요. 지금은 이름과 목장만 보여요.</p>';
+  }
+
+  function adminRoute(sub) {
+    if (!S.admin) { location.hash = '#/more'; return ''; }
+    adminSeed();
+    if (sub && sub !== 'send' && !can(sub)) { location.hash = '#/admin'; return ''; }
+    switch (sub) {
+      case 'send': return adminSend();
+      case 'members': return adminMembers();
+      case 'jubo': return adminJubo();
+      case 'challenge': return adminChallenge();
+      case 'mission': return adminMission();
+      case 'groups': return adminGroups();
+      case 'reports': return adminReports();
+      case 'reading': return adminReading();
+      case 'people': return adminPeople();
+      default: return adminHome();
+    }
+  }
+  function bindAdminAll() {
+    bindAdmin();
+    var on = function (sel, fn) { document.querySelectorAll(sel).forEach(function (b) { b.onclick = function (e) { fn(b, e); }; }); };
+    on('[data-role]', function (b) { S.adminRole = b.dataset.role; save(); route(); });
+    on('[data-ok]', function (b) {
+      var a = S.pending.filter(function (x) { return x.id === b.dataset.ok; })[0], g = document.querySelector('[data-pg="' + a.id + '"]').value;
+      S.pending = S.pending.filter(function (x) { return x !== a; });
+      S.people.push({ name: a.name, role: 'member', group: g });
+      S.groups.forEach(function (x) { if (x.name === g) x.count++; });
+      save(); toast(a.name + '님을 승인했어요' + (g ? ' · ' + g : '')); route();
+    });
+    on('[data-deny]', function (b) {
+      if (!confirm('등록 교인이 아니라고 안내할까요?')) return;
+      S.pending = S.pending.filter(function (x) { return x.id !== b.dataset.deny; }); save(); toast('안내 알림을 보냈어요 (시안)'); route();
+    });
+    on('[data-jubo]', function () { S.juboOpen = !S.juboOpen; save(); route(); });
+    on('[data-jubo-push]', function () {
+      var b = BULLETINS[0];
+      receive({ kind: 'notice', title: '이번 주 주보가 올라왔어요', body: b ? md(b.date) + ' 주보 · ' + (b.title || '') : '이번 주 주보를 확인해 보세요', url: '#/news?tab=jubo' });
+    });
+    on('[data-close-ch]', function (b) { S.challenges[b.dataset.closeCh].closed = true; save(); toast('챌린지를 닫았어요'); route(); });
+    var cf = $('#chForm');
+    if (cf) cf.onsubmit = function (e) {
+      e.preventDefault();
+      if (cf.to.value < cf.from.value) { toast('끝나는 날이 시작보다 빨라요'); return; }
+      S.challenges.unshift({ title: cf.title.value.trim(), from: cf.from.value, to: cf.to.value });
+      save();
+      if (cf.push.checked && cf.from.value <= dayKey(new Date())) receive({ kind: 'notice', title: cf.title.value.trim() + '가 시작됐어요', body: md(cf.from.value) + ' ~ ' + md(cf.to.value) + ' · 나눔에서 오늘의 감사를 적어 보세요', url: '#/talk/diary' });
+      else toast('챌린지를 만들었어요');
+      route();
+    };
+    var mk = $('#mnKind');
+    if (mk) mk.onclick = function (e) { var b = e.target.closest('[data-v]'); if (!b) return; mk.querySelectorAll('.chip').forEach(function (c) { c.classList.toggle('on', c === b); }); };
+    var mf = $('#mnForm');
+    if (mf) mf.onsubmit = function (e) {
+      e.preventDefault();
+      S.missionNews.unshift({ country: mf.country.value, kind: mk.querySelector('.on').dataset.v, text: mf.text.value.trim(), at: md(dayKey(new Date())) });
+      save(); toast(mf.country.value + ' 소식을 올렸어요'); route();
+    };
+    on('[data-mdel]', function (b) { S.missionNews.splice(Number(b.dataset.mdel), 1); save(); route(); });
+    document.querySelectorAll('[data-leader]').forEach(function (s) { s.onchange = function () { S.groups[s.dataset.leader].leader = s.value; save(); toast('목자를 정했어요'); }; });
+    var gf = $('#gForm');
+    if (gf) gf.onsubmit = function (e) { e.preventDefault(); S.groups.push({ name: gf.g.value.trim(), leader: '', count: 0 }); save(); route(); };
+    on('[data-restore]', function (b) { S.posts.forEach(function (p) { if (p.id === b.dataset.restore) p.hidden = false; }); save(); toast('다시 보이게 했어요'); route(); });
+    on('[data-remove]', function (b) { if (!confirm('이 글을 지울까요? 되돌릴 수 없어요.')) return; S.posts = S.posts.filter(function (p) { return p.id !== b.dataset.remove; }); save(); route(); });
+    document.querySelectorAll('[data-prole]').forEach(function (s) { s.onchange = function () { S.people[s.dataset.prole].role = s.value; save(); toast('권한을 바꿨어요'); }; });
+    var pq = $('#pq');
+    if (pq) pq.oninput = function () { var v = pq.value.trim(); document.querySelectorAll('[data-pname]').forEach(function (r) { r.hidden = v && r.dataset.pname.indexOf(v) < 0; }); };
+  }
+
   // 운영자: 알림 보내기
   var TEMPLATES = [
     ['추수감사', 'event', '이번 주일은 추수감사주일이에요', '11월 22일, 감사의 마음으로 함께 예배드려요.', '#/news'],
@@ -707,15 +934,14 @@
     ['목장 모임', 'group', '이번 주 목장 모임', '금요일 저녁 7:30에 만나요.', '#/talk/group'],
   ];
   function adminSend() {
-    if (!S.admin) { location.hash = '#/more'; return ''; }
-    renderTop({ back: '더보기', white: true });
+    renderTop({ back: '관리', white: true });
     return '<div class="note">실제 앱에서는 알림을 켠 성도 전체에게 가요. 시안에서는 이 휴대폰으로만 와요.</div>' +
       '<div class="chips" id="tpl">' + TEMPLATES.map(function (t, i) { return '<button class="chip" data-i="' + i + '">' + t[0] + '</button>'; }).join('') + '</div>' +
       '<form id="sendForm" style="display:flex;flex-direction:column;gap:12px">' +
         '<label class="field"><span>제목 <b id="tc">0</b>/30</span><input name="title" maxlength="30" required></label>' +
         '<label class="field"><span>내용 <b id="bc">0</b>/120</span><textarea name="body" rows="3" maxlength="120" required></textarea></label>' +
         '<div class="row"><label class="field"><span>종류</span><select name="kind">' + ALERT_KINDS.map(function (k) { return '<option value="' + k[0] + '">' + k[1].split(' ·')[0] + '</option>'; }).join('') + '</select></label>' +
-        '<label class="field"><span>받는 사람</span><select name="to"><option>전체</option><option>목장별</option><option>부서별</option></select></label></div>' +
+        '<label class="field"><span>받는 사람</span><select name="to">' + (S.adminRole === 'leader' ? '<option>우리 목장</option>' : '<option>전체</option><option>목장별</option><option>부서별</option>') + '</select></label></div>' +
         '<label class="field"><span>누르면 열 화면</span><select name="url"><option value="#/news">교회 소식</option><option value="#/sermons">말씀</option><option value="#/worship">예배·모임 안내</option><option value="#/talk">나눔</option><option value="#/talk/group">목장방</option><option value="#/talk/diary">감사일기</option></select></label>' +
         '<div class="push-preview"><div style="color:#fff;font-size:.78rem;font-weight:700;margin-bottom:8px;opacity:.85">휴대폰에 이렇게 보여요</div><div class="push"><img src="icon-192.png" alt=""><div style="flex:1"><div class="app"><span>예그린교회</span><span>지금</span></div><b id="pt">제목</b><p id="pb">내용</p></div></div></div>' +
         '<button class="btn">보내기</button></form>' +
@@ -789,7 +1015,7 @@
       case 'visit': tab = 4; html = visit(); break;
       case 'newcomer': tab = 4; html = newcomer(); after = bindNewcomer; break;
       case 'alerts': tab = -1; html = alerts(); after = bindAlerts; break;
-      case 'admin': tab = 4; html = adminSend(); after = bindAdmin; break;
+      case 'admin': tab = 4; html = adminRoute(p[1]); after = bindAdminAll; break;
       default: location.hash = '#/'; return;
     }
     $('#view').innerHTML = html;

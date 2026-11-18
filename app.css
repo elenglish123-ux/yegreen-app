@@ -211,3 +211,19 @@ textarea { resize: none; line-height: 1.55; }
 .pray-item.done { opacity: .75; background: #f6f7f5; }
 .seg { grid-template-columns: repeat(4, 1fr); }
 .seg a { flex: 1 1 0; min-width: 0; padding-left: 2px; padding-right: 2px; font-size: .84rem; }
+/* 관리자 화면 (2026-11-18) */
+.card.admin-head { background: linear-gradient(150deg, var(--green-d), var(--green)); color: #fff; }
+.card.admin-head .chip { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.3); color: #fff; }
+.card.admin-head .chip.on { background: #fff; color: var(--green-d); border-color: #fff; }
+.badge-inline { display: inline-block; min-width: 20px; padding: 0 6px; border-radius: 10px; background: var(--red); color: #fff; font-size: .75rem; font-weight: 800; text-align: center; vertical-align: 2px; }
+.list .it.locked { opacity: .45; }
+.steps-ol { margin: 6px 0 0 18px; font-size: .9rem; color: var(--muted); }
+.steps-ol li { margin: 3px 0; }
+.mnews { border-top: 1px solid #eee9e0; padding: 8px 0; }
+.mnews p { font-size: .95rem; }
+.bars { display: flex; align-items: flex-end; gap: 6px; height: 130px; }
+.bars div { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 3px; }
+.bars span { font-size: .72rem; color: var(--muted); font-weight: 700; }
+.bars i { width: 100%; background: #cfe3d6; border-radius: 5px 5px 0 0; min-height: 4px; }
+.bars i.t { background: var(--green); }
+.bars small { font-size: .72rem; color: var(--muted); }
