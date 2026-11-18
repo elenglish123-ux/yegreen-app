@@ -354,13 +354,14 @@
       '<span class="rx' + (p.reacted ? ' on' : '') + '" data-react="' + p.id + '">' + (p.cat === 'pray' ? '🙏 기도했어요' : '🙌 아멘') + ' ' + p.count + '</span> <span class="rx">💬 ' + p.comments.length + '</span>') + '</a>';
   }
   function segs(on) {
-    return '<div class="seg">' + [['church', '교회 나눔'], ['group', '목장방'], ['diary', '감사 챌린지']].map(function (s) { return '<a href="#/talk/' + s[0] + '"' + (s[0] === on ? ' class="on"' : '') + '>' + s[1] + '</a>'; }).join('') + '</div>';
+    return '<div class="seg">' + [['church', '교회 나눔'], ['group', '목장방'], ['diary', '감사 챌린지'], ['prayer', '기도 공간']].map(function (s) { return '<a href="#/talk/' + s[0] + '"' + (s[0] === on ? ' class="on"' : '') + '>' + s[1] + '</a>'; }).join('') + '</div>';
   }
   function talk(sub, q) {
     if (!S.me || !S.me.approved) return gate();
     sub = sub || 'church';
-    renderTop({ title: '나눔', right: sub === 'diary' ? '' : '<a class="icon-btn" href="#/write?to=' + (sub === 'group' ? 'group' : 'all') + '" aria-label="글쓰기">' + svg('pen', 2) + '</a>', bell: true });
+    renderTop({ title: '나눔', right: sub === 'diary' || sub === 'prayer' ? '' : '<a class="icon-btn" href="#/write?to=' + (sub === 'group' ? 'group' : 'all') + '" aria-label="글쓰기">' + svg('pen', 2) + '</a>', bell: true });
     if (sub === 'diary') return segs(sub) + diary();
+    if (sub === 'prayer') return segs(sub) + prayerRoom();
     if (sub === 'group') return segs(sub) + groupRoom();
     var f = q.cat || 'all';
     var list = S.posts.filter(function (p) { return p.scope !== 'group' && canSee(p) && (f === 'all' || p.cat === f || p.notice); });
@@ -394,6 +395,7 @@
     var gf = $('#groupForm');
     if (gf) gf.onsubmit = function (e) { e.preventDefault(); S.me.group = gf.g.value.trim(); save(); route(); };
     bindDiary();
+    bindPrayer();
   }
   function react(id) {
     var p = S.posts.filter(function (x) { return x.id === id; })[0];
@@ -474,6 +476,44 @@
       };
       document.body.append(dim, pop);
     };
+  }
+
+  // 나만의 기도 공간 (목사님 결정 2026-11-18): 이 휴대폰 안에만 저장, 서버로 보내지 않음
+  var PKEY = 'yegreen-prayer-v1';
+  function prayers() { try { return JSON.parse(localStorage.getItem(PKEY)) || []; } catch (e) { return []; } }
+  function savePrayers(list) { try { localStorage.setItem(PKEY, JSON.stringify(list)); } catch (e) {} }
+  function prayerRoom() {
+    var list = prayers(), open = list.filter(function (x) { return !x.done; }), done = list.filter(function (x) { return x.done; });
+    function item(x) {
+      return '<div class="card pray-item' + (x.done ? ' done' : '') + '"><div class="sub" style="font-size:.78rem">' + esc(x.at) + (x.done ? ' · 🙌 ' + esc(x.done) + ' 응답' : '') + '</div>' +
+        '<p class="text" style="margin:4px 0 8px">' + esc(x.text) + '</p>' +
+        '<div class="row">' + (x.done ? '' : '<button class="btn small ghost" data-pdone="' + x.id + '">🙌 응답됐어요</button>') +
+        '<button class="btn small ghost" data-pdel="' + x.id + '" style="flex:0 0 auto">지우기</button></div></div>';
+    }
+    return '<div class="card lockbox"><b>🔒 나만 보는 기도 공간</b><div class="sub">여기 적은 기도는 <b>이 휴대폰 안에만</b> 저장돼요. 교회 서버로 보내지 않아서 목사님·간사님·운영자도 볼 수 없어요.</div></div>' +
+      '<form class="card" id="prayForm" style="display:flex;flex-direction:column;gap:10px"><b>오늘의 기도</b>' +
+        '<textarea name="t" rows="4" maxlength="1000" required placeholder="하나님께만 드리는 기도를 적어 보세요."></textarea>' +
+        '<button class="btn">저장</button></form>' +
+      (open.length ? '<div class="sec-title"><b>기도하고 있어요 ' + open.length + '</b></div>' + open.map(item).join('') : '') +
+      (done.length ? '<div class="sec-title"><b>응답된 기도 ' + done.length + '</b></div>' + done.map(item).join('') : '') +
+      '<p class="sub" style="text-align:center;font-size:.78rem">휴대폰을 바꾸거나 앱 데이터를 지우면 함께 지워져요.</p>';
+  }
+  function bindPrayer() {
+    var f = $('#prayForm');
+    if (!f) return;
+    f.onsubmit = function (e) {
+      e.preventDefault();
+      var v = f.t.value.trim(); if (!v) return;
+      var list = prayers();
+      list.unshift({ id: 'q' + Date.now(), text: v, at: md(dayKey(new Date())) });
+      savePrayers(list); toast('기도를 저장했어요 🙏'); route();
+    };
+    document.querySelectorAll('[data-pdone]').forEach(function (b) {
+      b.onclick = function () { var list = prayers(); list.forEach(function (x) { if (x.id === b.dataset.pdone) x.done = md(dayKey(new Date())); }); savePrayers(list); toast('응답된 기도로 옮겼어요 🙌'); route(); };
+    });
+    document.querySelectorAll('[data-pdel]').forEach(function (b) {
+      b.onclick = function () { if (!confirm('이 기도를 지울까요? 되돌릴 수 없어요.')) return; savePrayers(prayers().filter(function (x) { return x.id !== b.dataset.pdel; })); route(); };
+    });
   }
 
   // 감사일기

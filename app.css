@@ -205,3 +205,9 @@ textarea { resize: none; line-height: 1.55; }
 .card.grace { display: block; background: var(--green); color: #fff; }
 .card.grace b { font-size: 1.08rem; }
 .slogan { font-family: "Noto Serif KR", serif; font-weight: 700; font-size: 1.15rem; color: var(--green-d); margin: 4px 0 10px; }
+.seg a { white-space: nowrap; }
+.card.lockbox { background: #2f3b35; color: #fff; }
+.card.lockbox .sub { color: #cfd8d2; margin-top: 4px; }
+.pray-item.done { opacity: .75; background: #f6f7f5; }
+.seg { grid-template-columns: repeat(4, 1fr); }
+.seg a { flex: 1 1 0; min-width: 0; padding-left: 2px; padding-right: 2px; font-size: .84rem; }
