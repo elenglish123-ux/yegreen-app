@@ -90,6 +90,55 @@ label.f { display: grid; gap: 5px; font-size: 13px; font-weight: 700; color: var
 .phone .push p { font-size: 13px; color: #444; }
 .lock { background: #2f3b35; color: #fff; }
 .lock p { color: #cfd8d2; font-size: 13.5px; margin-top: 4px; }
+/* 설교 영상 만들기 */
+.vsteps { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.vsteps button { display: flex; align-items: center; gap: 8px; background: #fff; border: 1.5px solid var(--line); border-radius: 12px; padding: 8px 14px; font-weight: 700; color: var(--muted); }
+.vsteps button b { width: 22px; height: 22px; border-radius: 50%; background: #eee; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; }
+.vsteps button.on { border-color: var(--green); color: var(--green-d); }
+.vsteps button.on b { background: var(--green); color: #fff; }
+.vsteps button.done b { background: var(--green-l); color: var(--green); }
+.vdrop { display: flex; flex-direction: column; align-items: center; gap: 4px; border: 2px dashed #cfd8d2; border-radius: 14px; padding: 22px; cursor: pointer; background: #fafcfa; }
+.vdrop b { color: var(--green-d); }
+.vdrop span { font-size: 13px; color: var(--muted); }
+.vflow { list-style: none; counter-reset: v; display: grid; gap: 10px; }
+.vflow li { counter-increment: v; display: grid; grid-template-columns: 28px 1fr; column-gap: 10px; font-size: 13.5px; color: var(--muted); }
+.vflow li::before { content: counter(v); grid-row: span 2; width: 26px; height: 26px; border-radius: 50%; background: var(--green-l); color: var(--green); font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.vflow li b { color: var(--ink); font-size: 14.5px; }
+.vtl { position: relative; display: flex; height: 54px; border-radius: 10px; overflow: hidden; margin-top: 6px; }
+.vseg { background: #e9e5dd; border-right: 2px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 11.5px; color: var(--muted); overflow: hidden; white-space: nowrap; }
+.vseg.sermon { background: #cfe3d6; color: var(--green-d); font-weight: 800; }
+.vcut { position: absolute; top: 0; bottom: 0; border: 3px solid var(--green); border-radius: 8px; pointer-events: none; }
+.vtl-scale { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 4px; }
+/* 썸네일 — 기존 예그린 유튜브 썸네일 4가지 스타일 */
+.vthumb { position: relative; aspect-ratio: 16/9; border-radius: 10px; overflow: hidden; container-type: inline-size; }
+.vthumb .vt-photo { position: absolute; right: 0; top: 0; bottom: 0; width: 43.75%; background: center bottom / cover no-repeat; }
+.vthumb .vt-brand { position: absolute; right: 2.5%; top: 2.5%; font-size: 1.6cqw; font-weight: 700; letter-spacing: .08em; color: #fff; opacity: .9; z-index: 2; }
+.vthumb .vt-brand.spread { right: auto; left: 0; width: 56%; text-align: center; top: 9%; font-size: 1.9cqw; font-weight: 600; letter-spacing: .12em; opacity: .85; }
+.vthumb .vt-series { position: absolute; left: 2.5%; top: 2.5%; font-size: 2cqw; color: #fff; border-bottom: 1px solid rgba(255,255,255,.8); padding-bottom: .4%; z-index: 2; }
+.vthumb .vt-text { position: absolute; top: 0; bottom: 0; left: 0; width: 56%; display: flex; flex-direction: column; justify-content: center; padding: 0 0 0 4.5%; z-index: 2; }
+.vthumb .vt-text.center { align-items: center; text-align: center; padding: 6% 0 0; }
+.vthumb .vt-title { font-size: 6.4cqw; font-weight: 900; line-height: 1.22; letter-spacing: -.02em; }
+.vthumb .vt-ref { font-size: 2.6cqw; font-weight: 800; margin-top: 4.5%; }
+.vthumb.st-blue .vt-title { font-size: 5.9cqw; }
+.vthumb.st-torn .vt-torn { position: absolute; left: 0; top: 13%; bottom: 0; width: 58%; background: #2c2c2c; z-index: 1;
+  clip-path: polygon(0 4%, 8% 0, 16% 5%, 26% 1%, 37% 6%, 48% 2%, 58% 7%, 70% 3%, 82% 8%, 91% 4%, 100% 9%, 96% 30%, 100% 52%, 95% 74%, 99% 100%, 0 100%); }
+.vthumb.st-torn .vt-text { width: 54%; padding-top: 8%; z-index: 2; }
+.vthumb.st-torn .vt-ref { border-top: 1px solid rgba(255,255,255,.4); padding-top: 2%; }
+.vpick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.vpick button { text-align: center; border: 2.5px solid transparent; border-radius: 14px; padding: 6px; background: #faf8f4; }
+.vpick button b { display: block; margin-top: 6px; font-size: 13.5px; color: var(--muted); }
+.vpick button.on { border-color: var(--green); background: var(--green-l); }
+.vpick button.on b { color: var(--green-d); }
+.ytprev b { display: block; margin-top: 10px; font-size: 15px; line-height: 1.4; }
+.ytprev small { color: var(--muted); font-size: 12.5px; }
+.ytprev pre { white-space: pre-wrap; font: inherit; font-size: 13px; background: #f3f3f3; border-radius: 10px; padding: 10px 12px; margin-top: 8px; color: #333; }
+.ytconn { display: flex; align-items: center; gap: 12px; border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.ytconn > span:first-child { width: 38px; height: 28px; background: #e33; color: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+.ytconn b { display: block; }
+.ytconn small { color: var(--muted); font-size: 12.5px; }
+.ytconn .tag { margin-left: auto; }
+.vprog { height: 10px; background: #eee; border-radius: 6px; overflow: hidden; margin-top: 6px; }
+.vprog i { display: block; height: 100%; background: var(--green); transition: width .5s; }
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; }
   aside { position: static; height: auto; }
@@ -116,8 +165,8 @@ label.f { display: grid; gap: 5px; font-size: 13px; font-weight: 700; color: var
 </div>
 <script src="https://elenglish123-ux.github.io/yegreen-site/media.js"></script>
 <script src="https://elenglish123-ux.github.io/yegreen-site/bulletin/bulletins.js"></script>
-<script src="admin.js?v=1118f"></script>
+<script src="admin.js?v=1118h"></script>
 <script>window.YG_HELP = 'admin';</script>
-<script src="helper.js?v=1118c"></script>
+<script src="helper.js?v=1118d"></script>
 </body>
 </html>

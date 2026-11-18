@@ -20,6 +20,7 @@
     ['send', '📣', '알림 보내기', ['pastor', 'admin', 'leader'], '소식'],
     ['jubo', '📰', '주보 · 광고', ['pastor', 'admin'], '소식'],
     ['mission', '🌏', '선교 소식', ['pastor', 'admin'], '소식'],
+    ['videomake', '🎞', '설교 영상 만들기', ['pastor', 'admin'], '소식'],
     ['challenge', '🌾', '감사 챌린지', ['pastor', 'admin'], '나눔'],
     ['reports', '🚩', '나눔 관리', ['pastor', 'admin'], '나눔'],
     ['gvideo', '🎬', '목장 영상', ['pastor', 'admin', 'leader'], '나눔'],
@@ -229,7 +230,150 @@
         }).join('') + '</table></div>' +
         '<div class="card"><h2>성도는 이렇게 봐요</h2><ol style="margin-left:18px;color:var(--muted);font-size:14px"><li>앱 › 나눔 › 목장방 맨 위에 「이번 주 목장 영상」 카드</li><li>모임 때 목자님이 함께 틀기 (성도 로그인 없이)</li><li>혼자 볼 때는 처음 한 번 라잇나우미디어 로그인 안내</li></ol></div></div></div>';
   }
-  var VIEWS = { '': dashboard, members: members, people: people, groups: groups, send: send, jubo: jubo, mission: mission, challenge: challenge, reports: reports, reading: reading, gvideo: gvideo };
+
+  // ================= 설교 영상 만들기 (시안, 2026-11-18) =================
+  // 실제로는 교회 PC 프로그램이 받아쓰기(설교 구간 찾기)·자르기·썸네일·유튜브 업로드를 하고, 이 화면은 확인·버튼 역할.
+  var VM = null;
+  function hms(sec) { sec = Math.max(0, Math.round(sec)); var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), x = sec % 60; return (h ? h + ':' + pad(m) : m) + ':' + pad(x); }
+  function toSec(t) { var a = String(t).trim().split(':').map(Number); if (a.some(isNaN)) return null; return a.reduce(function (s, v) { return s * 60 + v; }, 0); }
+  function shortRef(p) { // "시편 150:1-6" → "시150:1-6"
+    var m = String(p || '').match(/^(\S+)\s*(.*)$/); if (!m) return p || '';
+    var map = { '시편': '시', '누가복음': '눅', '에스라': '스', '사도행전': '행', '요한복음': '요', '마태복음': '마', '마가복음': '막', '로마서': '롬', '창세기': '창', '이사야': '사' };
+    return (map[m[1]] || m[1]) + m[2];
+  }
+  function vmInit() {
+    var s0 = (MEDIA.sunday || [])[0] || { title: '설교 제목', passage: '시편 1:1-6', preacher: '고용진 목사', date: dayKey(new Date()), videoId: '' };
+    VM = {
+      step: 1, src: s0.videoId ? 'https://www.youtube.com/watch?v=' + s0.videoId : '', file: null, fileUrl: null, total: 4320,
+      parts: [['예배 전 찬양', 0, 900], ['대표기도 · 성경봉독', 900, 1530], ['찬양대', 1530, 1930], ['설교', 1930, 3940], ['봉헌 · 광고', 3940, 4200], ['축도', 4200, 4320]],
+      start: 1930, end: 3940, title: s0.title.replace(/,(?=\S)/g, ', '), passage: s0.passage, preacher: s0.preacher || '고용진 목사', date: s0.date,
+      theme: 'blue', series: '', photo: null, when: 'now', at: '', list: '주일설교', vis: 'public',
+    };
+    vmText();
+  }
+  function vmText() {
+    var d = VM.date.replace(/-/g, '.');
+    VM.ytTitle = d + ' "' + VM.title + '" (' + shortRef(VM.passage) + ') ' + VM.preacher + ' | 예그린교회 주일설교';
+    VM.desc = '📖 ' + VM.passage + '\n🎤 ' + VM.preacher + ' · 예그린교회 주일2부예배 설교\n\n' +
+      '✨ 말씀 요약 (AI 초안 · 시안 예시)\n' +
+      '1. 하나님께 드리는 찬양은 상황이 아니라 하나님이 어떤 분이신지에서 시작됩니다.\n' +
+      '2. 감사는 받은 은혜를 기억하는 훈련입니다.\n' +
+      '3. 이번 주, 호흡이 있는 동안 하루 한 번 감사를 고백해 보세요.\n\n' +
+      '⏱ 목차\n0:00 설교 시작\n' + hms((VM.end - VM.start) * .35) + ' 본문 나눔\n' + hms((VM.end - VM.start) * .8) + ' 적용과 기도\n\n' +
+      '⛪ 예그린교회 (기독교대한감리회)\n주일예배 1부 8:50 · 2부 10:50 | 인천 서구 연희동 683-4 3층\n홈페이지 https://elenglish123-ux.github.io/yegreen-site/\n\n#예그린교회 #주일설교 #' + VM.preacher.replace(/\s/g, '') + ' #' + VM.passage.split(' ')[0];
+  }
+  // 기존 예그린 설교 썸네일(유튜브) 4가지 스타일을 본뜸. 목사님 사진은 시안이라 기존 썸네일에서 잘라 씀(thumbs/).
+  var TSTYLES = {
+    blue: { name: '파란 시리즈', bg: '#416893', photo: 'thumbs/p_blue.jpg', align: 'left', color: '#fff', ref: '#fff', brand: 'right', series: true },
+    light: { name: '밝은 회색', bg: '#e9e7e4', photo: 'thumbs/p_light.jpg', align: 'center', color: '#27337a', ref: '#27337a', brand: 'spread' },
+    beige: { name: '베이지', bg: '#989787', photo: 'thumbs/p_beige.jpg', align: 'center', color: '#fff', ref: '#fff', brand: 'spread' },
+    torn: { name: '찢어진 종이', bg: '#5d86b5', photo: 'thumbs/p_torn.jpg', align: 'left', color: '#fff', ref: '#fff', brand: 'right', torn: true },
+  };
+  function thumbHtml(big, key) {
+    var t = TSTYLES[key || VM.theme];
+    var title = esc(VM.title).replace(/, /g, ',<br>');
+    var ref = esc(VM.passage) + ' | ' + esc(VM.preacher);
+    return '<div class="vthumb st-' + (key || VM.theme) + (big ? ' big' : '') + '" style="background:' + t.bg + '">' +
+      (t.torn ? '<div class="vt-torn"></div>' : '') +
+      '<div class="vt-photo" style="background-image:url(' + (VM.photo || t.photo) + ')"></div>' +
+      (t.brand === 'spread' ? '<div class="vt-brand spread" style="color:' + t.color + '">Y E G R I N &nbsp; C H U R C H</div>' : '<div class="vt-brand">YEGRIN 💧 CHURCH</div>') +
+      (t.series && VM.series ? '<div class="vt-series">' + esc(VM.series) + '</div>' : '') +
+      '<div class="vt-text ' + t.align + '"><div class="vt-title" style="color:' + t.color + '">' + title + '</div>' +
+      '<div class="vt-ref" style="color:' + t.ref + '">' + ref + '</div></div></div>';
+  }
+  function videomake() {
+    if (!VM) vmInit();
+    var steps = ['영상 넣기', '설교 구간', '썸네일', '제목 · 더보기', '올리기'];
+    var head = '<div class="vsteps">' + steps.map(function (n, i) { return '<button data-vstep="' + (i + 1) + '" class="' + (VM.step === i + 1 ? 'on' : VM.step > i + 1 ? 'done' : '') + '"><b>' + (VM.step > i + 1 ? '✓' : i + 1) + '</b>' + n + '</button>'; }).join('') + '</div>' +
+      '<p class="note" style="margin-bottom:14px">시안이에요. 화면 흐름만 보여 드리고 실제로 자르거나 올리지는 않아요. 실제로는 교회 PC 프로그램이 이 화면의 버튼대로 처리해요.</p>';
+    var body = '', len = VM.end - VM.start;
+    if (VM.step === 1) {
+      body = '<div class="grid g2e"><div class="card"><h2>① 예배 영상 넣기</h2>' +
+        '<label class="f">유튜브에 올라간 예배 영상 주소<input id="vmSrc" value="' + esc(VM.src) + '" placeholder="https://www.youtube.com/watch?v=..."></label>' +
+        '<p style="text-align:center;color:var(--muted);margin:10px 0">또는</p>' +
+        '<label class="vdrop"><input type="file" id="vmFile" accept="video/*" hidden><b>🎬 영상 파일 고르기</b><span>' + (VM.file ? esc(VM.file) : '촬영한 예배 영상 (mp4)') + '</span></label>' +
+        '<div style="margin-top:14px"><button class="btn" data-vnext>설교 구간 찾기 →</button></div></div>' +
+        '<div class="card"><h2>이렇게 만들어져요</h2><ol class="vflow"><li><b>설교 구간 자동 찾기</b>음성을 글로 바꿔 「설교」 시작과 끝을 찾아요</li><li><b>설교만 자르기</b>찬양·광고를 빼고 설교만 새 영상으로</li><li><b>썸네일</b>교회 썸네일 틀에 제목·본문이 자동으로</li><li><b>제목 · 더보기</b>주보의 설교 제목·본문 + AI 요약·목차</li><li><b>유튜브에 올리기</b>교회 채널, 바로 공개 또는 예약 → 홈페이지·앱에 자동</li></ol></div></div>';
+    } else if (VM.step === 2) {
+      var bar = VM.parts.map(function (pt) { var w = (pt[2] - pt[1]) / VM.total * 100; return '<div class="vseg' + (pt[0] === '설교' ? ' sermon' : '') + '" style="width:' + w + '%" title="' + esc(pt[0]) + '"><span>' + esc(pt[0]) + '</span></div>'; }).join('');
+      body = '<div class="card"><h2>② 설교 구간 <span class="tag">자동으로 찾았어요 · 시안 예시</span></h2>' +
+        '<div class="vtl">' + bar + '<i class="vcut" style="left:' + (VM.start / VM.total * 100) + '%;width:' + (len / VM.total * 100) + '%"></i></div>' +
+        '<div class="vtl-scale"><span>0:00</span><span>' + hms(VM.total / 2) + '</span><span>' + hms(VM.total) + '</span></div>' +
+        (VM.fileUrl ? '<video id="vmVideo" src="' + VM.fileUrl + '" controls style="width:100%;max-height:300px;border-radius:12px;margin-top:12px;background:#000"></video>' : '') +
+        '<div class="row" style="margin-top:14px"><label class="f">설교 시작<input id="vmStart" value="' + hms(VM.start) + '"></label><label class="f">설교 끝<input id="vmEnd" value="' + hms(VM.end) + '"></label><label class="f">길이<input disabled value="' + hms(len) + '"></label></div>' +
+        '<div style="display:flex;gap:8px;margin-top:12px"><button class="btn ghost sm" data-vpeek="start">▶ 시작 부분 보기</button><button class="btn ghost sm" data-vpeek="end">▶ 끝 부분 보기</button><span style="flex:1"></span><button class="btn ghost sm" data-vprev>← 이전</button><button class="btn sm" data-vnext>이 구간으로 자르기 →</button></div>' +
+        '<p style="color:var(--muted);font-size:13px;margin-top:10px">찾는 방법: 「설교 말씀 전하겠습니다」·「기도하겠습니다」 같은 말과 목사님 목소리가 이어지는 구간을 찾아요. 틀리면 시간을 고쳐 주세요.</p></div>';
+    } else if (VM.step === 3) {
+      body = '<div class="card" style="margin-bottom:16px"><h2>③ 썸네일 고르기 <span class="tag">기존 예그린 썸네일 스타일</span></h2><div class="vpick">' +
+          Object.keys(TSTYLES).map(function (k) { return '<button data-vtheme="' + k + '" class="' + (VM.theme === k ? 'on' : '') + '">' + thumbHtml(false, k) + '<b>' + (VM.theme === k ? '✓ ' : '') + TSTYLES[k].name + '</b></button>'; }).join('') + '</div></div>' +
+        '<div class="grid g2"><div class="card"><h2>고른 썸네일</h2>' + thumbHtml(true) + '</div>' +
+        '<div class="card"><h2>바꾸기</h2><div class="form">' +
+          '<label class="f">설교 제목<input id="vmTitle" value="' + esc(VM.title) + '"></label>' +
+          '<div class="row"><label class="f">본문<input id="vmPass" value="' + esc(VM.passage) + '"></label><label class="f">설교자<input id="vmPre" value="' + esc(VM.preacher) + '"></label></div>' +
+          '<label class="f">시리즈 이름 (파란 시리즈 스타일에 보여요 · 선택)<input id="vmSeries" value="' + esc(VM.series || '') + '" placeholder="예: 10주 시리즈 주일 설교"></label>' +
+          '<label class="vdrop" style="padding:12px"><input type="file" id="vmPhoto" accept="image/*" hidden><b>🙂 목사님 사진 바꾸기</b><span>시안은 기존 썸네일 사진 · 실제는 배경 없는 PNG 한 장</span></label>' +
+          '<p style="color:var(--muted);font-size:13px">제목·본문은 주보와 유튜브 목록에서 자동으로 가져왔어요.</p>' +
+          '<div style="display:flex;gap:8px"><button class="btn ghost sm" data-vprev>← 이전</button><button class="btn sm" data-vnext>다음 →</button></div></div></div></div>';
+    } else if (VM.step === 4) {
+      body = '<div class="grid g2"><div class="card"><h2>④ 제목 · 더보기(설명)</h2><div class="form">' +
+          '<label class="f">유튜브 제목 <span style="font-weight:500">(' + VM.ytTitle.length + '/100자)</span><input id="vmYt" maxlength="100" value="' + esc(VM.ytTitle) + '"></label>' +
+          '<label class="f">더보기 설명<textarea id="vmDesc" rows="16">' + esc(VM.desc) + '</textarea></label>' +
+          '<div style="display:flex;gap:8px"><button class="btn ghost sm" data-vprev>← 이전</button><button class="btn ghost sm" data-vai>✨ AI로 요약 다시 쓰기</button><span style="flex:1"></span><button class="btn sm" data-vnext>다음 →</button></div></div></div>' +
+        '<div class="card"><h2>유튜브에서 이렇게 보여요</h2><div class="ytprev">' + thumbHtml(false) + '<b>' + esc(VM.ytTitle) + '</b><small>예그린교회 · 조회수 0회 · 방금</small><pre>' + esc(VM.desc.split('\n').slice(0, 6).join('\n')) + '\n…더보기</pre></div></div></div>';
+    } else if (VM.step === 5) {
+      body = '<div class="grid g2"><div class="card"><h2>⑤ 유튜브에 올리기</h2><div class="form">' +
+          '<div class="ytconn"><span>▶</span><div><b>예그린교회 유튜브 채널</b><small>@yegrin · 처음 한 번 목사님·간사님이 업로드 권한을 허락해요</small></div><span class="tag gray">시안 · 연결 안 됨</span></div>' +
+          '<div class="row"><label class="f">공개<select id="vmVis"><option value="public">공개</option><option value="unlisted">링크가 있는 사람만</option><option value="private">비공개</option></select></label><label class="f">재생목록<select id="vmList"><option>주일설교</option><option>새벽예배</option><option>특별집회</option></select></label></div>' +
+          '<label class="f">올릴 때<select id="vmWhen"><option value="now">지금 바로</option><option value="later">예약</option></select></label>' +
+          '<label class="f" id="vmAtWrap" style="display:none">예약 시간<input type="datetime-local" id="vmAt"></label>' +
+          '<label style="font-size:14px"><input type="checkbox" checked style="width:auto"> 올라가면 앱 성도에게 「새 설교」 알림 보내기</label>' +
+          '<div style="display:flex;gap:8px"><button class="btn ghost sm" data-vprev>← 이전</button><button class="btn" data-vgo>🚀 유튜브에 올리기</button></div>' +
+          '<div id="vmProg"></div></div></div>' +
+        '<div class="card"><h2>올릴 영상</h2>' + thumbHtml(false) + '<p style="margin-top:10px"><b>' + esc(VM.ytTitle) + '</b></p><p style="color:var(--muted);font-size:13.5px">설교 ' + hms(len) + ' · ' + hms(VM.start) + '~' + hms(VM.end) + ' 구간</p></div></div>';
+    }
+    var jobs = (S.videoJobs || []);
+    var hist = jobs.length ? '<div class="card" style="margin-top:16px"><h2>만든 영상</h2><table>' + jobs.map(function (j) { return '<tr><td><b>' + esc(j.title) + '</b><div style="color:var(--muted);font-size:13px">' + esc(j.at) + ' · ' + esc(j.len) + '</div></td><td><span class="tag gold">시안 (안 올라감)</span></td></tr>'; }).join('') + '</table></div>' : '';
+    return head + body + hist;
+  }
+  function bindVmake() {
+    if (!$('.vsteps')) return;
+    var on = function (sel, fn) { document.querySelectorAll(sel).forEach(function (b) { b.onclick = function (e) { fn(b, e); }; }); };
+    function grab() {
+      var x;
+      if ($('#vmSrc')) VM.src = $('#vmSrc').value.trim();
+      if ($('#vmStart')) { x = toSec($('#vmStart').value); if (x != null) VM.start = x; x = toSec($('#vmEnd').value); if (x != null) VM.end = x; if (VM.end <= VM.start) VM.end = VM.start + 60; }
+      if ($('#vmSeries')) VM.series = $('#vmSeries').value.trim();
+      if ($('#vmTitle')) { VM.title = $('#vmTitle').value.trim() || VM.title; VM.passage = $('#vmPass').value.trim(); VM.preacher = $('#vmPre').value.trim(); vmText(); }
+      if ($('#vmYt')) { VM.ytTitle = $('#vmYt').value; VM.desc = $('#vmDesc').value; }
+    }
+    on('[data-vstep]', function (b) { grab(); VM.step = Number(b.dataset.vstep); route(); });
+    on('[data-vnext]', function () { grab(); if (VM.step === 1 && !VM.src && !VM.file) { toast('영상 주소나 파일을 넣어 주세요'); return; } VM.step++; route(); window.scrollTo(0, 0); });
+    on('[data-vprev]', function () { grab(); VM.step--; route(); });
+    var f = $('#vmFile');
+    if (f) f.onchange = function () { var fl = f.files[0]; if (!fl) return; VM.file = fl.name; VM.fileUrl = URL.createObjectURL(fl); route(); toast('영상을 넣었어요 (이 PC 안에서만 미리보기)'); };
+    var vv = $('#vmVideo');
+    if (vv) vv.onloadedmetadata = function () { if (vv.duration && Math.abs(vv.duration - VM.total) > 5) { var k = vv.duration / VM.total; VM.total = vv.duration; VM.parts.forEach(function (pt) { pt[1] *= k; pt[2] *= k; }); VM.start *= k; VM.end *= k; route(); } };
+    on('[data-vpeek]', function (b) { grab(); var t = b.dataset.vpeek === 'start' ? VM.start : Math.max(0, VM.end - 20); var v = $('#vmVideo'); if (v) { v.currentTime = t; v.play(); } else toast(hms(t) + ' 부분을 보여 드려요 (영상 파일을 넣으면 여기서 바로 재생돼요)'); });
+    ['#vmStart', '#vmEnd', '#vmTitle', '#vmPass', '#vmPre', '#vmSeries'].forEach(function (id) { var el = $(id); if (el) el.onchange = function () { grab(); route(); }; });
+    on('[data-vtheme]', function (b) { grab(); VM.theme = b.dataset.vtheme; route(); });
+    var ph = $('#vmPhoto');
+    if (ph) ph.onchange = function () { var fl = ph.files[0]; if (!fl) return; var r = new FileReader(); r.onload = function () { VM.photo = r.result; route(); }; r.readAsDataURL(fl); };
+    on('[data-vai]', function () { grab(); VM.desc = VM.desc.replace(/✨ 말씀 요약[\s\S]*?\n\n/, '✨ 말씀 요약 (AI 초안 · 시안 예시)\n1. 찬양은 하나님이 하신 일을 기억하는 데서 시작됩니다.\n2. 성소에서도, 삶의 자리에서도 하나님을 찬양할 수 있습니다.\n3. 이번 주 감사 한 가지를 적고 가족과 나눠 보세요.\n\n'); route(); toast('요약을 다시 썼어요 (시안 예시 문장)'); });
+    var w = $('#vmWhen');
+    if (w) w.onchange = function () { $('#vmAtWrap').style.display = w.value === 'later' ? '' : 'none'; };
+    on('[data-vgo]', function (b) {
+      if (!confirm('시안이라 실제로 올라가지는 않아요. 올리는 과정을 보여 드릴까요?')) return;
+      b.disabled = true;
+      var steps = ['설교 구간 자르는 중', '썸네일 만드는 중', '유튜브에 올리는 중', '재생목록에 넣는 중'], i = 0, box = $('#vmProg');
+      (function tick() {
+        box.innerHTML = '<div class="vprog"><i style="width:' + Math.round(i / steps.length * 100) + '%"></i></div><p style="color:var(--muted);font-size:13.5px">' + (i < steps.length ? steps[i] + '…' : '✅ 끝! 실제라면 지금 유튜브·홈페이지·앱에 올라가요.') + '</p>';
+        if (i++ < steps.length) setTimeout(tick, 700);
+        else { S.videoJobs = S.videoJobs || []; S.videoJobs.unshift({ title: VM.ytTitle, at: now(), len: hms(VM.end - VM.start) }); save(); }
+      })();
+    });
+  }
+
+  var VIEWS = { '': dashboard, members: members, people: people, groups: groups, send: send, jubo: jubo, mission: mission, challenge: challenge, reports: reports, reading: reading, gvideo: gvideo, videomake: videomake };
 
   // ---------- 화면 전환 ----------
   function route() {
@@ -249,6 +393,7 @@
     document.title = m[2] + ' — 예그린교회 관리자';
     $('#view').innerHTML = VIEWS[k]();
     bind();
+    if (k === 'videomake') bindVmake();
   }
 
   function bind() {
