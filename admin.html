@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>예그린교회 관리자</title>
+<link rel="icon" href="logo-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root {
+  --green: #2f6b4f; --green-d: #1f4a37; --green-l: #e7f1ea; --gold: #c9a45c; --gold-l: #fff6e2;
+  --blue: #2b86c5; --red: #e5484d; --ink: #222; --muted: #7d786f; --line: #e8e4dc; --bg: #f5f3ee; --yellow: #fff3c4;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Pretendard, "Malgun Gothic", sans-serif; background: var(--bg); color: var(--ink); font-size: 15px; line-height: 1.55; word-break: keep-all; }
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: none; }
+.layout { display: grid; grid-template-columns: 236px 1fr; min-height: 100vh; }
+aside { background: var(--green-d); color: #dfe9e3; padding: 22px 14px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 20px; border-bottom: 1px solid rgba(255,255,255,.12); margin-bottom: 14px; }
+.brand img { width: 36px; height: 36px; background: #fff; border-radius: 10px; padding: 4px; }
+.brand b { color: #fff; font-size: 17px; display: block; line-height: 1.2; }
+.brand small { font-size: 12px; opacity: .7; }
+nav a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; font-weight: 600; font-size: 14.5px; margin-bottom: 2px; }
+nav a:hover { background: rgba(255,255,255,.08); }
+nav a.on { background: #fff; color: var(--green-d); }
+nav a.locked { opacity: .35; pointer-events: none; }
+nav a .n { margin-left: auto; background: var(--red); color: #fff; border-radius: 10px; font-size: 12px; padding: 0 7px; font-weight: 800; }
+nav .grp { font-size: 11.5px; letter-spacing: .1em; opacity: .55; margin: 16px 12px 6px; font-weight: 700; }
+main { padding: 0 32px 48px; min-width: 0; }
+.topbar { display: flex; align-items: center; gap: 14px; padding: 18px 0; border-bottom: 1px solid var(--line); margin-bottom: 26px; position: sticky; top: 0; background: var(--bg); z-index: 5; }
+.topbar h1 { font-size: 22px; color: var(--green-d); }
+.topbar .sp { flex: 1; }
+.rolepick { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.rolepick button { border: 1.5px solid var(--line); background: #fff; border-radius: 20px; padding: 5px 12px; font-weight: 700; font-size: 13px; color: var(--muted); }
+.rolepick button.on { background: var(--green); border-color: var(--green); color: #fff; }
+.btn { display: inline-flex; align-items: center; gap: 6px; background: var(--green); color: #fff; font-weight: 700; border-radius: 10px; padding: 9px 16px; font-size: 14px; }
+.btn.ghost { background: #fff; color: var(--green); box-shadow: inset 0 0 0 1.5px var(--green); }
+.btn.red { background: var(--red); }
+.btn.sm { padding: 6px 12px; font-size: 13px; }
+.card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; }
+.card h2 { font-size: 17px; color: var(--green-d); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card h2 .more { margin-left: auto; font-size: 13px; color: var(--green); font-weight: 700; }
+.grid { display: grid; gap: 16px; }
+.g4 { grid-template-columns: repeat(4, 1fr); }
+.g2 { grid-template-columns: 1.4fr 1fr; }
+.g2e { grid-template-columns: 1fr 1fr; }
+.stat { display: block; }
+.stat .k { font-size: 13px; color: var(--muted); font-weight: 600; }
+.stat .v { font-size: 30px; font-weight: 800; color: var(--green-d); line-height: 1.2; margin-top: 4px; }
+.stat .s { font-size: 12.5px; color: var(--muted); }
+.stat.alert .v { color: var(--red); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; font-size: 12.5px; color: var(--muted); font-weight: 700; padding: 8px 10px; border-bottom: 1.5px solid var(--line); background: #faf8f4; }
+td { padding: 11px 10px; border-bottom: 1px solid #f0ece5; vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+td .actions { display: flex; gap: 6px; justify-content: flex-end; }
+input, select, textarea { border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 11px; background: #fff; width: 100%; }
+textarea { resize: vertical; }
+select.inline { width: auto; padding: 5px 8px; }
+label.f { display: grid; gap: 5px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.form { display: grid; gap: 12px; }
+.row { display: flex; gap: 10px; align-items: end; }
+.row > * { flex: 1; }
+.tag { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 10px; padding: 1px 9px; background: var(--green-l); color: var(--green); }
+.tag.gold { background: var(--gold-l); color: #8a6a2a; }
+.tag.red { background: #fde8e8; color: var(--red); }
+.tag.gray { background: #eee; color: #777; }
+.note { background: var(--yellow); color: #7a5a00; border-radius: 12px; padding: 11px 15px; font-size: 13.5px; }
+.empty { text-align: center; color: var(--muted); padding: 26px 0; }
+.av { width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 13px; vertical-align: middle; margin-right: 8px; }
+.bars { display: flex; align-items: flex-end; gap: 10px; height: 170px; }
+.bars div { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; }
+.bars span { font-size: 12px; font-weight: 700; color: var(--muted); }
+.bars i { width: 100%; max-width: 46px; background: #cfe3d6; border-radius: 6px 6px 0 0; min-height: 4px; }
+.bars i.t { background: var(--green); }
+.bars small { font-size: 12px; color: var(--muted); }
+.feed div { padding: 9px 0; border-bottom: 1px solid #f0ece5; font-size: 14px; display: flex; gap: 10px; }
+.feed div:last-child { border-bottom: 0; }
+.feed small { color: var(--muted); margin-left: auto; white-space: nowrap; }
+.jubo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.jubo img { width: 100%; border-radius: 8px; border: 1px solid var(--line); }
+.toast { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); background: #222; color: #fff; padding: 11px 20px; border-radius: 12px; font-weight: 600; z-index: 50; }
+.phone { background: #1d1d1f; border-radius: 16px; padding: 12px; }
+.phone .push { background: rgba(255,255,255,.92); border-radius: 14px; padding: 10px 12px; display: flex; gap: 10px; }
+.phone .push img { width: 34px; height: 34px; border-radius: 8px; }
+.phone .push b { display: block; font-size: 14px; }
+.phone .push p { font-size: 13px; color: #444; }
+.lock { background: #2f3b35; color: #fff; }
+.lock p { color: #cfd8d2; font-size: 13.5px; margin-top: 4px; }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  aside { position: static; height: auto; }
+  .g4 { grid-template-columns: 1fr 1fr; }
+  .g2, .g2e { grid-template-columns: 1fr; }
+  main { padding: 0 16px 40px; }
+  .topbar { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside>
+    <div class="brand"><img src="logo-mark.svg" alt=""><div><b>예그린교회</b><small>앱 관리자 · 시안</small></div></div>
+    <nav id="nav"></nav>
+  </aside>
+  <main>
+    <div class="topbar"><h1 id="title"></h1><div class="sp"></div>
+      <div class="rolepick" id="rolePick"></div>
+      <a class="btn ghost sm" href="index.html" target="_blank" rel="noopener">📱 앱 열기</a>
+    </div>
+    <div id="view"></div>
+  </main>
+</div>
+<script src="https://elenglish123-ux.github.io/yegreen-site/media.js"></script>
+<script src="https://elenglish123-ux.github.io/yegreen-site/bulletin/bulletins.js"></script>
+<script src="admin.js?v=1118"></script>
+</body>
+</html>

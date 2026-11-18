@@ -755,6 +755,7 @@
           : '<div class="it locked"><span class="ico">🔒</span><span style="flex:1"><b style="display:block">' + m[2] + '</b><span class="sub" style="font-weight:500;font-size:.8rem">' + ROLES[S.adminRole] + '은(는) 쓸 수 없어요</span></span></div>';
       }).join('') + '</div>' +
       '<div class="note"><b>권한은 아직 안(案)이에요.</b> 누가 어떤 메뉴를 쓸지는 2차 미팅에서 목사님과 정해요. 위에서 역할을 바꾸면 그 사람에게 보이는 메뉴가 달라져요.</div>' +
+      '<a class="btn ghost" href="admin.html" target="_blank" rel="noopener">💻 PC용 관리자 화면 열기</a>' +
       '<div class="card flat"><b>🔒 관리자도 볼 수 없는 것</b><p class="sub" style="margin-top:4px">나만의 기도 공간, 「나만 보기」 감사일기는 휴대폰 안에만 있어서 관리자 화면에 나오지 않아요.</p></div>';
   }
 
