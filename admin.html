@@ -139,6 +139,26 @@ label.f { display: grid; gap: 5px; font-size: 13px; font-weight: 700; color: var
 .ytconn .tag { margin-left: auto; }
 .vprog { height: 10px; background: #eee; border-radius: 6px; overflow: hidden; margin-top: 6px; }
 .vprog i { display: block; height: 100%; background: var(--green); transition: width .5s; }
+/* 쇼츠 */
+.vmode { display: inline-flex; background: #e9e5dd; border-radius: 12px; padding: 3px; margin-bottom: 14px; }
+.vmode button { padding: 8px 18px; border-radius: 10px; font-weight: 800; color: var(--muted); }
+.vmode button.on { background: #fff; color: var(--green-d); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.vshgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.vshcard { opacity: .6; }
+.vshcard.on { opacity: 1; border-color: var(--green); }
+.vshort { position: relative; aspect-ratio: 9/16; max-width: 230px; margin: 0 auto; border-radius: 14px; overflow: hidden; background: #22364f; color: #fff; container-type: inline-size; }
+.vshort .vs-photo { position: absolute; left: 0; right: 0; top: 14%; height: 52%; background: center top / cover no-repeat; }
+.vshort .vs-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 55%, #22364f); }
+.vshort .vs-top { position: absolute; top: 4%; left: 0; right: 0; text-align: center; font-size: 6cqw; font-weight: 800; letter-spacing: .02em; }
+.vshort .vs-quote { position: absolute; left: 6%; right: 6%; top: 60%; text-align: center; font-size: 8.6cqw; font-weight: 900; line-height: 1.32; text-shadow: 0 2px 8px rgba(0,0,0,.5); }
+.vshort .vs-quote::first-line { color: #ffe08a; }
+.vshort .vs-bottom { position: absolute; left: 6%; right: 6%; bottom: 4%; font-size: 5cqw; }
+.vshort .vs-bottom b { display: block; }
+.vshort .vs-bottom span { opacity: .8; }
+.vshort .vs-len { position: absolute; right: 4%; top: 10%; background: rgba(0,0,0,.45); border-radius: 6px; padding: 1% 3%; font-size: 4.6cqw; font-weight: 700; }
+.vsh-check { display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 800; color: var(--green-d); margin-top: 10px; }
+.vsh-check input { width: auto; }
+.sh-yt { font-size: 12px; color: var(--muted); background: #f6f4ef; border-radius: 8px; padding: 6px 9px; }
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; }
   aside { position: static; height: auto; }
@@ -165,7 +185,7 @@ label.f { display: grid; gap: 5px; font-size: 13px; font-weight: 700; color: var
 </div>
 <script src="https://elenglish123-ux.github.io/yegreen-site/media.js"></script>
 <script src="https://elenglish123-ux.github.io/yegreen-site/bulletin/bulletins.js"></script>
-<script src="admin.js?v=1118h"></script>
+<script src="admin.js?v=1119a"></script>
 <script>window.YG_HELP = 'admin';</script>
 <script src="helper.js?v=1118d"></script>
 </body>

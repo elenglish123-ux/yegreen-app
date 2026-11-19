@@ -284,7 +284,9 @@
   function videomake() {
     if (!VM) vmInit();
     var steps = ['영상 넣기', '설교 구간', '썸네일', '제목 · 더보기', '올리기'];
-    var head = '<div class="vsteps">' + steps.map(function (n, i) { return '<button data-vstep="' + (i + 1) + '" class="' + (VM.step === i + 1 ? 'on' : VM.step > i + 1 ? 'done' : '') + '"><b>' + (VM.step > i + 1 ? '✓' : i + 1) + '</b>' + n + '</button>'; }).join('') + '</div>' +
+    var modeTabs = '<div class="vmode"><button data-vmode="sermon" class="' + (VM.mode !== 'shorts' ? 'on' : '') + '">🎬 설교 영상</button><button data-vmode="shorts" class="' + (VM.mode === 'shorts' ? 'on' : '') + '">📱 쇼츠</button></div>';
+    if (VM.mode === 'shorts') return modeTabs + shortsView();
+    var head = modeTabs + '<div class="vsteps">' + steps.map(function (n, i) { return '<button data-vstep="' + (i + 1) + '" class="' + (VM.step === i + 1 ? 'on' : VM.step > i + 1 ? 'done' : '') + '"><b>' + (VM.step > i + 1 ? '✓' : i + 1) + '</b>' + n + '</button>'; }).join('') + '</div>' +
       '<p class="note" style="margin-bottom:14px">시안이에요. 화면 흐름만 보여 드리고 실제로 자르거나 올리지는 않아요. 실제로는 교회 PC 프로그램이 이 화면의 버튼대로 처리해요.</p>';
     var body = '', len = VM.end - VM.start;
     if (VM.step === 1) {
@@ -335,7 +337,71 @@
     var hist = jobs.length ? '<div class="card" style="margin-top:16px"><h2>만든 영상</h2><table>' + jobs.map(function (j) { return '<tr><td><b>' + esc(j.title) + '</b><div style="color:var(--muted);font-size:13px">' + esc(j.at) + ' · ' + esc(j.len) + '</div></td><td><span class="tag gold">시안 (안 올라감)</span></td></tr>'; }).join('') + '</table></div>' : '';
     return head + body + hist;
   }
+  // ---------- 쇼츠 만들기 ----------
+  // 설교에서 30~59초 구간 3개를 골라 세로(9:16) 영상 + 큰 자막으로. 실제로는 받아쓰기에서 AI가 마음에 남는 문장을 찾음.
+  function shInit() {
+    VM.shorts = [
+      { on: true, start: VM.start + 312, len: 48, quote: '찬양은 상황이 아니라\n하나님이 어떤 분이신지에서\n시작됩니다', title: '찬양은 어디서 시작될까요?' },
+      { on: true, start: VM.start + 1105, len: 42, quote: '감사는 받은 은혜를\n기억하는 훈련입니다', title: '감사는 훈련입니다' },
+      { on: false, start: VM.start + 1760, len: 55, quote: '호흡이 있는 동안\n오늘 한 번\n하나님을 찬양하세요', title: '호흡이 있는 동안 찬양하라' },
+    ];
+    VM.shDays = '다음 날부터 하루 1개 · 저녁 7시';
+  }
+  function shortCard(c, i, big) {
+    return '<div class="vshort' + (big ? ' big' : '') + '"><div class="vs-photo" style="background-image:url(' + (VM.photo || 'thumbs/p_blue.jpg') + ')"></div>' +
+      '<div class="vs-top">예그린교회 · 주일설교</div>' +
+      '<div class="vs-quote">' + esc(c.quote).replace(/\n/g, '<br>') + '</div>' +
+      '<div class="vs-bottom"><b>' + esc(VM.title) + '</b><span>' + esc(VM.passage) + ' · ' + esc(VM.preacher) + '</span></div>' +
+      '<div class="vs-len">' + c.len + '초</div></div>';
+  }
+  function shortsView() {
+    if (!VM.shorts) shInit();
+    var pick = VM.shorts.filter(function (c) { return c.on; }).length;
+    var cards = VM.shorts.map(function (c, i) {
+      return '<div class="card vshcard' + (c.on ? ' on' : '') + '">' + shortCard(c, i) +
+        '<label class="vsh-check"><input type="checkbox" data-shon="' + i + '"' + (c.on ? ' checked' : '') + '> 이 쇼츠 만들기</label>' +
+        '<div class="form" style="gap:8px;margin-top:8px">' +
+          '<div class="row"><label class="f">시작<input data-shstart="' + i + '" value="' + hms(c.start) + '"></label><label class="f">길이(초)<input type="number" min="15" max="59" data-shlen="' + i + '" value="' + c.len + '"></label></div>' +
+          '<label class="f">큰 자막 (줄바꿈 그대로)<textarea rows="3" data-shquote="' + i + '">' + esc(c.quote) + '</textarea></label>' +
+          '<label class="f">쇼츠 제목<input data-shtitle="' + i + '" value="' + esc(c.title) + '"></label>' +
+          '<div class="sh-yt">' + esc(c.title + ' | ' + VM.passage + ' | ' + VM.preacher + ' #shorts #예그린교회') + '</div>' +
+        '</div></div>';
+    }).join('');
+    return '<p class="note" style="margin-bottom:14px">시안이에요. 설교 「' + esc(VM.title) + '」에서 마음에 남는 구간 3개를 골라 둔 <b>예시</b>예요. 실제로는 받아쓰기를 보고 AI가 골라 주고, 사람이 확인해요.</p>' +
+      '<div class="vshgrid">' + cards + '</div>' +
+      '<div class="card" style="margin-top:16px"><h2>📅 올리기</h2><div class="row" style="align-items:end">' +
+        '<label class="f">올리는 때<select id="shWhen"><option>다음 날부터 하루 1개 · 저녁 7시</option><option>한 번에 모두 지금</option><option>월·수·금 저녁 7시</option></select></label>' +
+        '<label class="f">함께 올릴 곳<select><option>유튜브 쇼츠</option><option>유튜브 쇼츠 + 인스타 릴스 (나중에)</option></select></label>' +
+        '<button class="btn" data-shgo style="flex:0 0 auto">🚀 쇼츠 ' + pick + '개 올리기</button></div>' +
+        '<div id="shProg"></div>' +
+        '<p style="color:var(--muted);font-size:13px;margin-top:10px">쇼츠 설명란에는 「전체 설교 보기」 링크가 자동으로 들어가서, 쇼츠를 본 분이 설교 전체로 넘어갈 수 있어요.</p></div>';
+  }
+  function bindShorts() {
+    var on = function (sel, fn) { document.querySelectorAll(sel).forEach(function (b) { b.onclick = function (e) { fn(b, e); }; }); };
+    document.querySelectorAll('[data-shon]').forEach(function (c) { c.onchange = function () { VM.shorts[c.dataset.shon].on = c.checked; route(); }; });
+    function upd(attr, key, conv) { document.querySelectorAll('[data-' + attr + ']').forEach(function (el) { el.onchange = function () { var v = conv ? conv(el.value) : el.value; if (v == null) return; VM.shorts[el.dataset[attr]][key] = v; route(); }; }); }
+    upd('shstart', 'start', toSec);
+    upd('shlen', 'len', function (v) { v = Number(v); return v >= 15 && v <= 59 ? v : null; });
+    upd('shquote', 'quote');
+    upd('shtitle', 'title');
+    on('[data-shgo]', function (b) {
+      var list = VM.shorts.filter(function (c) { return c.on; });
+      if (!list.length) { toast('만들 쇼츠를 골라 주세요'); return; }
+      if (!confirm('시안이라 실제로 올라가지는 않아요. 과정을 보여 드릴까요?')) return;
+      b.disabled = true;
+      var when = $('#shWhen').value, box = $('#shProg'), i = 0;
+      (function tick() {
+        box.innerHTML = '<div class="vprog"><i style="width:' + Math.round(i / list.length * 100) + '%"></i></div><p style="color:var(--muted);font-size:13.5px">' +
+          (i < list.length ? (i + 1) + '/' + list.length + ' 「' + esc(list[i].title) + '」 세로로 자르고 자막 넣는 중…' : '✅ 끝! 실제라면 「' + esc(when) + '」로 예약돼요.') + '</p>';
+        if (i++ < list.length) setTimeout(tick, 800);
+        else { S.videoJobs = S.videoJobs || []; list.forEach(function (c) { S.videoJobs.unshift({ title: '[쇼츠] ' + c.title, at: now(), len: c.len + '초' }); }); save(); }
+      })();
+    });
+  }
+
   function bindVmake() {
+    document.querySelectorAll('[data-vmode]').forEach(function (b) { b.onclick = function () { VM.mode = b.dataset.vmode; route(); }; });
+    if (VM && VM.mode === 'shorts') { bindShorts(); return; }
     if (!$('.vsteps')) return;
     var on = function (sel, fn) { document.querySelectorAll(sel).forEach(function (b) { b.onclick = function (e) { fn(b, e); }; }); };
     function grab() {
