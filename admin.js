@@ -53,12 +53,12 @@
     if (S.juboOpen == null) S.juboOpen = true;
     gvSeed();
   }
-  // 목장 영상 (라잇나우미디어 등 링크) — 2026-11-18 시안
-  var RN_HOME = 'https://app.rightnowmedia.org/ko/library/default';
+  // 목장 영상 (교회가 고른 유튜브 링크) — 2026-11-18 시안, 라잇나우는 2차 미팅에서 뺌(11-22)
   function gvSeed() {
+    if (S.groupVideos && S.groupVideos.some(function (v) { return /rightnowmedia/.test(v.url || ''); })) S.groupVideos = null;
     if (!S.groupVideos) S.groupVideos = [{
-      id: 'v1', week: '2026-11-22', title: '우리는 왜 교회에 가는가?', series: 'Essentials of Faith · 1세션', speaker: 'BEN STUART', mins: 12,
-      url: RN_HOME, target: '전체 목장', sample: true,
+      id: 'v1', week: '2026-11-22', title: '감사하라, 찬송하라, 찬양하라', series: '주일설교 · 시편 150:1-6', speaker: '고용진 목사', mins: 35,
+      url: 'https://www.youtube.com/@yegrin', target: '전체 목장', sample: true,
       qs: ['내가 교회에 오는 가장 큰 이유는 무엇인가요?', '영상에서 마음에 남은 한 문장은?', '이번 주 우리 목장이 서로를 위해 할 수 있는 일 한 가지'],
     }];
   }
@@ -219,7 +219,7 @@
     var leader = S.adminRole === 'leader';
     var targets = leader ? ['기쁨목장'] : ['전체 목장'].concat(S.groups.map(function (g) { return g.name; }));
     return '<div class="grid g2"><div class="card"><h2>이번 주 목장 영상 올리기</h2><form class="form" id="gvForm">' +
-        '<label class="f">영상 링크 (라잇나우미디어에서 「공유」 → 링크 복사)<input name="url" type="url" required placeholder="https://app.rightnowmedia.org/..."></label>' +
+        '<label class="f">영상 링크 (유튜브 「공유」 → 링크 복사 · 교회 영상은 「일부 공개」로 올려도 돼요)<input name="url" type="url" required placeholder="https://youtu.be/..."></label>' +
         '<div class="row"><label class="f">제목<input name="title" required maxlength="40"></label><label class="f">시리즈 · 회차<input name="series" maxlength="40"></label></div>' +
         '<div class="row"><label class="f">강사<input name="speaker" maxlength="30"></label><label class="f">길이(분)<input name="mins" type="number" min="1" max="120" value="12"></label></div>' +
         '<label class="f">나눔 질문 1<input name="q1" required maxlength="80"></label><label class="f">나눔 질문 2<input name="q2" maxlength="80"></label><label class="f">나눔 질문 3<input name="q3" maxlength="80"></label>' +
@@ -228,7 +228,7 @@
       '<div class="grid" style="align-content:start"><div class="card"><h2>올린 영상</h2><table>' + S.groupVideos.map(function (v, i) {
           return '<tr><td><b>' + esc(v.title) + '</b>' + (v.sample ? ' <span class="tag gold">예시</span>' : '') + '<div style="color:var(--muted);font-size:13px">' + md(v.week) + ' · ' + esc(v.target) + ' · ' + esc(v.series) + '</div></td><td style="width:70px"><button class="btn ghost sm" data-gvdel="' + i + '">지우기</button></td></tr>';
         }).join('') + '</table></div>' +
-        '<div class="card"><h2>성도는 이렇게 봐요</h2><ol style="margin-left:18px;color:var(--muted);font-size:14px"><li>앱 › 나눔 › 목장방 맨 위에 「이번 주 목장 영상」 카드</li><li>모임 때 목자님이 함께 틀기 (성도 로그인 없이)</li><li>혼자 볼 때는 처음 한 번 라잇나우미디어 로그인 안내</li></ol></div></div></div>';
+        '<div class="card"><h2>성도는 이렇게 봐요</h2><ol style="margin-left:18px;color:var(--muted);font-size:14px"><li>앱 › 나눔 › 목장방 맨 위에 「이번 주 목장 영상」 카드</li><li>모임 때 목자님이 함께 틀기 (성도 로그인 없이)</li><li>누르면 유튜브에서 바로 열려요 (로그인 없음)</li></ol></div></div></div>';
   }
 
   // ================= 설교 영상 만들기 (시안, 2026-11-18) =================

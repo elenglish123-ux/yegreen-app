@@ -127,12 +127,12 @@
   }
 
 
-  // 목장 영상 (라잇나우미디어 등 링크) — 2026-11-18 시안
-  var RN_HOME = 'https://app.rightnowmedia.org/ko/library/default';
+  // 목장 영상 (교회가 고른 유튜브 링크) — 2026-11-18 시안, 라잇나우는 2차 미팅에서 뺌(11-22)
   function gvSeed() {
+    if (S.groupVideos && S.groupVideos.some(function (v) { return /rightnowmedia/.test(v.url || ''); })) S.groupVideos = null;
     if (!S.groupVideos) S.groupVideos = [{
-      id: 'v1', week: '2026-11-22', title: '우리는 왜 교회에 가는가?', series: 'Essentials of Faith · 1세션', speaker: 'BEN STUART', mins: 12,
-      url: RN_HOME, target: '전체 목장', sample: true,
+      id: 'v1', week: '2026-11-22', title: '감사하라, 찬송하라, 찬양하라', series: '주일설교 · 시편 150:1-6', speaker: '고용진 목사', mins: 35,
+      url: 'https://www.youtube.com/@yegrin', target: '전체 목장', sample: true,
       qs: ['내가 교회에 오는 가장 큰 이유는 무엇인가요?', '영상에서 마음에 남은 한 문장은?', '이번 주 우리 목장이 서로를 위해 할 수 있는 일 한 가지'],
     }];
   }
@@ -395,33 +395,14 @@
     var seen = S.gvSeen && S.gvSeen[v.id];
     return '<div class="card gv"><div class="gv-head"><span>🎬 이번 주 목장 영상</span><span>' + md(v.week) + ' 모임</span></div>' +
       '<div class="gv-body"><div class="gv-thumb"><b>▶</b><small>' + v.mins + '분</small></div><div><b class="gv-title">' + esc(v.title) + '</b><div class="sub">' + esc(v.series) + ' · ' + esc(v.speaker) + '</div>' + (v.sample ? '<span class="tag gold">예시</span>' : '') + '</div></div>' +
-      '<button class="btn" data-gv="' + v.id + '">▶ 영상 보기 · 라잇나우미디어' + (seen ? ' ✓' : '') + '</button>' +
-      '<div class="gv-tip">👥 모임 때 목자님이 함께 틀어 드려요. 혼자 미리 보려면 처음 한 번 로그인이 필요해요.</div>' +
+      '<button class="btn" data-gv="' + v.id + '">▶ 영상 보기' + (seen ? ' ✓' : '') + '</button>' +
+      '<div class="gv-tip">👥 모임 때 목자님이 함께 틀어 드려요. 미리 보고 오셔도 좋아요.</div>' +
       '<div class="gv-qs"><b>나눔 질문</b><ol>' + v.qs.filter(Boolean).map(function (q) { return '<li>' + esc(q) + '</li>'; }).join('') + '</ol></div></div>';
   }
-  // 처음 누를 때 로그인 안내 → 라잇나우미디어로 이동
   function gvOpen(id) {
     var v = S.groupVideos.filter(function (x) { return x.id === id; })[0];
     if (!v) return;
-    function go() { S.gvSeen = S.gvSeen || {}; S.gvSeen[id] = true; save(); window.open(v.url, '_blank', 'noopener'); route(); }
-    if (S.rnGuideDone) { go(); return; }
-    var dim = document.createElement('div'); dim.className = 'dim';
-    var sh = document.createElement('div'); sh.className = 'sheet';
-    sh.innerHTML = '<div class="grab"></div><div class="h1">처음 한 번만 로그인해요</div>' +
-      '<p class="sub">목장 영상은 교회가 구독한 <b>라잇나우미디어</b>에서 열려요.</p>' +
-      '<ol class="rn-steps"><li><b>1</b><div>교회 초대 링크로 <b>가입</b><span>교회가 구독해서 성도 부담은 없어요 (방법은 교회에 확인)</span></div></li>' +
-        '<li><b>2</b><div><b>로그인</b> 상태 유지 켜기<span>휴대폰이 기억해 다음부터 바로 열려요</span></div></li>' +
-        '<li><b>3</b><div>다음부터는 <b>누르면 바로 영상</b><span>휴대폰을 바꾸면 한 번 더 로그인</span></div></li></ol>' +
-      '<div class="note">어려우시면 목장 모임 때 목자님께 도와 달라고 하세요. 모임에서는 목자님이 함께 틀어 드려요.</div>' +
-      '<div class="row"><button class="btn ghost" data-x>닫기</button><button class="btn" data-go>영상 열기</button></div>' +
-      '<label class="check" style="justify-content:center"><input type="checkbox" data-never> 다음부터 이 안내 보지 않기</label>';
-    function close() { dim.remove(); sh.remove(); }
-    dim.onclick = close;
-    sh.onclick = function (e) {
-      if (e.target.closest('[data-x]')) close();
-      if (e.target.closest('[data-go]')) { if (sh.querySelector('[data-never]').checked) S.rnGuideDone = true; close(); go(); }
-    };
-    document.body.append(dim, sh);
+    S.gvSeen = S.gvSeen || {}; S.gvSeen[id] = true; save(); window.open(v.url, '_blank', 'noopener'); route();
   }
   function groupRoom() {
     if (!S.me.group) {
@@ -920,7 +901,7 @@
     var leader = S.adminRole === 'leader';
     var targets = leader ? ['기쁨목장'] : ['전체 목장'].concat(S.groups.map(function (g) { return g.name; }));
     return '<form class="card" id="gvForm" style="display:flex;flex-direction:column;gap:10px"><b>이번 주 목장 영상 올리기</b>' +
-        '<label class="field"><span>영상 링크 (라잇나우미디어에서 「공유」 → 링크 복사)</span><input name="url" type="url" required placeholder="https://app.rightnowmedia.org/..."></label>' +
+        '<label class="field"><span>영상 링크 (유튜브 「공유」 → 링크 복사)</span><input name="url" type="url" required placeholder="https://youtu.be/..."></label>' +
         '<label class="field"><span>제목</span><input name="title" required maxlength="40" placeholder="예: 우리는 왜 교회에 가는가?"></label>' +
         '<div class="row"><label class="field"><span>시리즈 · 회차</span><input name="series" maxlength="40" placeholder="예: 1세션"></label><label class="field" style="flex:.6"><span>길이(분)</span><input name="mins" type="number" min="1" max="120" value="12"></label></div>' +
         '<label class="field"><span>강사</span><input name="speaker" maxlength="30"></label>' +
