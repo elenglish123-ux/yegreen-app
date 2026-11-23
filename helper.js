@@ -65,7 +65,7 @@
     '.yh-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 10px}.yh-chips button{border:1.5px solid #d7e6dc;background:#fff;color:#2f6b4f;border-radius:16px;padding:5px 11px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}' +
     '.yh-in{display:flex;gap:6px;padding:10px;border-top:1px solid #e6e2da;background:#fff}.yh-in input{flex:1;border:1.5px solid #e6e2da;border-radius:12px;padding:9px 11px;font:inherit}.yh-in button{background:#2f6b4f;color:#fff;border:0;border-radius:12px;padding:0 14px;font:inherit;font-weight:800;cursor:pointer}' +
     '.yh-note{font-size:11px;color:#8a857c;text-align:center;padding:0 14px 8px}' +
-    '#app.no-tabs ~ .yh-fab{bottom:20px}';
+    '#app.no-tabs ~ .yh-fab{display:none}';
   document.head.append(css);
 
   var fab = document.createElement('button');

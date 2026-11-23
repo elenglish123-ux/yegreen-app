@@ -243,3 +243,11 @@ textarea { resize: none; line-height: 1.55; }
 .rn-steps li { display: flex; gap: 12px; align-items: flex-start; }
 .rn-steps li > b { width: 28px; height: 28px; border-radius: 50%; background: var(--green); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
 .rn-steps span { display: block; font-size: .8rem; color: var(--muted); }
+
+/* 광고 포스터 (2026-11-23) */
+.posters { display: flex; flex-direction: column; gap: 12px; margin-bottom: 6px; }
+.card.poster { display: block; padding: 10px 10px 12px; text-decoration: none; color: inherit; }
+.card.poster img { display: block; width: 100%; max-height: 72vh; object-fit: contain; background: #f2efe8; border-radius: 12px; margin-bottom: 8px; }
+.card.poster b { display: block; font-size: 1.02rem; padding: 0 4px; }
+.card.poster .sub { padding: 0 4px; }
+.poster-full img { display: block; width: 100%; border-radius: 12px; }
