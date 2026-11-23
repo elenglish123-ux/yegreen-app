@@ -317,10 +317,6 @@
     var html = '<div class="chips">' + [['notice', '광고'], ['jubo', '주보'], ['photo', '사진']].map(function (t) { return '<a class="chip' + (t[0] === tab ? ' on' : '') + '" href="#/news?tab=' + t[0] + '">' + t[1] + '</a>'; }).join('') + '</div>';
     var b = BULLETINS[0];
     if (tab === 'notice') {
-      var ps = livePosters();
-      if (ps.length) html += '<div class="posters">' + ps.map(function (p) {
-        return '<a class="card poster" href="#/poster/' + esc(p.id) + '"><img src="' + esc(p.img) + '" alt="' + esc(p.title) + '" loading="lazy"><b>' + esc(p.title) + '</b>' + (p.until ? '<span class="sub">' + md(p.until) + '까지</span>' : '') + '</a>';
-      }).join('') + '</div>' + (bulletinNews().length ? '<div class="sec-title"><b>주보 광고</b></div>' : '');
       html += bulletinNews().map(function (n, i) {
         var m = (n.t + ' ' + n.b).match(/(\d{1,2})월\s?(\d{1,2})일/);
         return '<a class="card news-item" href="#/news/' + i + '"><div class="day">' + (m ? '<b>' + m[2] + '</b><small>' + m[1] + '월</small>' : '<b style="font-size:1rem">안내</b>') + '</div><div><b style="font-size:1.02rem">' + inl(n.t) + '</b><div class="sub">' + esc(lines(n.b)[0] || '') + '</div></div></a>';
@@ -335,19 +331,6 @@
     }
     if (!S.alerts.notice) html += '<button class="card green" data-toggle-alert="notice" style="display:flex;justify-content:space-between;align-items:center;width:100%"><b style="color:var(--green-d)">🔔 새 소식 알림 받기</b><span class="tg"></span></button>';
     return html;
-  }
-  // 광고 포스터 — 끝나는 날이 지나면 저절로 내려감 (2차 미팅: 광고는 글보다 포스터 한 장)
-  function livePosters() {
-    posterSeed();
-    var t = dayKey(new Date());
-    return (S.posters || []).filter(function (p) { return !p.until || p.until >= t; });
-  }
-  function posterView(id) {
-    var p = (S.posters || []).filter(function (x) { return x.id === id; })[0];
-    renderTop({ back: '소식', white: true });
-    if (!p) return '<p class="empty">포스터를 찾을 수 없어요.</p>';
-    return '<div class="card poster-full"><img src="' + esc(p.img) + '" alt="' + esc(p.title) + '"><div class="h2" style="margin-top:10px">' + esc(p.title) + '</div>' + (p.until ? '<div class="sub">' + md(p.until) + '까지</div>' : '') + '</div>' +
-      '<p class="sub" style="text-align:center">사진을 손가락 두 개로 벌리면 크게 볼 수 있어요.</p>';
   }
   function newsDetail(i) {
     var n = bulletinNews()[i];
@@ -908,8 +891,7 @@
   var ADMIN_MENUS = [
     ['members', '👤', '가입 승인', '가입 신청을 확인하고 목장을 정해요', ['pastor', 'admin']],
     ['send', '📣', '알림 보내기', '공지·긴급 알림, 목장 알림', ['pastor', 'admin', 'leader']],
-    ['jubo', '📰', '주보', '주보 프로그램에서 온 주보를 앱에 공개', ['pastor', 'admin']],
-    ['poster', '🖼', '광고 포스터', '광고를 포스터 한 장으로 올리기', ['pastor', 'admin']],
+    ['jubo', '📰', '주보·광고', '주보 프로그램에서 온 주보를 앱에 공개', ['pastor', 'admin']],
     ['challenge', '🌾', '감사 챌린지', '챌린지 이름과 기간을 정해 열고 닫기', ['pastor', 'admin']],
     ['mission', '🌏', '선교 소식', '나라별 소식·기도제목 올리기', ['pastor', 'admin']],
     ['groups', '🏠', '목장 관리', '목장 만들기, 목자 정하기, 식구 배정', ['pastor', 'admin']],
@@ -920,7 +902,7 @@
   ];
   function adminSeed() {
     if (CLOUD) {
-      ['pending', 'groups', 'people', 'challenges', 'missionNews', 'posters', 'posts', 'sent'].forEach(function (k) { S[k] = S[k] || []; });
+      ['pending', 'groups', 'people', 'challenges', 'missionNews', 'posts', 'sent'].forEach(function (k) { S[k] = S[k] || []; });
       return;
     }
     if (!S.pending) S.pending = [
@@ -938,7 +920,6 @@
     ];
     if (!S.challenges) S.challenges = CHALLENGES.map(function (c) { return { title: c.title, from: c.from, to: c.to }; });
     if (!S.missionNews) S.missionNews = [];
-    posterSeed();
     if (!S.adminRole) S.adminRole = 'admin';
     if (S.juboOpen == null) S.juboOpen = true;
   }
@@ -1002,87 +983,6 @@
         '<label class="check"><input type="checkbox" name="push" checked>열 때 성도에게 알림 보내기</label>' +
         '<button class="btn">챌린지 만들기</button></form>' +
       '<p class="sub">챌린지 기간에만 나눔 › 감사 챌린지 칸이 열려요.</p>';
-  }
-
-  function posterSeed() {
-    if (CLOUD) { S.posters = S.posters || []; return; }
-    if (!S.posters) S.posters = [{ id: 'ps1', title: '(예시) 2026 새생명축제', img: 'thumbs/poster-sample.jpg', until: '', at: '예시', sample: true }];
-  }
-  function adminPoster() {
-    adminTop(1);
-    var t = dayKey(new Date());
-    return '<form class="card" id="psForm" style="display:flex;flex-direction:column;gap:10px"><b>광고 포스터 올리기</b>' +
-        '<label class="field"><span>포스터 사진</span><input name="file" type="file" accept="image/*" required></label>' +
-        '<img id="psPrev" alt="" style="display:none;width:100%;border-radius:12px">' +
-        '<label class="field"><span>제목 (알림·목록에 보여요)</span><input name="title" required maxlength="40" placeholder="예: 성탄 축하 예배 안내"></label>' +
-        '<label class="field"><span>언제까지 보일까요? (비우면 지울 때까지)</span><input name="until" type="date" min="' + t + '"></label>' +
-        '<label class="check"><input type="checkbox" name="push" checked>올릴 때 전체 교인에게 알림 보내기</label>' +
-        '<button class="btn">올리기</button></form>' +
-      '<p class="sub">세로로 긴 포스터가 가장 잘 보여요. 사진은 앱에서 알맞은 크기로 줄여서 올려요. 끝나는 날이 지나면 소식에서 저절로 내려가요.</p>' +
-      (S.posters.length ? '<div class="sec-title"><b>올린 포스터</b></div>' + S.posters.map(function (p, i) {
-        var over = p.until && p.until < t;
-        return '<div class="card row" style="align-items:center"><img src="' + esc(p.img) + '" alt="" style="width:64px;height:88px;object-fit:cover;border-radius:8px;flex:0 0 auto"><div style="flex:1;min-width:0"><b>' + esc(p.title) + '</b><div class="sub">' + (p.until ? md(p.until) + '까지' + (over ? ' · 내려감' : '') : '지울 때까지') + '</div></div><button class="btn small ghost" style="flex:0 0 auto" data-psdel="' + i + '">지우기</button></div>';
-      }).join('') : '');
-  }
-  // 포스터 사진을 긴 변 1080px JPEG로 줄임 (서버 문서 한 개에 들어가게 900KB 아래로)
-  function shrinkImage(file) {
-    return new Promise(function (ok, no) {
-      var fr = new FileReader();
-      fr.onerror = no;
-      fr.onload = function () {
-        var im = new Image();
-        im.onerror = function () { no(new Error('사진을 열 수 없어요')); };
-        im.onload = function () {
-          var side = 1080, q = 0.82, out;
-          for (var k = 0; k < 6; k++) {
-            var sc = Math.min(1, side / Math.max(im.width, im.height));
-            var cv = document.createElement('canvas'); cv.width = Math.round(im.width * sc); cv.height = Math.round(im.height * sc);
-            var cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(im, 0, 0, cv.width, cv.height);
-            out = cv.toDataURL('image/jpeg', q);
-            if (out.length < 850000) return ok(out);
-            side = Math.round(side * 0.85); q = Math.max(0.6, q - 0.06);
-          }
-          no(new Error('사진이 너무 커요'));
-        };
-        im.src = fr.result;
-      };
-      fr.readAsDataURL(file);
-    });
-  }
-  function bindPosterForm() {
-    var f = $('#psForm');
-    if (!f) return;
-    var data = null;
-    f.file.onchange = function () {
-      data = null;
-      var file = f.file.files[0]; if (!file) return;
-      shrinkImage(file).then(function (d) { data = d; var pv = $('#psPrev'); pv.src = d; pv.style.display = 'block'; }, function (e) { toast(e.message || '사진을 열 수 없어요'); });
-    };
-    f.onsubmit = function (e) {
-      e.preventDefault();
-      if (!data) { toast('사진을 줄이는 중이에요. 잠시 뒤 다시 눌러 주세요'); return; }
-      var p = { title: f.title.value.trim(), img: data, until: f.until.value || '', at: md(dayKey(new Date())) };
-      var msg = { kind: 'notice', title: '새 광고: ' + p.title, body: '교회 소식에서 포스터를 확인해 보세요', url: '#/news' };
-      f.querySelector('.btn').disabled = true;
-      if (CLOUD) {
-        var job = YG.addPoster(p);
-        if (f.push.checked) job = job.then(function () { return YG.notice(msg, 'all'); });
-        put(job, '포스터를 올렸어요');
-      } else {
-        p.id = 'ps' + Date.now(); S.posters.unshift(p);
-        try { save(); } catch (er) {}
-        if (f.push.checked) receive(msg); else toast('포스터를 올렸어요');
-        route();
-      }
-    };
-    document.querySelectorAll('[data-psdel]').forEach(function (b) {
-      b.onclick = function () {
-        if (!confirm('이 포스터를 지울까요?')) return;
-        var p = S.posters[Number(b.dataset.psdel)];
-        if (CLOUD) put(YG.delPoster(p), '포스터를 지웠어요');
-        else { S.posters.splice(Number(b.dataset.psdel), 1); save(); route(); }
-      };
-    });
   }
 
   function adminMission() {
@@ -1178,7 +1078,6 @@
       case 'jubo': return adminJubo();
       case 'challenge': return adminChallenge();
       case 'mission': return adminMission();
-      case 'poster': return adminPoster();
       case 'groups': return adminGroups();
       case 'reports': return adminReports();
       case 'reading': return adminReading();
@@ -1269,7 +1168,6 @@
     }
   }
   function bindAdminAll() {
-    bindPosterForm();
     if (CLOUD) return bindAdminCloud();
     bindAdmin();
     var on = function (sel, fn) { document.querySelectorAll(sel).forEach(function (b) { b.onclick = function (e) { fn(b, e); }; }); };
@@ -1410,7 +1308,6 @@
       case 'gate': html = gate(); tab = -1; after = bindGate; break;
       case 'home': html = home(); tab = 0; after = bindHome; break;
       case 'sermons': html = sermons(r.q); tab = 1; after = bindSermons; break;
-      case 'poster': tab = 2; html = posterView(p[1]); break;
       case 'news': tab = 2; html = p[1] != null ? newsDetail(Number(p[1])) : news(r.q); break;
       case 'talk': tab = 3; html = talk(p[1], r.q); after = function () { bindGate(); bindTalk(); }; break;
       case 'write': tab = -1; html = write(r.q); after = bindWrite; break;

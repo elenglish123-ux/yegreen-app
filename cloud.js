@@ -248,7 +248,6 @@
     if (member.role === 'pastor') sub('notes', 'pastorNotes', []); else sub('notes', 'pastorNotes', [['uid', '==', uid]]);
     sub('videos', 'groupVideos', []);
     sub('mission', 'missionNews', []);
-    sub('posters', 'posters', []);
     sub('challenges', 'challenges', []);
     sub('groups', 'groups', []);
     sub('reads', 'reads', []);
@@ -290,7 +289,6 @@
     S.groupVideos = (cache.videos || []).slice().sort(function (a, b) { return a.week < b.week ? 1 : a.week > b.week ? -1 : byTs(a, b); });
     S.missionNews = (cache.mission || []).slice().sort(byTs).map(function (n) { n.at = n.at || rel(n.ts); return n; });
     S.challenges = (cache.challenges || []).slice().sort(byTs);
-    S.posters = (cache.posters || []).slice().sort(byTs);
     var ms = cache.members || cache.groupMembers || [];
     S.people = ms.filter(function (m) { return m.status === 'approved'; }).map(function (m) { return { id: m.id, name: m.name, role: m.role, group: m.group || '' }; });
     S.pending = ms.filter(function (m) { return m.status === 'pending'; }).sort(byTs).map(function (m) { return { id: m.id, name: m.name, group: m.wantGroup || '', at: rel(m.ts), memo: m.memo || '' }; });
@@ -398,9 +396,6 @@
   YG.delVideo = function (v) { return A.del('groupVideos', v.id); };
   YG.addMission = function (n) { n = Object.assign({}, n); n.ts = now(); return A.add('missionNews', n); };
   YG.delMission = function (n) { return A.del('missionNews', n.id); };
-  // 광고 포스터: 사진은 줄여서(긴 변 1080px JPEG) 문서 안에 글자로 저장 — 따로 파일 저장소가 필요 없음
-  YG.addPoster = function (p) { p = Object.assign({}, p); p.ts = now(); p.by = myName(); return A.add('posters', p); };
-  YG.delPoster = function (p) { return A.del('posters', p.id); };
   YG.addChallenge = function (c) { c = Object.assign({}, c); c.ts = now(); return A.add('challenges', c); };
   YG.closeChallenge = function (c) { return A.update('challenges', c.id, { closed: true }); };
   YG.notice = function (msg, to) { return A.add('notices', { kind: msg.kind || 'notice', title: msg.title, body: msg.body || '', url: msg.url || '#/', to: to || 'all', ts: now(), by: myName() }); };
