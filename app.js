@@ -30,7 +30,7 @@
       admin: false,
       alerts: { notice: true, event: true, sermon: false, talk: true, group: true, diary: false, quiet: true },
       notifs: [
-        { id: 'n1', kind: 'notice', title: '감사주간이 시작됐어요', body: '11월 9일부터 21일까지, 감사일기로 함께해요.', url: '#/talk/prayer?p=thanks', at: '11월 9일', read: false },
+        { id: 'n1', kind: 'notice', title: '감사주간이 시작됐어요', body: '11월 9일부터 21일까지, 감사일기로 함께해요.', url: '#/talk/prayer?p=vow&c=thanks', at: '11월 9일', read: false },
       ],
       posts: [
         { id: 'p0', notice: true, cat: 'thanks', scope: 'all', author: '교회 공지', text: '11월 9일부터 21일까지 감사주간이에요. 감사일기에 오늘의 감사를 적고 나눠 주세요.', at: '공지', count: 0, reacted: false, comments: [] },
@@ -285,7 +285,7 @@
       '<div class="quick"><a href="#/worship"><i>⛪</i>예배 시간</a><a href="#/visit"><i>📍</i>오시는 길</a><a href="#/mission"><i>🌏</i>선교 소식</a></div>' +
       '<div class="card"><div class="h2" style="margin-bottom:4px">다가오는 일정</div>' + (ev || '<p class="sub">다가오는 일정이 없어요.</p>') + '</div>' +
       (news ? '<div class="card"><div class="sec-title" style="margin:0 0 4px"><b>교회 소식</b><a href="#/news">전체</a></div>' + news + '</div>' : '') +
-      (S.me && S.me.approved && challengeNow() ? '<a class="card green" href="#/talk/prayer?p=thanks" style="display:flex;align-items:center;gap:12px"><span style="font-size:1.6rem">🌾</span><div><b>오늘의 감사 기도를 드려 보세요</b><div class="sub" style="color:#55705f">' + (thanksDays()[dayKey(new Date())] ? '오늘 감사 도장을 찍었어요 ✓' : challengeNow().title + ' · ' + md(challengeNow().to) + '까지') + '</div></div></a>' : '');
+      (S.me && S.me.approved && challengeNow() ? '<a class="card green" href="#/talk/prayer?p=vow&c=thanks" style="display:flex;align-items:center;gap:12px"><span style="font-size:1.6rem">🌾</span><div><b>감사 기도 챌린지로 함께해요</b><div class="sub" style="color:#55705f">' + (thanksDays()[dayKey(new Date())] ? '오늘 감사 기도를 드렸어요 ✓' : challengeNow().title + ' · ' + md(challengeNow().to) + '까지') + '</div></div></a>' : '');
   }
 
   // ---------- 말씀 ----------
@@ -462,7 +462,7 @@
     if (!S.me || !S.me.approved) return gate();
     sub = sub || 'church';
     renderTop({ title: '나눔', right: sub === 'diary' || sub === 'prayer' || sub === 'bible' ? '' : '<a class="icon-btn" href="#/write?to=' + (sub === 'group' ? 'group' : 'all') + '" aria-label="글쓰기">' + svg('pen', 2) + '</a>', bell: true });
-    if (sub === 'diary') { sub = 'prayer'; q = { p: 'thanks' }; }   // 감사 챌린지 탭은 기도 공간 「감사 기도」로 합침 (2026-11-25)
+    if (sub === 'diary') { sub = 'prayer'; q = { p: 'vow', c: 'thanks' }; }   // 감사 챌린지 탭은 기도 공간 「감사 기도」로 합침 (2026-11-25)
     if (sub === 'prayer') return segs(sub) + prayerRoom(q);
     if (sub === 'bible') return segs(sub) + bibleRoom();
     if (sub === 'group') return segs(sub) + groupRoom();
@@ -666,7 +666,7 @@
     ['joy', '주님을 기쁘시게', '😊', '오늘 주님을 기쁘시게 해 드린 일, 해 드리고 싶은 일을 적어 보세요.'],
     ['hard', '마음이 힘들어요', '😢', '힘든 마음을 있는 그대로 털어놓아도 괜찮아요.'],
     ['help', '도와주세요', '🙏', '주님의 도우심이 필요한 일을 구체적으로 적어 보세요.'],
-    ['vow', '작정 기도', '🔥', '하나님께 작정하고 드릴 기도 제목을 적어 보세요. 위에서 기간과 하루 시간을 정해요.'],
+    ['vow', '나의 기도 챌린지', '🏁', '챌린지 동안 붙잡을 기도 제목을 적어 보세요. 위에서 종류·기간·시간을 정해요.'],
     ['morning', '하루를 시작하며', '🌅', '오늘 하루를 주님께 맡겨요. 오늘 할 일과 만날 사람을 올려 드려 보세요.'],
     ['review', '하루를 돌아보며', '🌙', '하나님, 오늘 저 어땠나요? 하루를 돌아보며 적어 보세요.'],
     ['thanks', '감사 기도', '🌾', '오늘 감사한 일을 하나님께 올려 드려요. 쓰면 달력에 감사 도장이 찍혀요.'],
@@ -721,17 +721,22 @@
     return { n: n, day: day, end: dayKey(end), active: day >= 1 && day <= v.days, over: day > v.days, todayOn: !!D[today], cells: cells };
   }
   function vowTime(m) { return m >= 60 ? (m % 60 ? Math.floor(m / 60) + '시간 ' + (m % 60) + '분' : (m / 60) + '시간') : m + '분'; }
+  // 나의 기도 챌린지 종류 (2026-11-25, 나연 아이디어): [키, 이름, 그림, 기본 일수, 기본 분(0=시간 안 정함)]
+  var CTYPES = [['vow', '작정 기도', '🔥', 40, 30], ['thanks', '감사 기도', '🌾', 21, 0], ['morning', '아침 기도', '🌅', 7, 10], ['word', '말씀 기도', '📖', 30, 20], ['custom', '직접 만들기', '✏️', 7, 10]];
+  function ctypeOf(k) { return CTYPES.filter(function (c) { return c[0] === k; })[0] || CTYPES[0]; }
+  function vowName(v) { var c = ctypeOf(v.kind); return c[2] + ' ' + (v.kind === 'custom' && v.name ? v.name : c[1]); }
   function vowTrack(x, small) {
     if (!x.vow) return '';
-    var v = x.vow, f = vowInfo(x);
-    var line = '🔥 ' + v.days + '일 작정 · 하루 ' + vowTime(v.mins) + ' · ' + md(v.start) + ' ~ ' + md(f.end);
+    var v = x.vow, f = vowInfo(x), mins = +v.mins || 0;
+    var line = vowName(v) + ' ' + v.days + '일' + (mins ? ' · 하루 ' + vowTime(mins) : '') + ' · ' + md(v.start) + ' ~ ' + md(f.end);
+    var did = mins ? '오늘 ' + vowTime(mins) + ' 기도했어요' : '오늘 드렸어요';
     if (!x.mine) return '<div class="vow-line">' + line + (f.active ? ' · ' + f.day + '일째' : '') + '</div>';
     var pct = Math.round(f.n / v.days * 100);
     return '<div class="vow' + (small ? ' sm' : '') + '"><div class="vow-line">' + line + '</div>' +
       '<div class="vow-bar"><span style="width:' + pct + '%"></span></div>' +
-      '<div class="vow-st"><b>' + f.n + '</b> / ' + v.days + '일 드렸어요' + (f.active ? ' · 오늘 ' + f.day + '일째' : f.over ? ' · 작정 기간이 끝났어요' : ' · ' + md(v.start) + '에 시작해요') + '</div>' +
+      '<div class="vow-st"><b>' + f.n + '</b> / ' + v.days + '일 드렸어요' + (f.active ? ' · 오늘 ' + f.day + '일째' : f.over ? ' · 챌린지 기간이 끝났어요' + (f.n >= v.days ? ' 🎉 완주!' : '') : ' · ' + md(v.start) + '에 시작해요') + '</div>' +
       (small ? '' : '<div class="vow-dots">' + f.cells + '</div>') +
-      (f.active ? '<button class="btn small' + (f.todayOn ? '' : ' ghost') + '" data-vowck="' + x.id + '">' + (f.todayOn ? '오늘 ' + vowTime(v.mins) + ' 기도했어요 ✓' : '오늘 ' + vowTime(v.mins) + ' 기도했어요') + '</button>' : '') + '</div>';
+      (f.active ? '<button class="btn small' + (f.todayOn ? '' : ' ghost') + '" data-vowck="' + x.id + '">' + did + (f.todayOn ? ' ✓' : '') + '</button>' : '') + '</div>';
   }
   // 감사 도장: 감사 기도를 쓴 날 (예전 감사일기 S.diary도 이어서 셈)
   function thanksDays() {
@@ -777,7 +782,8 @@
     var old = { mine: 'me', with: 'all' };
     var tab = byScope[q.t] ? q.t : old[q.t] || 'all';
     var hf = q.h && headOf(q.h) ? q.h : '';
-    var pick = headOf(q.p) || headOf(hf) || HEADS[0];   // ?p=thanks 로 들어오면 감사 기도가 골라진 채로
+    var pick = headOf(q.p) || headOf(hf) || HEADS[0];   // ?p=vow&c=thanks 로 들어오면 감사 기도 챌린지가 골라진 채로
+    var ch0 = challengeNow(), ck = ctypeOf(q.c || (ch0 ? 'thanks' : 'vow'));
     var list = byScope[tab].filter(function (x) { return !hf || x.head === hf; });
     var open = list.filter(function (x) { return !x.done; }), done = list.filter(function (x) { return x.done; });
     var hard = isPastor ? byScope.pastor.filter(function (x) { return !x.mine && x.head === 'hard' && !x.done; }).length : 0;
@@ -798,14 +804,17 @@
     }
     var form = '<form class="card" id="prayForm" style="display:flex;flex-direction:column;gap:10px"><b>오늘의 기도</b>' +
         '<div class="sub" style="font-weight:700">어떤 기도인가요?</div><div class="ph-pick" id="phPick">' + HEADS.map(function (h) { return '<button type="button" class="ph-b' + (h[0] === pick[0] ? ' on' : '') + '" data-v="' + h[0] + '">' + h[2] + ' ' + esc(h[1]) + '</button>'; }).join('') + '</div>' +
-        '<div id="thxBox"' + (pick[0] === 'thanks' ? '' : ' hidden') + '>' + thanksCal() + '</div>' +
-        '<div id="vowBox" class="vow-set"' + (pick[0] === 'vow' ? '' : ' hidden') + '><b>🔥 작정 기도 정하기</b>' +
-          '<div class="sub" style="font-weight:700">며칠 동안 드릴까요?</div><div class="chips" id="vdPick" style="margin:0;flex-wrap:wrap;overflow:visible">' +
-            [3, 7, 21, 40, 100].map(function (d) { return '<button type="button" class="chip' + (d === 21 ? ' on' : '') + '" data-v="' + d + '">' + d + '일</button>'; }).join('') +
-            '<label class="vow-in"><input name="vd" type="number" min="1" max="365" value="21">일</label></div>' +
+        '<div id="vowBox" class="vow-set"' + (pick[0] === 'vow' ? '' : ' hidden') + '><b>🏁 나의 기도 챌린지 만들기</b>' +
+          (ch0 ? '<div class="ph-help">🌱 지금 교회는 「' + esc(ch0.title) + '」 기간이에요 (' + md(ch0.from) + ' ~ ' + md(ch0.to) + '). 감사 기도 챌린지로 함께해요!</div>' : '') +
+          '<div class="sub" style="font-weight:700">어떤 챌린지인가요?</div><div class="chips" id="vkPick" style="margin:0;flex-wrap:wrap;overflow:visible">' +
+            CTYPES.map(function (c) { return '<button type="button" class="chip' + (c[0] === ck[0] ? ' on' : '') + '" data-v="' + c[0] + '" data-d="' + c[3] + '" data-m="' + c[4] + '">' + c[2] + ' ' + c[1] + '</button>'; }).join('') + '</div>' +
+          '<input name="vn" maxlength="20" placeholder="챌린지 이름 (예: 가족 구원 기도)"' + (ck[0] === 'custom' ? '' : ' hidden') + '>' +
+          '<div class="sub" style="font-weight:700">며칠 동안 할까요?</div><div class="chips" id="vdPick" style="margin:0;flex-wrap:wrap;overflow:visible">' +
+            [3, 7, 21, 40, 100].map(function (d) { return '<button type="button" class="chip" data-v="' + d + '">' + d + '일</button>'; }).join('') +
+            '<label class="vow-in"><input name="vd" type="number" min="1" max="365" value="' + ck[3] + '">일</label></div>' +
           '<div class="sub" style="font-weight:700">하루에 얼마나 드릴까요?</div><div class="chips" id="vmPick" style="margin:0;flex-wrap:wrap;overflow:visible">' +
-            [10, 20, 30, 60].map(function (m) { return '<button type="button" class="chip' + (m === 30 ? ' on' : '') + '" data-v="' + m + '">' + vowTime(m) + '</button>'; }).join('') +
-            '<label class="vow-in"><input name="vm" type="number" min="1" max="600" value="30">분</label></div>' +
+            [0, 10, 20, 30, 60].map(function (m) { return '<button type="button" class="chip" data-v="' + m + '">' + (m ? vowTime(m) : '정하지 않음') + '</button>'; }).join('') +
+            '<label class="vow-in"><input name="vm" type="number" min="0" max="600" value="' + ck[4] + '">분</label></div>' +
           '<div class="ph-help" id="vowHelp"></div></div>' +
         '<div class="sub" style="font-weight:700">누구와 나눌까요?</div><div class="chips" id="psPick" style="margin:0;flex-wrap:wrap;overflow:visible">' + PSCOPES.map(function (s, i) { return '<button type="button" class="chip' + (i === 0 ? ' on' : '') + '" data-v="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div>' +
         '<div class="ph-help" id="psHelp">' + PSCOPES[0][2] + '</div>' +
@@ -845,7 +854,7 @@
     var empty = { me: '나만 보는 기도가 아직 없어요.', pastor: isPastor ? '목사님께 온 기도가 없어요.' : '목사님께 보낸 기도가 아직 없어요.', group: '목장에 올라온 기도가 아직 없어요.', all: '교회에 올라온 기도가 아직 없어요.' }[tab];
     // 진행 중인 내 작정 기도: 성경읽기처럼 맨 위에서 날마다 체크
     var vows = [].concat(byScope.me, byScope.pastor, byScope.group, byScope.all).filter(function (x) { return x.mine && x.vow && !x.done && !vowInfo(x).over; });
-    var vowCard = vows.length ? '<div class="card vow-card"><div class="sec-title" style="margin:0 0 4px"><b>🔥 나의 작정 기도</b><span class="sub">' + vows.length + '개 진행 중</span></div>' +
+    var vowCard = vows.length ? '<div class="card vow-card"><div class="sec-title" style="margin:0 0 4px"><b>🏁 나의 기도 챌린지</b><span class="sub">' + vows.length + '개 진행 중</span></div>' +
       vows.map(function (x) { return '<div class="vow-item"><p>' + esc(x.text) + '</p>' + vowTrack(x) + '</div>'; }).join('') + '</div>' : '';
     return vowCard + form + tabs +
       (tab === 'pastor' && hard ?'<div class="card ph-alert">❗ 「' + HEADS[1][1] + '」 기도가 <b>' + hard + '개</b> 있어요. 먼저 연락해 보세요.</div>' : '') + chips +
@@ -856,18 +865,35 @@
   }
   function bindPrayer() {
     var f = $('#prayForm');
+    function autoThanks() {   // 진행 중인 감사 기도 챌린지가 있으면 감사 기도를 쓴 날 저절로 체크
+      var k = dayKey(new Date()), hit = false;
+      prayers().map(pFromLocal).concat(S.posts.filter(function (p) { return p.mine && p.cat === 'pray'; }).map(pFromPost)).forEach(function (x) {
+        if (!x.vow || x.vow.kind !== 'thanks' || x.done || !vowInfo(x).active) return;
+        S.vowDone = S.vowDone || {}; var D = S.vowDone[x.id] = S.vowDone[x.id] || {};
+        if (!D[k]) { D[k] = 1; hit = true; }
+      });
+      if (hit) save();
+      return hit;
+    }
     function goTab(s) {   // 기도를 드리면 그 열람 범위 탭으로
       var h = '#/talk/prayer?t=' + s;
       if (location.hash === h) route(); else location.hash = h;
     }
     function postById(id) { return S.posts.filter(function (x) { return x.id === id; })[0]; }
     if (f) {
-      $('#phPick').onclick = function (e) { var b = e.target.closest('[data-v]'); if (!b) return; $('#phPick').querySelectorAll('.ph-b').forEach(function (c) { c.classList.toggle('on', c === b); }); f.t.placeholder = headOf(b.dataset.v)[3]; $('#thxBox').hidden = b.dataset.v !== 'thanks'; $('#vowBox').hidden = b.dataset.v !== 'vow'; };
-      // 작정 기도: 기간·시간 칩 ↔ 숫자 칸
+      $('#phPick').onclick = function (e) { var b = e.target.closest('[data-v]'); if (!b) return; $('#phPick').querySelectorAll('.ph-b').forEach(function (c) { c.classList.toggle('on', c === b); }); f.t.placeholder = headOf(b.dataset.v)[3]; $('#vowBox').hidden = b.dataset.v !== 'vow'; };
+      // 기도 챌린지: 종류 → 기본 기간·시간, 칩 ↔ 숫자 칸
+      $('#vkPick').onclick = function (e) {
+        var b = e.target.closest('.chip'); if (!b) return;
+        $('#vkPick').querySelectorAll('.chip').forEach(function (c) { c.classList.toggle('on', c === b); });
+        f.vd.value = b.dataset.d; f.vm.value = b.dataset.m; f.vn.hidden = b.dataset.v !== 'custom'; vowHelp();
+      };
       function vowHelp() {
-        var d = Math.max(1, Math.min(365, parseInt(f.vd.value, 10) || 0)), m = Math.max(1, Math.min(600, parseInt(f.vm.value, 10) || 0));
+        var d = Math.max(1, Math.min(365, parseInt(f.vd.value, 10) || 0)), m = Math.max(0, Math.min(600, parseInt(f.vm.value, 10) || 0));
         var end = new Date(); end.setDate(end.getDate() + d - 1);
-        $('#vowHelp').textContent = '오늘(' + md(dayKey(new Date())) + ')부터 ' + md(dayKey(end)) + '까지 ' + d + '일 동안, 하루 ' + vowTime(m) + '씩 드려요. 날마다 체크하면 진행 막대가 채워져요.';
+        var kind = $('#vkPick .on').dataset.v;
+        $('#vowHelp').textContent = '오늘(' + md(dayKey(new Date())) + ')부터 ' + md(dayKey(end)) + '까지 ' + d + '일 동안' + (m ? ', 하루 ' + vowTime(m) + '씩' : '') + ' 드려요. 날마다 체크하면 진행 막대가 채워져요.' +
+          (kind === 'thanks' ? ' 기간 중에 「감사 기도」를 쓰면 그날은 저절로 체크돼요.' : '');
         $('#vdPick').querySelectorAll('.chip').forEach(function (c) { c.classList.toggle('on', +c.dataset.v === d); });
         $('#vmPick').querySelectorAll('.chip').forEach(function (c) { c.classList.toggle('on', +c.dataset.v === m); });
       }
@@ -886,16 +912,17 @@
         var v = f.t.value.trim(); if (!v) return;
         var head = $('#phPick .on').dataset.v, scope = $('#psPick .on').dataset.v;
         if (scope === 'group' && !S.me.group) { toast(CLOUD ? '아직 목장이 정해지지 않았어요.' : '목장방에서 목장을 먼저 골라 주세요.'); return; }
-        var thx = head === 'thanks' && !thanksDays()[dayKey(new Date())];
         if (head === 'thanks') { S.thanksDays = S.thanksDays || {}; S.thanksDays[dayKey(new Date())] = 1; save(); }
-        var vow = head === 'vow' ? { days: Math.max(1, Math.min(365, parseInt(f.vd.value, 10) || 21)), mins: Math.max(1, Math.min(600, parseInt(f.vm.value, 10) || 30)), start: dayKey(new Date()) } : null;
+        var vk = $('#vkPick .on').dataset.v;
+        var vow = head === 'vow' ? { kind: vk, name: vk === 'custom' ? f.vn.value.trim().slice(0, 20) : '', days: Math.max(1, Math.min(365, parseInt(f.vd.value, 10) || 21)), mins: Math.max(0, Math.min(600, parseInt(f.vm.value, 10) || 0)), start: dayKey(new Date()) } : null;
+        var thx = head === 'thanks' && autoThanks();
         if (scope === 'me') {
           var list = prayers(); list.unshift({ id: 'q' + Date.now(), head: head, text: v, at: md(dayKey(new Date())), day: dayKey(new Date()), vow: vow });
-          savePrayers(list); toast(thx ? '오늘 감사 도장을 찍었어요 🌾' : vow ? '🔥 ' + vow.days + '일 작정 기도를 시작했어요' : '나만 보는 기도로 저장했어요 🔒'); goTab('me'); return;
+          savePrayers(list); toast(thx ? '감사 기도 챌린지 오늘 체크 ✓ 🌾' : vow ? '🏁 ' + vowName(vow) + ' ' + vow.days + '일 챌린지를 시작했어요' : '나만 보는 기도로 저장했어요 🔒'); goTab('me'); return;
         }
         var done = scope === 'pastor' ? '목사님께만 보냈어요 🙏' : scope === 'group' ? '목장 식구들과 나눴어요 🏡' : '교회와 나눴어요 ⛪';
-        if (thx) done = '오늘 감사 도장을 찍었어요 🌾 ' + done.replace(/ \S+$/, '');
-        if (vow) done = '🔥 ' + vow.days + '일 작정 기도를 시작했어요';
+        if (thx) done = '감사 기도 챌린지 오늘 체크 ✓ ' + done.replace(/ \S+$/, '');
+        if (vow) done = '🏁 ' + vowName(vow) + ' ' + vow.days + '일 챌린지를 시작했어요';
         if (CLOUD) { f.querySelector('.btn').disabled = true; put(YG.addPost({ cat: 'pray', head: head, scope: scope, text: v, vow: vow }), done); f.reset(); goTab(scope); return; }
         S.posts.unshift({ id: 'p' + Date.now(), cat: 'pray', head: head, vow: vow || undefined, scope: scope, group: scope === 'group' ? S.me.group : undefined, author: S.me.name, text: v, at: '방금', mine: true, count: 0, reacted: false, comments: [] });
         save(); toast(done); goTab(scope);
@@ -908,7 +935,7 @@
         S.vowDone = S.vowDone || {}; var D = S.vowDone[id] = S.vowDone[id] || {};
         if (D[k]) delete D[k]; else D[k] = 1;
         save(); route();
-        if (D[k]) toast('오늘 작정 기도를 드렸어요 🔥 ' + Object.keys(D).length + '일째 체크');
+        if (D[k]) toast('오늘 체크했어요 🏁 ' + Object.keys(D).length + '일째');
       };
     });
     document.querySelectorAll('[data-pdone]').forEach(function (b) {
@@ -1503,7 +1530,7 @@
       e.preventDefault();
       if (cf.to.value < cf.from.value) { toast('끝나는 날이 시작보다 빨라요'); return; }
       var c = { title: cf.title.value.trim(), from: cf.from.value, to: cf.to.value }, job = YG.addChallenge(c);
-      if (cf.push.checked && cf.from.value <= dayKey(new Date())) job = job.then(function () { return YG.notice({ kind: 'notice', title: c.title + '가 시작됐어요', body: md(c.from) + ' ~ ' + md(c.to) + ' · 기도 공간에서 감사 기도로 함께해요', url: '#/talk/prayer?p=thanks' }, 'all'); });
+      if (cf.push.checked && cf.from.value <= dayKey(new Date())) job = job.then(function () { return YG.notice({ kind: 'notice', title: c.title + '가 시작됐어요', body: md(c.from) + ' ~ ' + md(c.to) + ' · 기도 공간에서 감사 기도 챌린지로 함께해요', url: '#/talk/prayer?p=vow&c=thanks' }, 'all'); });
       put(job, '챌린지를 만들었어요');
     };
     var mk = $('#mnKind');
@@ -1593,7 +1620,7 @@
       if (cf.to.value < cf.from.value) { toast('끝나는 날이 시작보다 빨라요'); return; }
       S.challenges.unshift({ title: cf.title.value.trim(), from: cf.from.value, to: cf.to.value });
       save();
-      if (cf.push.checked && cf.from.value <= dayKey(new Date())) receive({ kind: 'notice', title: cf.title.value.trim() + '가 시작됐어요', body: md(cf.from.value) + ' ~ ' + md(cf.to.value) + ' · 기도 공간에서 감사 기도로 함께해요', url: '#/talk/prayer?p=thanks' });
+      if (cf.push.checked && cf.from.value <= dayKey(new Date())) receive({ kind: 'notice', title: cf.title.value.trim() + '가 시작됐어요', body: md(cf.from.value) + ' ~ ' + md(cf.to.value) + ' · 기도 공간에서 감사 기도 챌린지로 함께해요', url: '#/talk/prayer?p=vow&c=thanks' });
       else toast('챌린지를 만들었어요');
       route();
     };
@@ -1633,7 +1660,7 @@
         '<div class="row"><label class="field"><span>종류</span><select name="kind">' + ALERT_KINDS.map(function (k) { return '<option value="' + k[0] + '">' + k[1].split(' ·')[0] + '</option>'; }).join('') + '</select></label>' +
         '<label class="field"><span>받는 사람</span><select name="to">' + (CLOUD ? (S.adminRole === 'leader' ? '<option value="' + esc(S.me.group) + '">우리 목장</option>' : '<option value="all">전체</option>' + S.groups.map(function (g) { return '<option value="' + esc(g.name) + '">' + esc(g.name) + '</option>'; }).join(''))
           : (S.adminRole === 'leader' ? '<option>우리 목장</option>' : '<option>전체</option><option>목장별</option><option>부서별</option>')) + '</select></label></div>' +
-        '<label class="field"><span>누르면 열 화면</span><select name="url"><option value="#/news">교회 소식</option><option value="#/sermons">말씀</option><option value="#/worship">예배·모임 안내</option><option value="#/talk">나눔</option><option value="#/talk/group">목장방</option><option value="#/talk/prayer?p=thanks">감사 기도</option></select></label>' +
+        '<label class="field"><span>누르면 열 화면</span><select name="url"><option value="#/news">교회 소식</option><option value="#/sermons">말씀</option><option value="#/worship">예배·모임 안내</option><option value="#/talk">나눔</option><option value="#/talk/group">목장방</option><option value="#/talk/prayer?p=vow&c=thanks">감사 기도 챌린지</option></select></label>' +
         '<div class="push-preview"><div style="color:#fff;font-size:.78rem;font-weight:700;margin-bottom:8px;opacity:.85">휴대폰에 이렇게 보여요</div><div class="push"><img src="icon-192.png" alt=""><div style="flex:1"><div class="app"><span>예그린교회</span><span>지금</span></div><b id="pt">제목</b><p id="pb">내용</p></div></div></div>' +
         '<button class="btn">보내기</button></form>' +
       (S.sent.length ? '<div class="sec-title"><b>보낸 기록</b></div>' + S.sent.map(function (s) { return '<div class="card"><b>' + esc(s.title) + '</b><div class="sub">' + esc(s.body) + '</div><div class="sub" style="font-size:.75rem">' + esc(s.at) + ' · ' + esc(s.to) + '</div></div>'; }).join('') : '');
