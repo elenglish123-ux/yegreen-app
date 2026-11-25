@@ -490,7 +490,6 @@
     return '<div class="card gv"><div class="gv-head"><span>🎬 이번 주 목장 영상</span><span>' + md(v.week) + ' 모임</span></div>' +
       '<div class="gv-body"><div class="gv-thumb"><b>▶</b><small>' + v.mins + '분</small></div><div><b class="gv-title">' + esc(v.title) + '</b><div class="sub">' + esc(v.series) + ' · ' + esc(v.speaker) + '</div>' + (v.sample ? '<span class="tag gold">예시</span>' : '') + '</div></div>' +
       '<button class="btn" data-gv="' + v.id + '">▶ 영상 보기' + (seen ? ' ✓' : '') + '</button>' +
-      '<div class="gv-tip">👥 모임 때 목자님이 함께 틀어 드려요. 미리 보고 오셔도 좋아요.</div>' +
       '<div class="gv-qs"><b>나눔 질문</b><ol>' + v.qs.filter(Boolean).map(function (q) { return '<li>' + esc(q) + '</li>'; }).join('') + '</ol></div></div>';
   }
   function gvOpen(id) {

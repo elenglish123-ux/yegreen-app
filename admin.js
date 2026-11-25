@@ -245,7 +245,7 @@
       '<div class="grid" style="align-content:start"><div class="card"><h2>올린 영상</h2><table>' + S.groupVideos.map(function (v, i) {
           return '<tr><td><b>' + esc(v.title) + '</b>' + (v.sample ? ' <span class="tag gold">예시</span>' : '') + '<div style="color:var(--muted);font-size:13px">' + md(v.week) + ' · ' + esc(v.target) + ' · ' + esc(v.series) + '</div></td><td style="width:70px"><button class="btn ghost sm" data-gvdel="' + i + '">지우기</button></td></tr>';
         }).join('') + '</table></div>' +
-        '<div class="card"><h2>성도는 이렇게 봐요</h2><ol style="margin-left:18px;color:var(--muted);font-size:14px"><li>앱 › 나눔 › 목장방 맨 위에 「이번 주 목장 영상」 카드</li><li>모임 때 목자님이 함께 틀기 (성도 로그인 없이)</li><li>누르면 유튜브에서 바로 열려요 (로그인 없음)</li></ol></div></div></div>';
+        '<div class="card"><h2>성도는 이렇게 봐요</h2><ol style="margin-left:18px;color:var(--muted);font-size:14px"><li>앱 › 나눔 › 목장방 맨 위에 「이번 주 목장 영상」 카드</li><li>누르면 유튜브에서 바로 열려요 (로그인 없음)</li></ol></div></div></div>';
   }
 
   // ================= 설교 영상 만들기 (시안, 2026-11-18) =================
