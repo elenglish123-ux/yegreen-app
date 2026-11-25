@@ -751,8 +751,152 @@
       '<div class="vow-bar"><span style="width:' + pct + '%"></span></div>' +
       '<div class="vow-st"><b>' + f.n + '</b> / ' + v.days + '일 드렸어요' + (f.active ? ' · 오늘 ' + f.day + '일째' : f.over ? ' · 챌린지 기간이 끝났어요' + (f.n >= v.days ? ' 🎉 완주!' : '') : ' · ' + md(v.start) + '에 시작해요') + '</div>' +
       (small ? '' : '<div class="vow-dots">' + f.cells + '</div>') +
-      (f.active ? '<button class="btn small' + (f.todayOn ? '' : ' ghost') + '" data-vowck="' + x.id + '">' + did + (f.todayOn ? ' ✓' : '') + '</button>' : '') + '</div>';
+      (f.active ? '<div class="row" style="flex-wrap:wrap;gap:6px">' +
+        '<button class="btn small" data-ptgo="' + x.id + '">▶ 기도 시작하기' + (todayMin(x.id) ? ' · 오늘 ' + todayMin(x.id) + '분' : '') + '</button>' +
+        '<button class="btn small ghost" data-vowck="' + x.id + '" style="flex:0 0 auto">' + (f.todayOn ? '✓ 오늘 체크됨' : '체크만 하기') + '</button></div>' : '') + '</div>';
   }
+  function todayMin(id) { return ((S.vowMin || {})[id] || {})[dayKey(new Date())] || 0; }
+
+  // ---------- 기도 타이머 + 배경 찬송 (나연 요청 2026-11-25) ----------
+  // 배경 음악은 녹음 파일을 쓰지 않음. 저작권이 끝난(공공 저작물) 옛 찬송가 선율을 앱이 직접 연주 → 연주·녹음 저작권 걱정 없음
+  // [키, 이름, 단위 박자 빠르기(BPM), 선율 '음:박' (R=쉼표), 바탕 화음 근음]
+  var HYMNS = [
+    ['grace', '나 같은 죄인 살리신 (305장)', 66, 'D4:1 G4:2 B4:.5 G4:.5 B4:2 A4:1 G4:2 E4:1 D4:2 D4:1 G4:2 B4:.5 G4:.5 B4:2 A4:1 D5:5 B4:1 D5:1.5 B4:.5 D5:.5 B4:.5 G4:2 D4:1 E4:1.5 G4:.5 G4:.5 E4:.5 D4:2 D4:1 G4:2 B4:.5 G4:.5 B4:2 A4:1 G4:5 R:3', 'G2'],
+    ['doxology', '만복의 근원 하나님 (1장)', 60, 'G4:2 G4:1 F#4:1 E4:1 D4:1 G4:1 A4:1 B4:2 R:1 B4:2 B4:1 B4:1 A4:1 G4:1 C5:1 B4:1 A4:2 R:1 G4:2 A4:1 B4:1 A4:1 G4:1 E4:1 F#4:1 G4:2 R:1 D5:2 B4:1 G4:1 A4:1 C5:1 B4:1 A4:1 G4:3 R:4', 'G2'],
+    ['silent', '고요한 밤 거룩한 밤 (109장)', 120, 'G4:3 A4:1 G4:2 E4:6 G4:3 A4:1 G4:2 E4:6 D5:4 D5:2 B4:6 C5:4 C5:2 G4:6 A4:4 A4:2 C5:3 B4:1 A4:2 G4:3 A4:1 G4:2 E4:6 A4:4 A4:2 C5:3 B4:1 A4:2 G4:3 A4:1 G4:2 E4:6 D5:4 D5:2 F5:3 D5:1 B4:2 C5:6 E5:6 C5:2 G4:2 E4:2 G4:3 F4:1 D4:2 C4:12 R:6', 'C3'],
+    ['pad', '잔잔한 화음 (말씀 묵상)', 0, '', ''],
+    ['none', '음악 없이', 0, '', ''],
+  ];
+  var AU = null, MUS = null;
+  function audio() {
+    try { if (!AU) { var C = window.AudioContext || window.webkitAudioContext; if (!C) return null; AU = new C(); } if (AU.state === 'suspended') AU.resume(); return AU; } catch (e) { return null; }
+  }
+  function nfreq(n) {
+    var m = n.match(/^([A-G])(#|b)?(\d)$/); if (!m) return 0;
+    var i = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
+    return 440 * Math.pow(2, (12 * (+m[3] + 1) + i - 69) / 12);
+  }
+  function bell(ctx, out, f, t, len, vol) {   // 부드러운 피아노·오르골 소리
+    [[1, 1], [2, .3], [3, .08]].forEach(function (h) {
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f * h[0];
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol * h[1], t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      o.connect(g); g.connect(out); o.start(t); o.stop(t + len + 0.05);
+    });
+  }
+  function drone(ctx, out, notes, vol, t) {   // 아주 작은 바탕 화음
+    var g = ctx.createGain(), lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 700;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 3);
+    var os = notes.map(function (n, i) { var o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = nfreq(n); o.detune.value = i * 4 - 4; o.connect(lp); o.start(t); return o; });
+    lp.connect(g); g.connect(out);
+    return { stop: function (at) { g.gain.cancelScheduledValues(at); g.gain.setValueAtTime(g.gain.value, at); g.gain.linearRampToValueAtTime(0.0001, at + 1.5); os.forEach(function (o) { o.stop(at + 1.6); }); } };
+  }
+  function musicStop() { if (MUS) { MUS.stop(); MUS = null; } }
+  function musicStart(key, vol) {
+    musicStop();
+    var h = HYMNS.filter(function (x) { return x[0] === key; })[0];
+    if (!h || key === 'none') return;
+    var ctx = audio(); if (!ctx) return;
+    var master = ctx.createGain(); master.gain.value = vol; master.connect(ctx.destination);
+    var t0 = ctx.currentTime + 0.2, timer, pads = [];
+    if (key === 'pad') {   // C–Am–F–G 화음이 8초마다 천천히 바뀜
+      var CH = [['C3', 'G3', 'E4'], ['A2', 'E3', 'C4'], ['F2', 'C3', 'A3'], ['G2', 'D3', 'B3']], ci = 0, next = t0;
+      var step = function () {
+        while (next < ctx.currentTime + 2) {
+          var d = drone(ctx, master, CH[ci % 4], 0.09, next); pads.push(d); d.stop(next + 8);
+          bell(ctx, master, nfreq(CH[ci % 4][2]) * 2, next + 0.5, 4, 0.05);
+          ci++; next += 8;
+        }
+      };
+    } else {
+      var notes = h[3].split(' ').map(function (s) { var p = s.split(':'); return [p[0], +p[1]]; }), beat = 60 / h[2], ni = 0, nt = t0;
+      var bass = drone(ctx, master, [h[4], h[4].replace(/\d/, function (d) { return +d + 1; })], 0.05, t0); pads.push(bass);
+      var step = function () {
+        while (nt < ctx.currentTime + 2) {
+          var n = notes[ni % notes.length];
+          if (n[0] !== 'R') bell(ctx, master, nfreq(n[0]), nt, Math.max(1.4, n[1] * beat * 1.8), 0.16);
+          nt += n[1] * beat; ni++;
+        }
+      };
+    }
+    step(); timer = setInterval(step, 250);
+    MUS = { key: key, gain: master, stop: function () { clearInterval(timer); var at = ctx.currentTime; master.gain.cancelScheduledValues(at); master.gain.setValueAtTime(master.gain.value, at); master.gain.linearRampToValueAtTime(0.0001, at + 1); pads.forEach(function (p) { try { p.stop(at); } catch (e) {} }); setTimeout(function () { master.disconnect(); }, 1600); } };
+  }
+  function chime() {   // 기도 시간이 다 되면: 맑은 종소리 세 번 + 진동
+    var ctx = audio(); if (!ctx) return;
+    var g = ctx.createGain(); g.gain.value = 0.5; g.connect(ctx.destination);
+    [0, 1.2, 2.4].forEach(function (d) { var t = ctx.currentTime + d; bell(ctx, g, nfreq('E5'), t, 3, .35); bell(ctx, g, nfreq('G5'), t + .15, 3, .25); bell(ctx, g, nfreq('C6'), t + .3, 3.5, .25); });
+    try { navigator.vibrate && navigator.vibrate([300, 200, 300, 200, 300]); } catch (e) {}
+  }
+  function myVows() {
+    return prayers().map(pFromLocal).concat(S.posts.filter(function (p) { return p.mine && p.cat === 'pray'; }).map(pFromPost)).filter(function (x) { return x.vow; });
+  }
+  function mmss(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); }
+  var PT_TICK = null;
+  function ptClose() { clearInterval(PT_TICK); PT_TICK = null; musicStop(); var el = document.getElementById('pt'); if (el) el.remove(); document.body.style.overflow = ''; }
+  function ptFinish(early) {   // 기도 끝: 기도한 시간 기록 + 오늘 체크
+    var r = S.ptRun; if (!r) return;
+    var k = dayKey(new Date(r.start)), min = Math.max(1, Math.round((Date.now() - r.start) / 60000));
+    if (r.goal && !early) min = r.goal;
+    S.vowMin = S.vowMin || {}; S.vowMin[r.id] = S.vowMin[r.id] || {}; S.vowMin[r.id][k] = (S.vowMin[r.id][k] || 0) + min;
+    S.vowDone = S.vowDone || {}; S.vowDone[r.id] = S.vowDone[r.id] || {}; S.vowDone[r.id][k] = 1;
+    S.ptRun = null; save();
+    var x = myVows().filter(function (v) { return v.id === r.id; })[0], f = x && vowInfo(x);
+    clearInterval(PT_TICK); PT_TICK = null;
+    if (!early) chime();
+    var el = document.getElementById('pt');
+    if (el) el.querySelector('.pt-in').innerHTML = '<div class="pt-done"><div style="font-size:3rem">🙏</div><b>' + (early ? '오늘 ' + min + '분 기도했어요' : '오늘 ' + vowTime(min) + ' 기도를 마쳤어요') + '</b>' +
+      (f ? '<p>' + vowName(x.vow) + ' · ' + f.n + ' / ' + x.vow.days + '일째 체크됐어요</p>' : '') +
+      '<p class="pt-v">「쉬지 말고 기도하라」<br><small>데살로니가전서 5:17</small></p>' +
+      '<button class="btn" data-ptclose>닫기</button></div>';
+    if (el) el.querySelector('[data-ptclose]').onclick = function () { ptClose(); route(); };
+  }
+  function ptOpen() {
+    var r = S.ptRun; if (!r) return;
+    var x = myVows().filter(function (v) { return v.id === r.id; })[0];
+    if (!x) { S.ptRun = null; save(); return; }
+    var el = document.getElementById('pt');
+    if (!el) { el = document.createElement('div'); el.id = 'pt'; document.body.appendChild(el); }
+    document.body.style.overflow = 'hidden';
+    var R = 92, C = 2 * Math.PI * R;
+    el.innerHTML = '<div class="pt-in"><div class="pt-top">' + vowName(x.vow) + ' · ' + vowInfo(x).day + '일째</div>' +
+      '<p class="pt-text">' + esc(x.text) + '</p>' +
+      '<div class="pt-ring"><svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="' + R + '" class="bg"/><circle cx="100" cy="100" r="' + R + '" class="fg" stroke-dasharray="' + C + '" stroke-dashoffset="' + C + '" id="ptArc"/></svg>' +
+        '<div class="pt-time"><b id="ptTime">' + (r.goal ? mmss(r.goal * 60) : '0:00') + '</b><span id="ptSub">' + (r.goal ? '남은 시간' : '기도한 시간') + '</span></div></div>' +
+      '<div class="pt-meta">' + (r.goal ? '목표 ' + vowTime(r.goal) + ' · ' : '') + new Date(r.start).toTimeString().slice(0, 5) + '에 시작</div>' +
+      '<div class="pt-mus"><div class="pt-ml">🎵 배경 찬송 <small>저작권이 끝난 옛 찬송 선율을 앱이 직접 연주해요</small></div>' +
+        '<div class="pt-chips">' + HYMNS.map(function (h) { return '<button class="' + ((MUS ? MUS.key : (r.playing ? r.music : 'none')) === h[0] ? 'on' : '') + '" data-ptm="' + h[0] + '">' + esc(h[1]) + '</button>'; }).join('') + '</div>' +
+        '<label class="pt-vol">🔈<input type="range" min="0" max="100" value="' + Math.round((S.ptVol == null ? .6 : S.ptVol) * 100) + '" id="ptVol">🔊</label></div>' +
+      '<button class="btn pt-end" data-ptend>■ 기도 끝</button></div>';
+    el.querySelectorAll('[data-ptm]').forEach(function (b) {
+      b.onclick = function () {
+        S.ptMusic = b.dataset.ptm; r.music = b.dataset.ptm; r.playing = b.dataset.ptm !== 'none'; save();
+        musicStart(b.dataset.ptm, S.ptVol == null ? .6 : S.ptVol);
+        el.querySelectorAll('[data-ptm]').forEach(function (c) { c.classList.toggle('on', c === b); });
+      };
+    });
+    $('#ptVol').oninput = function () { S.ptVol = this.value / 100; save(); if (MUS) MUS.gain.gain.value = S.ptVol; };
+    el.querySelector('[data-ptend]').onclick = function () {
+      var left = r.goal ? r.goal * 60 - (Date.now() - r.start) / 1000 : 0;
+      if (r.goal && left > 30 && !confirm('아직 ' + mmss(left) + ' 남았어요. 지금 기도를 마칠까요?\n오늘 기도한 시간은 그대로 기록돼요.')) return;
+      ptFinish(true);
+    };
+    function tick() {
+      if (!S.ptRun) return;
+      var gone = (Date.now() - r.start) / 1000;
+      if (r.goal) {
+        var left = r.goal * 60 - gone;
+        $('#ptTime').textContent = mmss(left);
+        $('#ptArc').setAttribute('stroke-dashoffset', String(C * Math.max(0, left) / (r.goal * 60)));
+        if (left <= 0) ptFinish(false);
+      } else {
+        $('#ptTime').textContent = mmss(gone);
+        $('#ptArc').setAttribute('stroke-dashoffset', String(C * (1 - (gone % 60) / 60)));
+      }
+    }
+    clearInterval(PT_TICK); PT_TICK = setInterval(tick, 1000); tick();
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && S.ptRun && document.getElementById('pt')) { /* 화면이 다시 켜지면 바로 시간 맞춤 */ ptOpen(); } });
   // 감사 도장: 감사 기도를 쓴 날 (예전 감사일기 S.diary도 이어서 셈)
   function thanksDays() {
     var R = {};
@@ -947,6 +1091,16 @@
       };
     }
     document.querySelectorAll('[data-pwith]').forEach(function (b) { b.onclick = function () { react(b.dataset.pwith); route(); }; });
+    document.querySelectorAll('[data-ptgo]').forEach(function (b) {
+      b.onclick = function () {
+        var x = myVows().filter(function (v) { return v.id === b.dataset.ptgo; })[0]; if (!x) return;
+        var m = S.ptMusic || 'grace';
+        S.ptRun = { id: x.id, start: Date.now(), goal: +x.vow.mins || 0, music: m, playing: m !== 'none' }; save();
+        ptOpen(); musicStart(m, S.ptVol == null ? .6 : S.ptVol);   // 누른 순간에 소리를 켜야 휴대폰에서도 나옴
+        ptOpen();
+      };
+    });
+    if (S.ptRun && !document.getElementById('pt')) { S.ptRun.playing = false; ptOpen(); }   // 기도 중에 새로고침해도 이어서
     document.querySelectorAll('[data-vowck]').forEach(function (b) {
       b.onclick = function () {
         var id = b.dataset.vowck, k = dayKey(new Date());

@@ -333,3 +333,31 @@ textarea { resize: none; line-height: 1.55; }
 .ph-b.ph-ch { background: #fff8f0; border: 1.5px dashed #e9b98f; color: #a2471f; font-weight: 700; text-align: center; padding: 11px 12px; }
 .ph-b.ph-ch small { display: block; font-weight: 500; font-size: .74rem; color: #a08d78; margin-top: 2px; }
 .ph-b.ph-ch.on { background: #fde9d6; border-style: solid; border-color: #d9773f; color: #8a3a17; }
+/* 기도 타이머 (2026-11-25) */
+#pt { position: fixed; inset: 0; z-index: 200; background: radial-gradient(120% 80% at 50% 0%, #2f6b4f 0%, #173527 70%); color: #fff; overflow-y: auto; }
+.pt-in { max-width: 480px; margin: 0 auto; min-height: 100%; padding: 28px 20px 32px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.pt-top { font-size: .86rem; font-weight: 700; color: #f6c99c; background: rgba(255,255,255,.08); border-radius: 999px; padding: 5px 14px; }
+.pt-text { font-size: 1.08rem; line-height: 1.6; opacity: .95; margin: 0; }
+.pt-ring { position: relative; width: 230px; height: 230px; margin: 6px 0; }
+.pt-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.pt-ring circle { fill: none; stroke-width: 8; }
+.pt-ring .bg { stroke: rgba(255,255,255,.12); }
+.pt-ring .fg { stroke: #f2a663; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.pt-time { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.pt-time b { font-size: 3.2rem; font-weight: 800; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.pt-time span { font-size: .82rem; opacity: .7; }
+.pt-meta { font-size: .8rem; opacity: .7; }
+.pt-mus { width: 100%; background: rgba(255,255,255,.07); border-radius: 16px; padding: 12px; text-align: left; }
+.pt-ml { font-weight: 700; font-size: .9rem; margin-bottom: 8px; }
+.pt-ml small { display: block; font-weight: 400; font-size: .72rem; opacity: .65; margin-top: 2px; }
+.pt-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pt-chips button { font: inherit; font-size: .8rem; color: #fff; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2); border-radius: 999px; padding: 6px 11px; cursor: pointer; }
+.pt-chips button.on { background: #f2a663; border-color: #f2a663; color: #3a1d08; font-weight: 700; }
+.pt-vol { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: .9rem; }
+.pt-vol input { flex: 1; accent-color: #f2a663; }
+.btn.pt-end { width: 100%; background: #fff; color: #173527; font-size: 1.05rem; padding: 14px; margin-top: 4px; }
+.pt-done { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 18vh; }
+.pt-done b { font-size: 1.35rem; }
+.pt-done p { opacity: .85; margin: 0; }
+.pt-done .pt-v { font-family: "Noto Serif KR", serif; margin: 10px 0 14px; opacity: .9; }
+.pt-done .btn { background: #fff; color: #173527; min-width: 160px; }
