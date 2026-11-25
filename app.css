@@ -218,7 +218,7 @@ textarea { resize: none; line-height: 1.55; }
 .card.lockbox .sub { color: #cfd8d2; margin-top: 4px; }
 .pray-item.done { opacity: .75; background: #f6f7f5; }
 /* 기도 공간 개편 (2026-11-25): 말머리 · 열람 범위 */
-.ph-pick { display: flex; flex-direction: column; gap: 6px; }
+.ph-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .ph-b { text-align: left; padding: 9px 12px; border: 1px solid #e3e0d8; border-radius: 12px; background: #fff; font: inherit; font-size: .9rem; color: inherit; cursor: pointer; }
 .ph-b.on { border-color: #2f6b4f; background: #eef5f0; font-weight: 700; color: #1f4a37; }
 .ph-help { font-size: .8rem; color: #55705f; background: #f1f6f2; border-radius: 10px; padding: 7px 10px; }
@@ -286,3 +286,4 @@ textarea { resize: none; line-height: 1.55; }
 .rn-steps li > b { width: 28px; height: 28px; border-radius: 50%; background: var(--green); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
 .rn-steps span { display: block; font-size: .8rem; color: var(--muted); }
 
+.ph-pick .ph-b:last-child:nth-child(odd) { grid-column: 1 / -1; }

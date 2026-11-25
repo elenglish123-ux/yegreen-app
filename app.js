@@ -660,10 +660,15 @@
   // 기도 공간 (2026-11-25 개편, 나연 아이디어): 말머리 7개 + 열람 범위 4가지
   // 「나만」은 예전처럼 이 휴대폰 안에만 저장(서버로 보내지 않음). 목사님만·목장만·전체는 나눔 글(cat 'pray' + head)로 서버에.
   // 이름 다듬기(2026-11-25): 모두 하나님께 건네는 말투로, 「기타」는 「자유롭게 기도해요」
+  // 말머리 다듬기 2차(2026-11-25): 짧은 이름 + 고르면 바뀌는 안내 문구 [키, 이름, 그림, 안내]
   var HEADS = [
-    ['joy', '예수님을 기쁘시게 하고 싶어요', '😊'], ['hard', '하나님, 오늘 너무 힘들어요', '😢'], ['help', '하나님, 도와주세요', '🙏'],
-    ['review', '하나님, 오늘 저 어땠나요?', '🌙'], ['thanks', '하나님, 감사해요', '🌾'], ['inter', '이 사람을 위해 기도해요', '🤝'],
-    ['sorry', '하나님, 잘못했어요', '💧'], ['etc', '자유롭게 기도해요', '✏️'],
+    ['joy', '주님을 기쁘시게', '😊', '오늘 주님을 기쁘시게 해 드린 일, 해 드리고 싶은 일을 적어 보세요.'],
+    ['hard', '마음이 힘들어요', '😢', '힘든 마음을 있는 그대로 털어놓아도 괜찮아요.'],
+    ['help', '도와주세요', '🙏', '주님의 도우심이 필요한 일을 구체적으로 적어 보세요.'],
+    ['review', '하루를 돌아보며', '🌙', '하나님, 오늘 저 어땠나요? 하루를 돌아보며 적어 보세요.'],
+    ['inter', '중보 기도', '🤝', '누구를 위해, 무엇을 기도할지 적어 보세요.'],
+    ['sorry', '회개 기도', '💧', '주님 앞에 내려놓고 싶은 것을 적어 보세요.'],
+    ['etc', '자유 기도', '✏️', '하나님께 드리고 싶은 기도를 자유롭게 적어 보세요.'],
   ];
   var PSCOPES = [
     ['me', '🔒 나만 보기', '이 휴대폰 안에만 저장돼요. 목사님도 운영자도 볼 수 없어요.'],
@@ -682,7 +687,7 @@
     S.posts.push(
       { id: 'h1', cat: 'pray', head: 'help', scope: 'group', group: null, author: '예시 목장 식구', text: '(예시) 다음 주 이사를 해요. 좋은 이웃을 만나고 아이들이 새 학교에 잘 적응하도록 도와주세요.', at: '오늘', count: 4, reacted: false, comments: [] },
       { id: 'h2', cat: 'pray', head: 'inter', scope: 'all', author: '예시 성도', text: '(예시) 투병 중인 친구 ○○를 위해 기도해요. 치료가 잘 되고 마음에 평안이 있기를.', at: '어제', count: 11, reacted: false, comments: [] },
-      { id: 'h3', cat: 'pray', head: 'thanks', scope: 'all', author: '예시 청년', text: '(예시) 취업 소식 기다리던 것, 오늘 합격했어요! 함께 기도해 주신 분들 감사해요.', at: '2일 전', count: 15, reacted: false, comments: [], answered: 1 });
+      { id: 'h3', cat: 'pray', head: 'help', scope: 'all', author: '예시 청년', text: '(예시) 취업 소식 기다리던 것, 오늘 합격했어요! 함께 기도해 주신 분들 감사해요.', at: '2일 전', count: 15, reacted: false, comments: [], answered: 1 });
     save();
   }
   // 화면에 그릴 한 줄: 「나만」(이 휴대폰) 기도와 서버(나눔) 기도를 같은 모양으로
@@ -721,7 +726,7 @@
         '<div class="sub" style="font-weight:700">어떤 기도인가요?</div><div class="ph-pick" id="phPick">' + HEADS.map(function (h, i) { return '<button type="button" class="ph-b' + (i === 0 ? ' on' : '') + '" data-v="' + h[0] + '">' + h[2] + ' ' + esc(h[1]) + '</button>'; }).join('') + '</div>' +
         '<div class="sub" style="font-weight:700">누구와 나눌까요?</div><div class="chips" id="psPick" style="margin:0;flex-wrap:wrap;overflow:visible">' + PSCOPES.map(function (s, i) { return '<button type="button" class="chip' + (i === 0 ? ' on' : '') + '" data-v="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div>' +
         '<div class="ph-help" id="psHelp">' + PSCOPES[0][2] + '</div>' +
-        '<textarea name="t" rows="4" maxlength="1000" required placeholder="하나님께 드리는 기도를 적어 보세요."></textarea>' +
+        '<textarea name="t" rows="4" maxlength="1000" required placeholder="' + HEADS[0][3] + '"></textarea>' +
         '<button class="btn">기도 드리기</button></form>';
     var tabs = '<div class="seg" style="margin-top:4px">' + [['mine', '내 기도 ' + mine.length]].concat([['with', '함께 기도해요 ' + withList.length]]).concat(isPastor ? [['pastor', '목사님께 온 기도 ' + toPastor.length + (hard ? ' ❗' : '')]] : [])
       .map(function (t) { return '<a href="' + link(t[0], hf) + '"' + (t[0] === tab ? ' class="on"' : '') + '>' + t[1] + '</a>'; }).join('') + '</div>';
@@ -729,7 +734,7 @@
       .map(function (c) { return '<a class="chip' + (c[0] === hf ? ' on' : '') + '" href="' + link(tab, c[0]) + '">' + esc(c[1]) + '</a>'; }).join('') + '</div>';
     var empty = tab === 'with' ? '목장이나 교회에 올라온 기도가 아직 없어요.' : tab === 'pastor' ? '목사님께 온 기도가 없어요.' : '아직 적은 기도가 없어요. 위에서 오늘의 기도를 적어 보세요.';
     return (tab === 'mine' ? form : '') + tabs +
-      (tab === 'pastor' && hard ? '<div class="card ph-alert">❗ 「하나님 저 오늘 너무 힘들어요」 기도가 <b>' + hard + '개</b> 있어요. 먼저 연락해 보세요.</div>' : '') + chips +
+      (tab === 'pastor' && hard ? '<div class="card ph-alert">❗ 「' + HEADS[1][1] + '」 기도가 <b>' + hard + '개</b> 있어요. 먼저 연락해 보세요.</div>' : '') + chips +
       (open.length ? '<div class="sec-title"><b>' + (tab === 'with' ? '함께 기도해요' : '기도하고 있어요') + ' ' + open.length + '</b></div>' + open.map(item).join('') : '') +
       (done.length ? '<div class="sec-title"><b>🙌 응답된 기도 ' + done.length + '</b></div>' + done.map(item).join('') : '') +
       (list.length ? '' : '<p class="empty">' + empty + '</p>') +
@@ -739,7 +744,7 @@
     var f = $('#prayForm');
     function postById(id) { return S.posts.filter(function (x) { return x.id === id; })[0]; }
     if (f) {
-      $('#phPick').onclick = function (e) { var b = e.target.closest('[data-v]'); if (!b) return; $('#phPick').querySelectorAll('.ph-b').forEach(function (c) { c.classList.toggle('on', c === b); }); };
+      $('#phPick').onclick = function (e) { var b = e.target.closest('[data-v]'); if (!b) return; $('#phPick').querySelectorAll('.ph-b').forEach(function (c) { c.classList.toggle('on', c === b); }); f.t.placeholder = headOf(b.dataset.v)[3]; };
       $('#psPick').onclick = function (e) {
         var b = e.target.closest('[data-v]'); if (!b) return;
         $('#psPick').querySelectorAll('.chip').forEach(function (c) { c.classList.toggle('on', c === b); });
