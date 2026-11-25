@@ -269,7 +269,25 @@
     if (b) b.onclick = function () { if (toggleRead(dayKey(new Date()))) toast('오늘 성경읽기를 마쳤어요 📖'); };
   }
 
+  // 주보를 사진 대신 글로 (나연 2026-11-25: 사진은 휴대폰에서 너무 작음). 원본 사진은 맨 아래 접어 둠
+  function juboText(b) {
+    var p = b.verseRef && parseRange(String(b.verseRef).split(':')[0]);
+    var days = ['주일', '월', '화', '수', '목', '금', '토'];
+    var start = new Date(b.date + 'T00:00:00');
+    return '<div class="card jubo-cover"><div class="label">' + md(b.date) + ' 주일 주보</div>' +
+        '<div class="jt">' + esc(b.title || '') + '</div>' + (b.titleEn ? '<div class="je">' + esc(b.titleEn) + '</div>' : '') +
+        (b.verseRef ? (p ? '<a class="jv" href="' + bibleUrl(p.code, p.from) + '" target="_blank" rel="noopener">📖 ' + esc(b.verseRef) + ' ›</a>' : '<div class="jv">📖 ' + esc(b.verseRef) + '</div>') : '') + '</div>' +
+      (b.news || []).map(function (n) {
+        return '<div class="card jubo-sec"><h3>' + inl(n.t) + '</h3><ul>' + lines(n.b).map(function (l) { return '<li>' + inl(l) + '</li>'; }).join('') + '</ul></div>';
+      }).join('') +
+      (b.reading && b.reading.length ? '<div class="card jubo-sec"><h3>📖 이번 주 성경읽기</h3><div class="jubo-read">' + b.reading.slice(0, 7).map(function (r, i) {
+        var d = new Date(start); d.setDate(d.getDate() + i);
+        return '<div><b>' + days[i] + '</b><small>' + (d.getMonth() + 1) + '/' + d.getDate() + '</small><span>' + esc(r) + '</span></div>';
+      }).join('') + '</div></div>' : '') +
+      (b.images && b.images.length ? '<details class="card jubo-img"><summary>🖼 주보 원본 사진 보기</summary><div class="jubo">' + b.images.map(function (src, i) { return '<a href="' + esc(DATA_ROOT + src) + '" target="_blank" rel="noopener"><img src="' + esc(DATA_ROOT + src) + '" alt="주보 ' + (i + 1) + '면" loading="lazy"></a>'; }).join('') + '</div></details>' : '');
+  }
   function home() {
+    setTimeout(gpRemind, 0);   // 목자: 주일 지나 기도제목 안 올렸으면 알림
     renderTop({ brand: true, bell: true });
     var s = (MEDIA.sunday || [])[0];
     var ev = upcoming().map(function (e) {
@@ -390,9 +408,7 @@
       }).join('') || '<p class="empty">아직 올라온 소식이 없어요.</p>';
       if (b) html += '<p class="sub" style="text-align:center">' + md(b.date) + ' 주보 기준</p>';
     } else if (tab === 'jubo') {
-      html += b ? '<div class="card"><div class="h2">' + md(b.date) + ' 주보</div><div class="sub" style="margin-bottom:10px">' + [b.title, b.verseRef].filter(Boolean).map(esc).join(' · ') + '</div><div class="jubo">' +
-        b.images.map(function (src, i) { return '<a href="' + esc(DATA_ROOT + src) + '" target="_blank" rel="noopener"><img src="' + esc(DATA_ROOT + src) + '" alt="주보 ' + (i + 1) + '면" loading="lazy"></a>'; }).join('') + '</div><p class="sub">사진을 누르면 크게 보여요.</p></div>'
-        : '<p class="empty">아직 올라온 주보가 없어요.</p>';
+      html += b ? juboText(b) : '<p class="empty">아직 올라온 주보가 없어요.</p>';
     } else {
       html += '<a class="card" href="https://elenglish123-ux.github.io/yegreen-site/gallery.html" target="_blank" rel="noopener" style="display:block;text-align:center;padding:30px 20px"><div style="font-size:2rem">📷</div><b>사진첩은 홈페이지에 있어요</b><p class="sub">한 달에 한 번, 예배와 행사 사진을 골라 올려요. 눌러서 보기</p></a>';
     }
@@ -525,7 +541,7 @@
     if (sub === 'diary') { sub = 'prayer'; q = { p: 'vow', c: 'thanks' }; }   // 감사 챌린지 탭은 기도 공간 「감사 기도」로 합침 (2026-11-25)
     if (sub === 'prayer') return segs(sub) + prayerRoom(q);
     if (sub === 'bible') return segs(sub) + bibleRoom(q);
-    if (sub === 'group') return segs(sub) + groupRoom();
+    if (sub === 'group') { setTimeout(gpRemind, 0); return segs(sub) + groupRoom(q); }
     var f = q.cat || 'all';
     var list = S.posts.filter(function (p) { return p.scope !== 'group' && p.scope !== 'qt' && canSee(p) && (f === 'all' || p.cat === f || p.notice); });
     list.sort(function (a, b) { return (b.notice ? 1 : 0) - (a.notice ? 1 : 0); });
@@ -553,11 +569,142 @@
     if (!v) return;
     S.gvSeen = S.gvSeen || {}; S.gvSeen[id] = true; save(); window.open(v.url, '_blank', 'noopener'); route();
   }
-  function groupRoom() {
+  // ---------- 목장 기도제목 (나연 2026-11-25) ----------
+  // 목자가 목장 모임 때 식구들 기도제목을 올림(글 또는 사진) → 목사님이 모든 목장의 중보기도 제목을 봄
+  // 한 주 = 월~주일, 주일 날짜가 그 주의 이름. 주일이 지났는데 안 올렸으면 목자에게 알림
+  // 글은 cat 'gpray' · scope 'group' · week · items[{n 이름, t 기도제목}] · img(선택)
+  function gpWeek(d) {   // d가 속한 주의 주일 날짜
+    d = new Date(d || new Date()); d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + (7 - d.getDay()) % 7);
+    return dayKey(d);
+  }
+  function gpPrevWeek() { var d = new Date(); d.setDate(d.getDate() - 7); return gpWeek(d); }
+  function gpRange(wk) { var e = new Date(wk + 'T00:00:00'), s = new Date(e); s.setDate(s.getDate() - 6); return (s.getMonth() + 1) + '/' + s.getDate() + ' ~ ' + (e.getMonth() + 1) + '/' + e.getDate(); }
+  function gpOf(group, wk) { return S.posts.filter(function (p) { return p.cat === 'gpray' && p.group === group && p.week === wk && !p.hidden; })[0] || null; }
+  function amLeaderOf(group) {
+    if (!S.me || !S.me.approved) return false;
+    if (!CLOUD) return true;   // 시안: 누구나 써 볼 수 있게 (실제로는 목자만)
+    return S.me.group === group && ['leader', 'admin', 'pastor'].indexOf(S.me.role) >= 0;
+  }
+  function gpSeed() {   // 시안: 몇 목장은 이미 올린 모습
+    if (CLOUD || S.gpSeed) return;
+    S.gpSeed = 1;
+    var wk = gpPrevWeek();
+    [['소망목장', '박한결', [['서지안', '이직 준비 중, 길을 열어 주세요'], ['임도윤', '아버지 건강 회복'], ['강나래', '아이들 학교 적응']]],
+     ['사랑목장', '이다정', [['홍새벽', '새벽기도 꾸준히 나가도록'], ['배온유', '가정의 평안'], ['노하은', '수술 후 회복']]],
+     ['청년목장', '강하준', [['류민준', '취업 면접'], ['마서진', '신앙 공동체에 잘 정착하도록']]]].forEach(function (g, i) {
+      S.posts.push({ id: 'gp' + i, cat: 'gpray', scope: 'group', group: g[0], week: wk, author: g[1], items: g[2].map(function (x) { return { n: x[0], t: x[1] }; }), text: '', at: '지난주', count: 0, reacted: false, comments: [] });
+    });
+    save();
+  }
+  function gpList(p) {
+    return (p.img ? '<img class="qt-img pr-img" src="' + p.img + '" alt="목장 기도제목 사진" data-qtview="1">' : '') +
+      ((p.items || []).filter(function (x) { return x.t; }).length ? '<ol class="gp-list">' + p.items.filter(function (x) { return x.t; }).map(function (x) { return '<li><b>' + esc(x.n) + '</b><span>' + esc(x.t) + '</span></li>'; }).join('') + '</ol>' : '') +
+      (p.common ? '<div class="gp-common"><b>🏡 목장 함께</b> ' + esc(p.common) + '</div>' : '');
+  }
+  // 목장방 카드
+  function gpCard(group, names, q) {
+    gpSeed();
+    var wk = gpWeek(), prev = gpPrevWeek(), lead = amLeaderOf(group);
+    var cur = gpOf(group, wk), last = gpOf(group, prev);
+    var target = q && q.gpw === prev ? prev : wk;   // 알림을 누르고 들어오면 지난주 것 쓰기
+    var editing = q && (q.gp === 'edit' || q.gpw);
+    var mine = gpOf(group, target);
+    var form = function () {
+      var old = {}; (mine && mine.items || []).forEach(function (x) { old[x.n] = x.t; });
+      return '<form id="gpForm" data-week="' + target + '" style="display:flex;flex-direction:column;gap:8px;margin-top:8px">' +
+        '<div class="sub" style="font-size:.8rem">' + gpRange(target) + ' 주 · 식구마다 한 줄씩 적어 주세요 (빈칸은 빼고 올라가요)</div>' +
+        names.map(function (n, i) { return '<label class="gp-row"><span>' + esc(n) + '</span><input name="m' + i + '" data-n="' + esc(n) + '" maxlength="150" value="' + esc(old[n] || '') + '" placeholder="기도제목"></label>'; }).join('') +
+        '<label class="gp-row"><span>🏡 함께</span><input name="common" maxlength="200" value="' + esc(mine && mine.common || '') + '" placeholder="목장 공동 기도제목 (선택)"></label>' +
+        '<label class="ph-photo"><input type="file" accept="image/*" id="gpFile" hidden><span id="gpPrev">📷 손으로 쓴 기도제목 사진으로 올리기 (선택)</span></label>' +
+        '<button class="btn">🙏 목사님께 기도제목 올리기</button>' +
+        (!CLOUD ? '<p class="sub" style="font-size:.74rem;margin:0">(시안) 실제 앱에서는 목자님만 이 칸이 보여요.</p>' : '') + '</form>';
+    };
+    var body;
+    if (cur && !editing) {
+      body = '<div class="gp-done">✓ ' + esc(cur.author || '목자') + ' 목자님이 올렸어요 · 목사님께 전달됐어요</div>' + gpList(cur) +
+        (lead ? '<a class="btn small ghost" href="#/talk/group?gp=edit" style="margin-top:8px">고쳐 쓰기</a>' : '');
+    } else if (lead) {
+      body = (cur ? '' : '<p class="sub" style="margin:0">목장 모임 때 이 칸을 열고 식구들 기도제목을 적어 올려 주세요. 목사님이 모든 목장의 기도제목을 보고 함께 기도하세요.</p>') + form();
+    } else {
+      body = '<p class="sub" style="margin:0">목자님이 목장 모임 때 우리 목장 기도제목을 올려요. 올라오면 여기에서 함께 볼 수 있어요.</p>';
+    }
+    var remind = lead && !last && !editing ? '<a class="card gp-remind" href="#/talk/group?gpw=' + prev + '">⏰ <b>지난주(' + gpRange(prev) + ') 기도제목이 아직 없어요</b><span>지금 올리기 ›</span></a>' : '';
+    var past = S.posts.filter(function (p) { return p.cat === 'gpray' && p.group === group && p.week !== wk && !p.hidden; }).sort(function (a, b) { return a.week < b.week ? 1 : -1; });
+    return remind + '<div class="card gp-card"><div class="sec-title" style="margin:0 0 6px"><b>🙏 이번 주 목장 기도제목</b><span class="sub">' + gpRange(target) + '</span></div>' + body +
+      (past.length ? '<details class="gp-past"><summary>지난 기도제목 ' + past.length + '주</summary>' + past.map(function (p) { return '<div class="gp-week"><div class="sub" style="font-weight:700">' + gpRange(p.week) + '</div>' + gpList(p) + '</div>'; }).join('') + '</details>' : '') + '</div>';
+  }
+  function bindGp() {
+    var f = $('#gpForm'); if (!f) return;
+    var shot = null;
+    $('#gpFile').onchange = function () {
+      var file = this.files && this.files[0]; if (!file) return;
+      $('#gpPrev').textContent = '사진을 줄이는 중…';
+      shrinkPhoto(file, function (url) { if (!url) { $('#gpPrev').textContent = '사진을 읽지 못했어요.'; return; } shot = url; $('#gpPrev').innerHTML = '<img src="' + url + '" alt="고른 사진"><small>' + Math.round(url.length * 0.75 / 1024) + 'KB로 줄였어요</small>'; });
+    };
+    f.onsubmit = function (e) {
+      e.preventDefault();
+      var items = [].slice.call(f.querySelectorAll('input[data-n]')).map(function (i) { return { n: i.dataset.n, t: i.value.trim() }; }).filter(function (x) { return x.t; });
+      var common = f.common.value.trim(), wk = f.dataset.week, group = S.me.group;
+      if (!items.length && !common && !shot) { toast('기도제목을 한 줄 이상 적거나 사진을 올려 주세요.'); return; }
+      var old = gpOf(group, wk);
+      var text = items.map(function (x) { return x.n + ': ' + x.t; }).concat(common ? ['함께: ' + common] : []).join('\n').slice(0, 3000) || '목장 기도제목 사진';
+      var doc = { cat: 'gpray', scope: 'group', week: wk, items: items, common: common, img: shot || (old && old.img) || '', text: text };
+      var back = function () { if (location.hash === '#/talk/group') route(); else location.hash = '#/talk/group'; };
+      var done = function () { toast('목사님께 기도제목을 올렸어요 🙏'); back(); };
+      if (CLOUD) {
+        f.querySelector('.btn').disabled = true;
+        var job = old && old.mine ? YG.removePost(old).then(function () { return YG.addPost(doc); }) : YG.addPost(doc);
+        put(job, '목사님께 기도제목을 올렸어요 🙏'); back(); return;
+      }
+      if (old) S.posts = S.posts.filter(function (x) { return x !== old; });
+      doc.id = 'p' + Date.now(); doc.group = group; doc.author = S.me.name; doc.at = '방금'; doc.mine = true; doc.count = 0; doc.reacted = false; doc.comments = [];
+      S.posts.unshift(doc); save(); done();
+    };
+  }
+  // 주일이 지났는데 지난주 기도제목이 없으면 목자에게 알림 (한 주에 한 번)
+  function gpRemind() {
+    if (!S.me || !S.me.approved || !S.me.group || !CLOUD) return;   // 시안에서는 알림이 계속 쌓이지 않게 끔
+    if (['leader', 'admin', 'pastor'].indexOf(S.me.role) < 0) return;
+    var prev = gpPrevWeek(); S.gpRemind = S.gpRemind || {};
+    if (gpOf(S.me.group, prev) || S.gpRemind[prev]) return;
+    S.gpRemind[prev] = 1; save();
+    receive({ kind: 'group', title: '목장 기도제목을 올려 주세요 🙏', body: '지난주(' + gpRange(prev) + ') ' + S.me.group + ' 기도제목이 아직 없어요. 눌러서 바로 올릴 수 있어요.', url: '#/talk/group?gpw=' + prev });
+  }
+  // 목사님·관리자: 목장별 현황
+  function adminGpray() {
+    gpSeed();
+    var q = parse().q, wk = q.w === 'this' ? gpWeek() : gpPrevWeek();
+    var groups = CLOUD ? (S.groups || []).map(function (g) { return g.name; }) : DEMO_GROUPS.map(function (g) { return g.name; });
+    var leaderOf = function (n) { var g = CLOUD ? (S.groups || []).filter(function (x) { return x.name === n; })[0] : demoGroup(n); return g && g.leader || ''; };
+    var rows = groups.map(function (n) { return { n: n, p: gpOf(n, wk), leader: leaderOf(n) }; });
+    var miss = rows.filter(function (r) { return !r.p; });
+    return '<div class="card"><div class="sec-title" style="margin:0 0 6px"><b>🙏 목장 기도제목</b><span class="sub">' + gpRange(wk) + '</span></div>' +
+      '<div class="seg" style="grid-template-columns:1fr 1fr;margin-bottom:10px"><a href="#/admin/gpray"' + (q.w === 'this' ? '' : ' class="on"') + '>지난주</a><a href="#/admin/gpray?w=this"' + (q.w === 'this' ? ' class="on"' : '') + '>이번 주</a></div>' +
+      '<div class="rd-stats"><div><b>' + (rows.length - miss.length) + '</b><span>목장 올림</span></div><div><b style="color:#c9502a">' + miss.length + '</b><span>아직 안 올림</span></div></div>' +
+      (miss.length ? '<button class="btn" data-gpnudge="' + wk + '" style="width:100%;margin-top:4px">⏰ 안 올린 ' + miss.length + '개 목장 목자님께 알림 보내기</button>' : '<p class="sub" style="text-align:center">모든 목장이 올렸어요 🙌</p>') + '</div>' +
+      rows.map(function (r) {
+        return r.p ? '<details class="card gp-admin"><summary><b>🏡 ' + esc(r.n) + '</b><span class="gp-ok">✓ 올림</span><small>' + esc(r.p.author || r.leader) + '</small></summary>' + gpList(r.p) + '</details>'
+          : '<div class="card gp-admin miss"><b>🏡 ' + esc(r.n) + '</b><span class="gp-no">아직</span><small>목자 ' + esc(r.leader || '미정') + '</small></div>';
+      }).join('');
+  }
+  function bindGpAdmin() {
+    document.querySelectorAll('[data-gpnudge]').forEach(function (b) {
+      b.onclick = function () {
+        var wk = b.dataset.gpnudge;
+        var groups = CLOUD ? (S.groups || []).map(function (g) { return g.name; }) : DEMO_GROUPS.map(function (g) { return g.name; });
+        var miss = groups.filter(function (n) { return !gpOf(n, wk); });
+        var msg = { kind: 'group', title: '목장 기도제목을 올려 주세요 🙏', body: gpRange(wk) + ' 목장 기도제목이 아직 없어요. 목사님이 함께 기도하고 싶어 하세요. 눌러서 바로 올릴 수 있어요.', url: '#/talk/group?gpw=' + wk };
+        if (CLOUD) { put(Promise.all(miss.map(function (n) { return YG.notice(msg, n); })), miss.length + '개 목장에 알림을 보냈어요'); return; }
+        toast(miss.length + '개 목장 목자님께 알림을 보냈어요 (시안)');
+      };
+    });
+  }
+  function groupRoom(q) {
     if (!S.me.group && CLOUD) {
       return '<div class="card" style="text-align:center;padding:26px 18px"><div style="font-size:2rem">🏠</div><div class="h2">아직 목장이 정해지지 않았어요</div><p class="sub" style="margin-top:6px">' + APPROVER + '이 목장을 정해 드리면 이곳에서 목장 식구들과 나눌 수 있어요.</p></div>';
     }
-    if (CLOUD) return cloudGroupRoom();
+    if (CLOUD) return cloudGroupRoom(q);
     if (!S.me.group) {
       return '<div class="card" style="display:flex;flex-direction:column;gap:12px"><div class="h2">목장을 골라 들어가 보세요</div><p class="sub">실제로는 교회가 목장을 정해 드려요. 시안에서는 예시 목장 10곳 중 하나를 눌러 둘러볼 수 있어요.</p>' +
         '<div class="gpick">' + DEMO_GROUPS.map(function (g) { return '<button class="gpick-b" data-pickg="' + esc(g.name) + '"><b>🏡 ' + esc(g.name) + '</b><span>목자 ' + esc(g.leader) + ' · ' + (g.members.length + 1) + '명</span><small>' + esc(g.meet) + '</small></button>'; }).join('') + '</div></div>';
@@ -568,6 +715,7 @@
     var members = [dg.leader + ' (목자)', S.me.name].concat(dg.members);
     return '<div class="card group-card"><div class="sub" style="color:#cfe3d6">우리 목장 · 예시</div><div class="big">' + esc(S.me.group) + '</div><div style="font-size:.9rem;opacity:.85">목자 ' + esc(dg.leader) + ' · 식구 ' + members.length + '명 · 우리 목장 사람만 볼 수 있어요</div>' +
         '<button class="gpick-leave" data-leaveg>다른 목장 둘러보기 ›</button></div>' +
+      gpCard(S.me.group, [S.me.name].concat(dg.members), q) +
       gvCard() +
       '<div class="card meet"><div style="font-size:.8rem;font-weight:800;color:#a07d2c">📌 목장 모임 · 목자가 올려요</div><b style="font-size:1.05rem">' + esc(meetText) + '</b>' +
         '<div class="row" style="margin-top:10px"><button class="btn small' + (going === true ? '' : ' ghost') + '" data-rsvp="yes">참석' + (going === true ? ' ✓' : '') + '</button><button class="btn small' + (going === false ? '' : ' ghost') + '" data-rsvp="no">불참' + (going === false ? ' ✓' : '') + '</button></div>' +
@@ -576,13 +724,14 @@
       '<details class="card"><summary style="font-weight:700;cursor:pointer">👥 목장 식구 ' + members.length + '명 보기</summary><div class="members">' + members.map(function (n) { return '<span>' + esc(n) + '</span>'; }).join('') + '</div></details>';
   }
   // 서버 모드 목장방: 실제 식구·모임 공지·참석
-  function cloudGroupRoom() {
+  function cloudGroupRoom(q) {
     var m = S.meeting || {}, going = m.going;
     var posts = S.posts.filter(function (p) { return p.scope === 'group' && canSee(p); });
     var members = S.groupMembers || [];
     var leaderName = (members.filter(function (x) { return x.role === 'leader'; })[0] || {}).name || ((S.groups || []).filter(function (g) { return g.name === S.me.group; })[0] || {}).leader || '';
     var amLeader = S.me.role !== 'member';
     return '<div class="card group-card"><div class="sub" style="color:#cfe3d6">우리 목장</div><div class="big">' + esc(S.me.group) + '</div><div style="font-size:.9rem;opacity:.85">' + (leaderName ? '목자 ' + esc(leaderName) + ' · ' : '') + '식구 ' + members.length + '명 · 우리 목장 사람만 볼 수 있어요</div></div>' +
+      gpCard(S.me.group, members.map(function (x) { return x.name; }), q) +
       gvCard() +
       '<div class="card meet"><div style="font-size:.8rem;font-weight:800;color:#a07d2c">📌 목장 모임 · 목자가 올려요</div>' +
         (m.text ? '<b style="font-size:1.05rem">' + esc(m.text) + '</b>' +
@@ -616,6 +765,7 @@
     document.querySelectorAll('[data-pickg]').forEach(function (b) { b.onclick = function () { S.me.group = b.dataset.pickg; S.meeting = { text: '', going: null }; save(); route(); window.scrollTo(0, 0); }; });
     var lg = $('[data-leaveg]'); if (lg) lg.onclick = function () { S.me.group = ''; save(); route(); window.scrollTo(0, 0); };
     bindDiary();
+    bindGp();
     bindPrayer();
     bindBible();
   }
@@ -1769,6 +1919,7 @@
     ['groups', '🏠', '목장 관리', '목장 만들기, 목자 정하기, 식구 배정', ['pastor', 'admin']],
     ['reports', '🚩', '나눔 관리', '신고된 글 확인 · 숨기기 · 지우기', ['pastor', 'admin']],
     ['gvideo', '🎬', '목장 영상', '이번 주 목장 영상 링크와 나눔 질문', ['pastor', 'admin', 'leader']],
+    ['gpray', '🙏', '목장 기도제목', '목장별로 올라온 중보기도 제목 · 안 올린 목장 알림', ['pastor', 'admin']],
     ['reading', '📖', '성경읽기 현황', '이번 주 함께 읽은 사람 수', ['pastor', 'admin', 'leader']],
     ['people', '👥', '교인 · 권한', '교인 목록, 성도·목자·관리자 권한', ['pastor']],
   ];
@@ -1951,6 +2102,7 @@
       case 'groups': return adminGroups();
       case 'reports': return adminReports();
       case 'reading': return adminReading();
+      case 'gpray': return adminGpray();
       case 'people': return adminPeople();
       case 'gvideo': return adminGvideo();
       default: return adminHome();
@@ -2025,7 +2177,7 @@
     if (pq) pq.oninput = function () { var v = pq.value.trim(); document.querySelectorAll('[data-pname]').forEach(function (r) { r.hidden = v && r.dataset.pname.indexOf(v) < 0; }); };
     var f = $('#sendForm');
     if (f) {
-      var sync = function () { $('#tc').textContent = f.title.value.length; $('#bc').textContent = f.body.value.length; $('#pt').textContent = f.title.value || '제목'; $('#pb').textContent = f.body.value || '내용'; };
+      var sync = function () { $('#tc').textContent = f.title.value.length; $('#bc').textContent = f.body.value.length; $('#pvt').textContent = f.title.value || '제목'; $('#pvb').textContent = f.body.value || '내용'; };
       f.oninput = sync;
       $('#tpl').onclick = function (e) { var b = e.target.closest('[data-i]'); if (!b) return; var t = TEMPLATES[b.dataset.i]; f.kind.value = t[1]; f.title.value = t[2]; f.body.value = t[3]; f.url.value = t[4]; sync(); };
       f.onsubmit = function (e) {
@@ -2038,6 +2190,7 @@
     }
   }
   function bindAdminAll() {
+    bindGpAdmin();
     if (CLOUD) return bindAdminCloud();
     bindAdmin();
     var on = function (sel, fn) { document.querySelectorAll(sel).forEach(function (b) { b.onclick = function (e) { fn(b, e); }; }); };
@@ -2117,14 +2270,14 @@
         '<label class="field"><span>받는 사람</span><select name="to">' + (CLOUD ? (S.adminRole === 'leader' ? '<option value="' + esc(S.me.group) + '">우리 목장</option>' : '<option value="all">전체</option>' + S.groups.map(function (g) { return '<option value="' + esc(g.name) + '">' + esc(g.name) + '</option>'; }).join(''))
           : (S.adminRole === 'leader' ? '<option>우리 목장</option>' : '<option>전체</option><option>목장별</option><option>부서별</option>')) + '</select></label></div>' +
         '<label class="field"><span>누르면 열 화면</span><select name="url"><option value="#/news">교회 소식</option><option value="#/sermons">말씀</option><option value="#/worship">예배·모임 안내</option><option value="#/talk">나눔</option><option value="#/talk/group">목장방</option><option value="#/talk/prayer?p=vow&c=thanks">감사 기도 챌린지</option></select></label>' +
-        '<div class="push-preview"><div style="color:#fff;font-size:.78rem;font-weight:700;margin-bottom:8px;opacity:.85">휴대폰에 이렇게 보여요</div><div class="push"><img src="icon-192.png" alt=""><div style="flex:1"><div class="app"><span>예그린교회</span><span>지금</span></div><b id="pt">제목</b><p id="pb">내용</p></div></div></div>' +
+        '<div class="push-preview"><div style="color:#fff;font-size:.78rem;font-weight:700;margin-bottom:8px;opacity:.85">휴대폰에 이렇게 보여요</div><div class="push"><img src="icon-192.png" alt=""><div style="flex:1"><div class="app"><span>예그린교회</span><span>지금</span></div><b id="pvt">제목</b><p id="pvb">내용</p></div></div></div>' +
         '<button class="btn">보내기</button></form>' +
       (S.sent.length ? '<div class="sec-title"><b>보낸 기록</b></div>' + S.sent.map(function (s) { return '<div class="card"><b>' + esc(s.title) + '</b><div class="sub">' + esc(s.body) + '</div><div class="sub" style="font-size:.75rem">' + esc(s.at) + ' · ' + esc(s.to) + '</div></div>'; }).join('') : '');
   }
   function bindAdmin() {
     var f = $('#sendForm');
     if (!f) return;
-    function sync() { $('#tc').textContent = f.title.value.length; $('#bc').textContent = f.body.value.length; $('#pt').textContent = f.title.value || '제목'; $('#pb').textContent = f.body.value || '내용'; }
+    function sync() { $('#tc').textContent = f.title.value.length; $('#bc').textContent = f.body.value.length; $('#pvt').textContent = f.title.value || '제목'; $('#pvb').textContent = f.body.value || '내용'; }
     f.oninput = sync;
     $('#tpl').onclick = function (e) {
       var b = e.target.closest('[data-i]'); if (!b) return;

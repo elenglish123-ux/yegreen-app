@@ -268,7 +268,7 @@
       head: d.head || '', answered: d.answered || 0,   // 기도 공간 말머리 · 응답됐어요 (2026-11-25)
       verse: d.verse || '',                             // 성경읽기 묵상 구절 (2026-11-25)
       vow: d.vow && d.vow.days ? d.vow : null,          // 작정 기도 {days, mins, start}
-      img: d.img || '', qday: d.qday || '', vid: d.vid || '',              // 큐티 사진 (약 100KB로 줄인 것) · 큐티한 날
+      img: d.img || '', qday: d.qday || '', vid: d.vid || '', week: d.week || '', items: d.items || [], common: d.common || '',              // 큐티 사진 (약 100KB로 줄인 것) · 큐티한 날
       mine: d.uid === uid, count: rx.length, reacted: rx.indexOf(uid) >= 0,
       comments: (d.comments || []).map(function (c) { return { author: c.author, text: c.text, uid: c.uid, ts: c.ts }; }),
     };
@@ -375,7 +375,7 @@
   YG.addPost = function (p) {
     return need() || A.add(p.scope === 'pastor' ? 'pastorNotes' : 'posts', {
       uid: uid, author: myName(), cat: p.cat, scope: p.scope === 'pastor' ? 'pastor' : p.scope, group: p.scope === 'group' ? member.group : '',
-      text: p.text, diary: p.diary || '', head: p.head || '', verse: String(p.verse || '').slice(0, 40), vow: p.vow ? { kind: String(p.vow.kind || 'vow'), name: String(p.vow.name || '').slice(0, 20), days: +p.vow.days, mins: +p.vow.mins, start: String(p.vow.start) } : null, img: String(p.img || '').slice(0, 200000), qday: String(p.qday || ''), vid: String(p.vid || '').slice(0, 20), notice: !!p.notice && isStaff(), reactors: [], comments: [], hidden: false, ts: now(),
+      text: p.text, diary: p.diary || '', head: p.head || '', verse: String(p.verse || '').slice(0, 40), vow: p.vow ? { kind: String(p.vow.kind || 'vow'), name: String(p.vow.name || '').slice(0, 20), days: +p.vow.days, mins: +p.vow.mins, start: String(p.vow.start) } : null, img: String(p.img || '').slice(0, 200000), qday: String(p.qday || ''), vid: String(p.vid || '').slice(0, 20), week: String(p.week || ''), items: (p.items || []).slice(0, 40).map(function (x) { return { n: String(x.n || '').slice(0, 20), t: String(x.t || '').slice(0, 150) }; }), common: String(p.common || '').slice(0, 200), notice: !!p.notice && isStaff(), reactors: [], comments: [], hidden: false, ts: now(),
     });
   };
   YG.answer = function (p) { return need() || A.update(p._col || 'posts', p.id, { answered: now() }); };   // 내 기도 「응답됐어요」

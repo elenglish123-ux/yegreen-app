@@ -388,3 +388,39 @@ textarea { resize: none; line-height: 1.55; }
 #qtForm textarea { font: inherit; padding: 10px 12px; border: 1px solid #e3e0d8; border-radius: 10px; resize: vertical; }
 .ph-photo { display: block; border: 1.5px dashed #cfd8d2; border-radius: 12px; padding: 10px; text-align: center; color: var(--green-d); font-size: .88rem; font-weight: 700; cursor: pointer; background: #f9fbf9; } .ph-photo img { display: block; max-width: 100%; max-height: 200px; margin: 0 auto 4px; border-radius: 8px; } .ph-photo small { display: block; font-weight: 500; font-size: .74rem; color: #6f6a60; } .pr-img { max-height: 260px; margin: 0 0 8px; }
 /* 영상 아래 은혜 나눔 (2026-11-25) */ .card.grace-box { border: 1px solid #dfe9e2; } #grForm textarea { font: inherit; padding: 10px 12px; border: 1px solid #e3e0d8; border-radius: 10px; resize: vertical; } .gr-list { margin-top: 12px; border-top: 1px solid #eee9e0; } .gr-item { padding: 12px 0; border-bottom: 1px dashed #eee9e0; } .gr-item:last-child { border-bottom: 0; } .gr-top { display: flex; gap: 8px; align-items: center; font-size: .86rem; } .gr-top span { font-size: .76rem; color: #8a8478; } .gr-item p { margin: 6px 0 8px; line-height: 1.6; white-space: pre-wrap; }
+/* 목장 기도제목 (2026-11-25) */
+.card.gp-card { border: 1.5px solid #cfe3d6; }
+.gp-done { font-size: .84rem; font-weight: 700; color: var(--green-d); background: #eef5f0; border-radius: 10px; padding: 7px 10px; margin-bottom: 8px; }
+.gp-list { margin: 6px 0 0; padding-left: 0; list-style: none; counter-reset: gp; }
+.gp-list li { display: flex; gap: 8px; padding: 7px 0; border-bottom: 1px dashed #eee9e0; font-size: .95rem; line-height: 1.5; }
+.gp-list li b { flex: 0 0 64px; color: var(--green-d); }
+.gp-common { margin-top: 8px; font-size: .92rem; background: #f6faf7; border-radius: 10px; padding: 8px 10px; }
+.gp-row { display: flex; align-items: center; gap: 8px; }
+.gp-row span { flex: 0 0 66px; font-size: .88rem; font-weight: 700; color: #3c4a42; }
+.gp-row input { flex: 1; min-width: 0; font: inherit; font-size: .92rem; padding: 9px 10px; border: 1px solid #e3e0d8; border-radius: 10px; }
+.card.gp-remind { display: flex; align-items: center; gap: 8px; background: #fff4ec; border: 1px solid #f3cfae; color: #8a3a17; font-size: .9rem; }
+.card.gp-remind b { flex: 1; }
+.card.gp-remind span { font-weight: 800; white-space: nowrap; }
+.gp-past { margin-top: 10px; }
+.gp-past summary { cursor: pointer; font-weight: 700; font-size: .88rem; color: #6f6a60; }
+.gp-week { margin-top: 10px; }
+.card.gp-admin summary, .card.gp-admin.miss { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.card.gp-admin small { margin-left: auto; color: #8a8478; font-size: .78rem; }
+.gp-ok { font-size: .76rem; font-weight: 800; color: #fff; background: var(--green); border-radius: 999px; padding: 2px 8px; }
+.gp-no { font-size: .76rem; font-weight: 800; color: #c9502a; background: #fff1e6; border-radius: 999px; padding: 2px 8px; }
+.card.gp-admin.miss { opacity: .9; }
+/* 주보 글로 보기 (2026-11-25) */
+.card.jubo-cover { text-align: center; background: linear-gradient(160deg, var(--green-d), var(--green)); color: #fff; padding: 24px 18px; }
+.jubo-cover .label { color: #cfe3d6; font-size: .82rem; }
+.jubo-cover .jt { font-family: "Noto Serif KR", serif; font-size: 1.5rem; font-weight: 700; margin: 8px 0 2px; line-height: 1.35; }
+.jubo-cover .je { font-size: .85rem; opacity: .8; font-style: italic; }
+.jubo-cover .jv { display: inline-block; margin-top: 12px; background: rgba(255,255,255,.14); color: #fff; border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: .95rem; }
+.card.jubo-sec h3 { margin: 0 0 8px; font-size: 1.12rem; color: var(--green-d); }
+.card.jubo-sec ul { margin: 0; padding-left: 18px; }
+.card.jubo-sec li { font-size: 1.02rem; line-height: 1.75; margin: 2px 0; }
+.jubo-read { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+.jubo-read div { background: #f6faf7; border-radius: 10px; padding: 8px 2px; display: flex; flex-direction: column; gap: 2px; }
+.jubo-read b { font-size: .8rem; color: var(--green-d); }
+.jubo-read small { font-size: .68rem; color: #8a8478; }
+.jubo-read span { font-size: .78rem; font-weight: 700; word-break: keep-all; }
+.jubo-img summary { cursor: pointer; font-weight: 700; color: #6f6a60; }
