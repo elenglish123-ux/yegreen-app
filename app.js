@@ -470,7 +470,7 @@
     list.sort(function (a, b) { return (b.notice ? 1 : 0) - (a.notice ? 1 : 0); });
     var ser = (MEDIA.sunday || [])[0];
     var graceTop = ser && (f === 'all' || f === 'grace') ? '<a class="card grace" href="#/write?to=all&cat=grace"><div class="label" style="color:#cfe3d6">이번 주 설교 · ' + md(ser.date) + '</div><b>' + esc(ser.title) + '</b><div style="font-size:.88rem;opacity:.85;margin-top:4px">이 말씀으로 받은 은혜와 이번 주 적용을 나눠 주세요 ✎</div></a>' : '';
-    return segs(sub) + '<div class="chips">' + [['all', '전체'], ['grace', '말씀 은혜'], ['word', '말씀 묵상'], ['thanks', '감사'], ['pray', '기도제목']].map(function (c) { return '<a class="chip' + (c[0] === f ? ' on' : '') + '" href="#/talk/church?cat=' + c[0] + '">' + c[1] + '</a>'; }).join('') + '</div>' +
+    return segs(sub) + '<div class="chips">' + [['all', '전체'], ['grace', '말씀 은혜'], ['word', '말씀 묵상'], ['pray', '기도제목']].map(function (c) { return '<a class="chip' + (c[0] === f ? ' on' : '') + '" href="#/talk/church?cat=' + c[0] + '">' + c[1] + '</a>'; }).join('') + '</div>' +
       graceTop + (list.map(function (p) { return postCard(p, true); }).join('') || '<p class="empty">아직 글이 없어요.</p>');
   }
   function gvCurrent() {
@@ -571,10 +571,10 @@
     var to = q.to === 'group' ? 'group' : 'all';
     renderTop({ back: '취소', white: true, right: '<button class="pill-btn" id="postBtn" disabled>올리기</button>' });
     return '<div><div class="sub" style="font-weight:700;margin-bottom:6px">어떤 글인가요?</div><div class="chips" id="catPick">' +
-        Object.keys(CATS).map(function (k, i) { return '<button class="chip' + ((q.cat ? k === q.cat : i === 1) ? ' on' : '') + '" data-v="' + k + '">' + CATS[k] + '</button>'; }).join('') + '</div></div>' +
+        Object.keys(CATS).filter(function (k) { return k !== 'thanks'; }).map(function (k, i) { return '<button class="chip' + ((q.cat ? k === q.cat : i === 0) ? ' on' : '') + '" data-v="' + k + '">' + CATS[k] + '</button>'; }).join('') + '</div></div>' +
       '<div><div class="sub" style="font-weight:700;margin-bottom:6px">누구에게 보일까요?</div><div class="chips" id="scopePick">' +
         ['pastor', 'group', 'all'].map(function (k) { return '<button class="chip' + (k === to ? ' on' : '') + '" data-v="' + k + '">' + (k === 'pastor' ? '🔒 ' : '') + SCOPES[k] + '</button>'; }).join('') + '</div></div>' +
-      '<textarea id="wText" rows="9" maxlength="1000" placeholder="' + (q.cat === 'grace' ? '설교 말씀으로 받은 은혜와 이번 주 적용을 짧게 적어 주세요.' : '오늘 감사한 일이나 함께 기도하고 싶은 내용을 적어 주세요.') + '"></textarea><div class="counter"><span id="wCount">0</span> / 1000</div>' +
+      '<textarea id="wText" rows="9" maxlength="1000" placeholder="' + (q.cat === 'grace' ? '설교 말씀으로 받은 은혜와 이번 주 적용을 짧게 적어 주세요.' : '교회 식구들과 나누고 싶은 이야기를 적어 주세요.') + '"></textarea><div class="counter"><span id="wCount">0</span> / 1000</div>' +
       '<div class="card green sub" style="color:#55705f">💡 다른 사람의 이름이나 사정은 허락을 받고 적어 주세요.</div>';
   }
   function bindWrite() {
