@@ -6,7 +6,7 @@
   var BULLETINS = window.BULLETINS || [];
   var DATA_ROOT = 'https://elenglish123-ux.github.io/yegreen-site/';
   var KINDS = [['sunday', '주일설교'], ['dawn', '새벽예배'], ['reading', '성경통독'], ['study', '성경공부']];
-  var CATS = { grace: '말씀 은혜', thanks: '감사', pray: '기도제목', group: '목장 이야기', word: '📖 말씀 묵상' };
+  var CATS = { grace: '말씀 은혜', thanks: '감사', pray: '기도제목', group: '목장 이야기', word: '📖 말씀 묵상', qt: '✍️ 필사', gpray: '🙏 목장 기도제목' };
   // 목사님 결정(2026-11-18): 등록 교인만, 가입 승인은 정하람 간사
   var APPROVER = '정하람 간사님';
   var SENTENCE = '죄에서 멀어져 자유케 되는 교회';
@@ -561,7 +561,7 @@
     return '<a class="card post' + (clamp ? ' clamp' : '') + (p.notice ? ' green pin' : '') + '" href="#/post/' + p.id + '">' +
       (p.notice ? '<span class="tag" style="background:#fff">📌 공지</span> <b>' + esc(p.text.split('.')[0]) + '</b><p class="sub" style="color:#55705f;margin-top:4px">' + esc(p.text) + '</p>' :
       '<div class="who">' + av(p.author) + '<div><b>' + esc(p.author) + ' <span class="tag">' + (p.head && headOf(p.head) ? headOf(p.head)[2] + ' ' + esc(headOf(p.head)[1]) : CATS[p.cat]) + '</span>' + (p.scope === 'pastor' ? ' <span class="tag lock">🔒 목사님께만</span>' : '') + (p.diary ? ' <span class="tag gold">감사일기</span>' : '') + (p.answered ? ' <span class="tag gold">🙌 응답됐어요</span>' : '') + '</b><div class="sub">' + esc(p.at) + '</div></div></div>' +
-      '<p class="text">' + esc(p.text) + '</p>' +
+      '<p class="text">' + esc(p.text) + '</p>' + (p.img ? '<img class="post-img" src="' + p.img + '" alt="" loading="lazy">' : '') +
       '<span class="rx' + (p.reacted ? ' on' : '') + '" data-react="' + p.id + '">' + (p.cat === 'pray' ? (p.head ? '🙏 함께 기도했어요' : '🙏 기도했어요') : '🙌 아멘') + ' ' + p.count + '</span> <span class="rx">💬 ' + p.comments.length + '</span>') + '</a>';
   }
   function segs(on) {
@@ -744,7 +744,7 @@
     }
     var dg = demoGroup(S.me.group) || { leader: '예시 목자', meet: S.meeting.text, members: ['예시 식구 1', '예시 식구 2', '예시 식구 3'] };
     var m = S.meeting, going = m.going, meetText = m.custom ? m.text : '(예시) 이번 주 ' + dg.meet;
-    var posts = S.posts.filter(function (p) { return p.scope === 'group' && canSee(p); });
+    var posts = S.posts.filter(function (p) { return p.scope === 'group' && p.cat !== 'gpray' && canSee(p); });   // 목장 기도제목은 위 카드에서만
     var members = [dg.leader + ' (목자)', S.me.name].concat(dg.members);
     return '<div class="card group-card"><div class="sub" style="color:#cfe3d6">우리 목장 · 예시</div><div class="big">' + esc(S.me.group) + '</div><div style="font-size:.9rem;opacity:.85">목자 ' + esc(dg.leader) + ' · 식구 ' + members.length + '명 · 우리 목장 사람만 볼 수 있어요</div>' +
         '<button class="gpick-leave" data-leaveg>다른 목장 둘러보기 ›</button></div>' +
@@ -759,7 +759,7 @@
   // 서버 모드 목장방: 실제 식구·모임 공지·참석
   function cloudGroupRoom(q) {
     var m = S.meeting || {}, going = m.going;
-    var posts = S.posts.filter(function (p) { return p.scope === 'group' && canSee(p); });
+    var posts = S.posts.filter(function (p) { return p.scope === 'group' && p.cat !== 'gpray' && canSee(p); });   // 목장 기도제목은 위 카드에서만
     var members = S.groupMembers || [];
     var leaderName = (members.filter(function (x) { return x.role === 'leader'; })[0] || {}).name || ((S.groups || []).filter(function (g) { return g.name === S.me.group; })[0] || {}).leader || '';
     var amLeader = S.me.role !== 'member';
@@ -815,7 +815,7 @@
     var to = q.to === 'group' ? 'group' : 'all';
     renderTop({ back: '취소', white: true, right: '<button class="pill-btn" id="postBtn" disabled>올리기</button>' });
     return '<div><div class="sub" style="font-weight:700;margin-bottom:6px">어떤 글인가요?</div><div class="chips" id="catPick">' +
-        Object.keys(CATS).filter(function (k) { return k !== 'thanks'; }).map(function (k, i) { return '<button class="chip' + ((q.cat ? k === q.cat : i === 0) ? ' on' : '') + '" data-v="' + k + '">' + CATS[k] + '</button>'; }).join('') + '</div></div>' +
+        Object.keys(CATS).filter(function (k) { return ['thanks', 'qt', 'gpray'].indexOf(k) < 0; }).map(function (k, i) { return '<button class="chip' + ((q.cat ? k === q.cat : i === 0) ? ' on' : '') + '" data-v="' + k + '">' + CATS[k] + '</button>'; }).join('') + '</div></div>' +
       '<div><div class="sub" style="font-weight:700;margin-bottom:6px">누구에게 보일까요?</div><div class="chips" id="scopePick">' +
         ['pastor', 'group', 'all'].map(function (k) { return '<button class="chip' + (k === to ? ' on' : '') + '" data-v="' + k + '">' + (k === 'pastor' ? '🔒 ' : '') + SCOPES[k] + '</button>'; }).join('') + '</div></div>' +
       '<textarea id="wText" rows="9" maxlength="1000" placeholder="' + (q.cat === 'grace' ? '설교 말씀으로 받은 은혜와 이번 주 적용을 짧게 적어 주세요.' : '교회 식구들과 나누고 싶은 이야기를 적어 주세요.') + '"></textarea><div class="counter"><span id="wCount">0</span> / 1000</div>' +
