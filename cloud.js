@@ -265,6 +265,7 @@
     return {
       id: d.id, _col: col, uid: d.uid, cat: d.cat, scope: col === 'pastorNotes' ? 'pastor' : d.scope, group: d.group || undefined,
       author: d.author, text: d.text, notice: !!d.notice, diary: d.diary || undefined, hidden: !!d.hidden, ts: d.ts, at: rel(d.ts),
+      head: d.head || '', answered: d.answered || 0,   // 기도 공간 말머리 · 응답됐어요 (2026-11-25)
       mine: d.uid === uid, count: rx.length, reacted: rx.indexOf(uid) >= 0,
       comments: (d.comments || []).map(function (c) { return { author: c.author, text: c.text, uid: c.uid, ts: c.ts }; }),
     };
@@ -371,9 +372,10 @@
   YG.addPost = function (p) {
     return need() || A.add(p.scope === 'pastor' ? 'pastorNotes' : 'posts', {
       uid: uid, author: myName(), cat: p.cat, scope: p.scope === 'pastor' ? 'pastor' : p.scope, group: p.scope === 'group' ? member.group : '',
-      text: p.text, diary: p.diary || '', notice: !!p.notice && isStaff(), reactors: [], comments: [], hidden: false, ts: now(),
+      text: p.text, diary: p.diary || '', head: p.head || '', notice: !!p.notice && isStaff(), reactors: [], comments: [], hidden: false, ts: now(),
     });
   };
+  YG.answer = function (p) { return need() || A.update(p._col || 'posts', p.id, { answered: now() }); };   // 내 기도 「응답됐어요」
   YG.removePost = function (p) { return need() || A.del(p._col || 'posts', p.id); };
   YG.react = function (p) { return need() || A.update(p._col || 'posts', p.id, { reactors: p.reacted ? A.remove(uid) : A.union(uid) }); };
   YG.comment = function (p, text) { return need() || A.update(p._col || 'posts', p.id, { comments: A.union({ uid: uid, author: myName(), text: text, ts: now() }) }); };

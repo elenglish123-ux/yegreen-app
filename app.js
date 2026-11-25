@@ -456,9 +456,9 @@
     if (p.hidden) return '<div class="card sub">신고되어 운영자 확인을 기다리는 글이에요.</div>';
     return '<a class="card post' + (clamp ? ' clamp' : '') + (p.notice ? ' green pin' : '') + '" href="#/post/' + p.id + '">' +
       (p.notice ? '<span class="tag" style="background:#fff">📌 공지</span> <b>' + esc(p.text.split('.')[0]) + '</b><p class="sub" style="color:#55705f;margin-top:4px">' + esc(p.text) + '</p>' :
-      '<div class="who">' + av(p.author) + '<div><b>' + esc(p.author) + ' <span class="tag">' + CATS[p.cat] + '</span>' + (p.scope === 'pastor' ? ' <span class="tag lock">🔒 목사님께만</span>' : '') + (p.diary ? ' <span class="tag gold">감사일기</span>' : '') + '</b><div class="sub">' + esc(p.at) + '</div></div></div>' +
+      '<div class="who">' + av(p.author) + '<div><b>' + esc(p.author) + ' <span class="tag">' + (p.head && headOf(p.head) ? headOf(p.head)[2] + ' ' + esc(headOf(p.head)[1]) : CATS[p.cat]) + '</span>' + (p.scope === 'pastor' ? ' <span class="tag lock">🔒 목사님께만</span>' : '') + (p.diary ? ' <span class="tag gold">감사일기</span>' : '') + (p.answered ? ' <span class="tag gold">🙌 응답됐어요</span>' : '') + '</b><div class="sub">' + esc(p.at) + '</div></div></div>' +
       '<p class="text">' + esc(p.text) + '</p>' +
-      '<span class="rx' + (p.reacted ? ' on' : '') + '" data-react="' + p.id + '">' + (p.cat === 'pray' ? '🙏 기도했어요' : '🙌 아멘') + ' ' + p.count + '</span> <span class="rx">💬 ' + p.comments.length + '</span>') + '</a>';
+      '<span class="rx' + (p.reacted ? ' on' : '') + '" data-react="' + p.id + '">' + (p.cat === 'pray' ? (p.head ? '🙏 함께 기도했어요' : '🙏 기도했어요') : '🙌 아멘') + ' ' + p.count + '</span> <span class="rx">💬 ' + p.comments.length + '</span>') + '</a>';
   }
   function segs(on) {
     return '<div class="seg">' + [['church', '교회 나눔'], ['group', '목장방'], ['diary', '감사 챌린지'], ['prayer', '기도 공간']].map(function (s) { return '<a href="#/talk/' + s[0] + '"' + (s[0] === on ? ' class="on"' : '') + '>' + s[1] + '</a>'; }).join('') + '</div>';
@@ -468,7 +468,7 @@
     sub = sub || 'church';
     renderTop({ title: '나눔', right: sub === 'diary' || sub === 'prayer' ? '' : '<a class="icon-btn" href="#/write?to=' + (sub === 'group' ? 'group' : 'all') + '" aria-label="글쓰기">' + svg('pen', 2) + '</a>', bell: true });
     if (sub === 'diary') return segs(sub) + diary();
-    if (sub === 'prayer') return segs(sub) + prayerRoom();
+    if (sub === 'prayer') return segs(sub) + prayerRoom(q);
     if (sub === 'group') return segs(sub) + groupRoom();
     var f = q.cat || 'all';
     var list = S.posts.filter(function (p) { return p.scope !== 'group' && canSee(p) && (f === 'all' || p.cat === f || p.notice); });
@@ -661,41 +661,125 @@
     };
   }
 
-  // 나만의 기도 공간 (목사님 결정 2026-11-18): 이 휴대폰 안에만 저장, 서버로 보내지 않음
+  // 기도 공간 (2026-11-25 개편, 나연 아이디어): 말머리 7개 + 열람 범위 4가지
+  // 「나만」은 예전처럼 이 휴대폰 안에만 저장(서버로 보내지 않음). 목사님만·목장만·전체는 나눔 글(cat 'pray' + head)로 서버에.
+  var HEADS = [
+    ['joy', '예수님 기쁘게 해 드리기', '😊'], ['hard', '하나님 저 오늘 너무 힘들어요', '😢'], ['help', '하나님 도와주세요', '🙏'],
+    ['review', '하나님 오늘 저 어땠나요', '🌙'], ['thanks', '하나님 감사해요', '🌾'], ['inter', '이 사람을 위해 기도해요', '🤝'], ['sorry', '하나님 잘못했어요', '💧'],
+  ];
+  var PSCOPES = [
+    ['me', '🔒 나만', '이 휴대폰 안에만 저장돼요. 목사님·운영자도 볼 수 없어요.'],
+    ['pastor', '🙏 목사님만', '담임목사님만 볼 수 있어요.'],
+    ['group', '🏡 목장만', '우리 목장 식구만 볼 수 있어요.'],
+    ['all', '⛪ 전체', '등록 교인 모두 볼 수 있어요.'],
+  ];
+  function headOf(k) { return HEADS.filter(function (h) { return h[0] === k; })[0] || null; }
+  function pscopeOf(k) { return PSCOPES.filter(function (s) { return s[0] === k; })[0] || PSCOPES[0]; }
   var PKEY = 'yegreen-prayer-v1';
   function prayers() { try { return JSON.parse(localStorage.getItem(PKEY)) || []; } catch (e) { return []; } }
   function savePrayers(list) { try { localStorage.setItem(PKEY, JSON.stringify(list)); } catch (e) {} }
-  function prayerRoom() {
-    var list = prayers(), open = list.filter(function (x) { return !x.done; }), done = list.filter(function (x) { return x.done; });
+  function prayerSeed() {   // 시안: 다른 성도의 예시 기도 (함께 기도하기를 눌러 볼 수 있게)
+    if (CLOUD || S.prayerSeed) return;
+    S.prayerSeed = 1;
+    S.posts.push(
+      { id: 'h1', cat: 'pray', head: 'help', scope: 'group', group: null, author: '예시 목장 식구', text: '(예시) 다음 주 이사를 해요. 좋은 이웃을 만나고 아이들이 새 학교에 잘 적응하도록 도와주세요.', at: '오늘', count: 4, reacted: false, comments: [] },
+      { id: 'h2', cat: 'pray', head: 'inter', scope: 'all', author: '예시 성도', text: '(예시) 투병 중인 친구 ○○를 위해 기도해요. 치료가 잘 되고 마음에 평안이 있기를.', at: '어제', count: 11, reacted: false, comments: [] },
+      { id: 'h3', cat: 'pray', head: 'thanks', scope: 'all', author: '예시 청년', text: '(예시) 취업 소식 기다리던 것, 오늘 합격했어요! 함께 기도해 주신 분들 감사해요.', at: '2일 전', count: 15, reacted: false, comments: [], answered: 1 });
+    save();
+  }
+  // 화면에 그릴 한 줄: 「나만」(이 휴대폰) 기도와 서버(나눔) 기도를 같은 모양으로
+  function pFromLocal(x) { return { id: x.id, local: true, head: x.head || '', text: x.text, at: x.at, done: !!x.done, doneAt: x.done || '', scope: 'me', mine: true, count: 0 }; }
+  function pFromPost(p) { return { id: p.id, post: p, head: p.head || '', text: p.text, at: p.at, done: !!p.answered, scope: p.scope, mine: !!p.mine, author: p.author, count: p.count || 0, reacted: !!p.reacted }; }
+  function prayerRoom(q) {
+    q = q || {};
+    prayerSeed();
+    var isPastor = CLOUD ? S.me.role === 'pastor' : S.adminRole === 'pastor' && S.admin;
+    var server = S.posts.filter(function (p) { return p.cat === 'pray' && p.head && !p.hidden && canSee(p); });
+    var mine = prayers().map(pFromLocal).concat(server.filter(function (p) { return p.mine; }).map(pFromPost));
+    var withList = server.filter(function (p) { return !p.mine && p.scope !== 'pastor'; }).map(pFromPost);
+    var toPastor = isPastor ? server.filter(function (p) { return !p.mine && p.scope === 'pastor'; }).map(pFromPost)
+      .sort(function (a, b) { return (b.head === 'hard' ? 1 : 0) - (a.head === 'hard' ? 1 : 0); }) : [];
+    var tab = q.t === 'with' ? 'with' : q.t === 'pastor' && isPastor ? 'pastor' : 'mine';
+    var hf = q.h && headOf(q.h) ? q.h : '';
+    var list = (tab === 'with' ? withList : tab === 'pastor' ? toPastor : mine).filter(function (x) { return !hf || x.head === hf; });
+    var open = list.filter(function (x) { return !x.done; }), done = list.filter(function (x) { return x.done; });
+    var hard = toPastor.filter(function (x) { return x.head === 'hard' && !x.done; }).length;
+    function link(t, h) { return '#/talk/prayer?t=' + t + (h ? '&h=' + h : ''); }
     function item(x) {
-      return '<div class="card pray-item' + (x.done ? ' done' : '') + '"><div class="sub" style="font-size:.78rem">' + esc(x.at) + (x.done ? ' · 🙌 ' + esc(x.done) + ' 응답' : '') + '</div>' +
-        '<p class="text" style="margin:4px 0 8px">' + esc(x.text) + '</p>' +
-        '<div class="row">' + (x.done ? '' : '<button class="btn small ghost" data-pdone="' + x.id + '">🙌 응답됐어요</button>') +
-        '<button class="btn small ghost" data-pdel="' + x.id + '" style="flex:0 0 auto">지우기</button></div></div>';
+      var h = headOf(x.head), sc = pscopeOf(x.scope);
+      var acts = '';
+      if (!x.mine && x.scope !== 'pastor') acts += '<button class="btn small' + (x.reacted ? '' : ' ghost') + '" data-pwith="' + x.id + '">🙏 함께 기도했어요 ' + x.count + '</button>';
+      if (x.mine && !x.done) acts += '<button class="btn small ghost" data-pdone="' + x.id + '"' + (x.local ? ' data-local="1"' : '') + '>🙌 응답됐어요</button>';
+      if (x.mine) acts += '<button class="btn small ghost" data-pdel="' + x.id + '"' + (x.local ? ' data-local="1"' : '') + ' style="flex:0 0 auto">지우기</button>';
+      return '<div class="card pray-item' + (x.done ? ' done' : '') + (x.head === 'hard' && tab === 'pastor' ? ' hard' : '') + '">' +
+        '<div class="ph-top">' + (h ? '<span class="ph-head">' + h[2] + ' ' + esc(h[1]) + '</span>' : '') + '<span class="ph-scope">' + sc[1] + '</span></div>' +
+        (x.mine ? '' : '<div class="sub" style="font-size:.8rem;margin-top:4px">' + esc(x.author || '') + '</div>') +
+        '<p class="text" style="margin:6px 0 8px">' + esc(x.text) + '</p>' +
+        '<div class="sub" style="font-size:.76rem;margin-bottom:8px">' + esc(x.at) + (x.done ? ' · 🙌 응답됐어요' + (x.doneAt ? ' (' + esc(x.doneAt) + ')' : '') : '') +
+          (x.mine && !x.local && x.scope !== 'pastor' && x.count ? ' · 🙏 ' + x.count + '명이 함께 기도했어요' : '') + '</div>' +
+        (acts ? '<div class="row" style="flex-wrap:wrap">' + acts + '</div>' : '') + '</div>';
     }
-    return '<div class="card lockbox"><b>🔒 나만 보는 기도 공간</b><div class="sub">여기 적은 기도는 <b>이 휴대폰 안에만</b> 저장돼요. 교회 서버로 보내지 않아서 목사님·간사님·운영자도 볼 수 없어요.</div></div>' +
-      '<form class="card" id="prayForm" style="display:flex;flex-direction:column;gap:10px"><b>오늘의 기도</b>' +
-        '<textarea name="t" rows="4" maxlength="1000" required placeholder="하나님께만 드리는 기도를 적어 보세요."></textarea>' +
-        '<button class="btn">저장</button></form>' +
-      (open.length ? '<div class="sec-title"><b>기도하고 있어요 ' + open.length + '</b></div>' + open.map(item).join('') : '') +
-      (done.length ? '<div class="sec-title"><b>응답된 기도 ' + done.length + '</b></div>' + done.map(item).join('') : '') +
-      '<p class="sub" style="text-align:center;font-size:.78rem">휴대폰을 바꾸거나 앱 데이터를 지우면 함께 지워져요.</p>';
+    var form = '<form class="card" id="prayForm" style="display:flex;flex-direction:column;gap:10px"><b>오늘의 기도</b>' +
+        '<div class="sub" style="font-weight:700">말머리</div><div class="ph-pick" id="phPick">' + HEADS.map(function (h, i) { return '<button type="button" class="ph-b' + (i === 0 ? ' on' : '') + '" data-v="' + h[0] + '">' + h[2] + ' ' + esc(h[1]) + '</button>'; }).join('') + '</div>' +
+        '<div class="sub" style="font-weight:700">누가 볼까요?</div><div class="chips" id="psPick" style="margin:0;flex-wrap:wrap;overflow:visible">' + PSCOPES.map(function (s, i) { return '<button type="button" class="chip' + (i === 0 ? ' on' : '') + '" data-v="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div>' +
+        '<div class="ph-help" id="psHelp">' + PSCOPES[0][2] + '</div>' +
+        '<textarea name="t" rows="4" maxlength="1000" required placeholder="하나님께 드리는 기도를 적어 보세요."></textarea>' +
+        '<button class="btn">기도 올리기</button></form>';
+    var tabs = '<div class="seg" style="margin-top:4px">' + [['mine', '내 기도 ' + mine.length]].concat([['with', '함께 기도해요 ' + withList.length]]).concat(isPastor ? [['pastor', '목사님께 온 기도 ' + toPastor.length + (hard ? ' ❗' : '')]] : [])
+      .map(function (t) { return '<a href="' + link(t[0], hf) + '"' + (t[0] === tab ? ' class="on"' : '') + '>' + t[1] + '</a>'; }).join('') + '</div>';
+    var chips = '<div class="chips">' + [['', '전체']].concat(HEADS.map(function (h) { return [h[0], h[2] + ' ' + h[1].replace(/^하나님 /, '')]; }))
+      .map(function (c) { return '<a class="chip' + (c[0] === hf ? ' on' : '') + '" href="' + link(tab, c[0]) + '">' + esc(c[1]) + '</a>'; }).join('') + '</div>';
+    var empty = tab === 'with' ? '목장이나 교회에 올라온 기도가 아직 없어요.' : tab === 'pastor' ? '목사님께 온 기도가 없어요.' : '아직 적은 기도가 없어요. 위에서 오늘의 기도를 적어 보세요.';
+    return (tab === 'mine' ? form : '') + tabs +
+      (tab === 'pastor' && hard ? '<div class="card ph-alert">❗ 「하나님 저 오늘 너무 힘들어요」 기도가 <b>' + hard + '개</b> 있어요. 먼저 연락해 보세요.</div>' : '') + chips +
+      (open.length ? '<div class="sec-title"><b>' + (tab === 'with' ? '함께 기도해요' : '기도하고 있어요') + ' ' + open.length + '</b></div>' + open.map(item).join('') : '') +
+      (done.length ? '<div class="sec-title"><b>🙌 응답된 기도 ' + done.length + '</b></div>' + done.map(item).join('') : '') +
+      (list.length ? '' : '<p class="empty">' + empty + '</p>') +
+      '<p class="sub" style="text-align:center;font-size:.78rem">「나만」으로 적은 기도는 휴대폰을 바꾸거나 앱 데이터를 지우면 함께 지워져요.</p>';
   }
   function bindPrayer() {
     var f = $('#prayForm');
-    if (!f) return;
-    f.onsubmit = function (e) {
-      e.preventDefault();
-      var v = f.t.value.trim(); if (!v) return;
-      var list = prayers();
-      list.unshift({ id: 'q' + Date.now(), text: v, at: md(dayKey(new Date())) });
-      savePrayers(list); toast('기도를 저장했어요 🙏'); route();
-    };
+    function postById(id) { return S.posts.filter(function (x) { return x.id === id; })[0]; }
+    if (f) {
+      $('#phPick').onclick = function (e) { var b = e.target.closest('[data-v]'); if (!b) return; $('#phPick').querySelectorAll('.ph-b').forEach(function (c) { c.classList.toggle('on', c === b); }); };
+      $('#psPick').onclick = function (e) {
+        var b = e.target.closest('[data-v]'); if (!b) return;
+        $('#psPick').querySelectorAll('.chip').forEach(function (c) { c.classList.toggle('on', c === b); });
+        var hard = $('#phPick .on').dataset.v === 'hard';
+        $('#psHelp').textContent = pscopeOf(b.dataset.v)[2] + (b.dataset.v === 'pastor' && hard ? ' 목사님이 힘든 기도를 먼저 챙겨 보세요.' : '');
+      };
+      f.onsubmit = function (e) {
+        e.preventDefault();
+        var v = f.t.value.trim(); if (!v) return;
+        var head = $('#phPick .on').dataset.v, scope = $('#psPick .on').dataset.v;
+        if (scope === 'me') {
+          var list = prayers(); list.unshift({ id: 'q' + Date.now(), head: head, text: v, at: md(dayKey(new Date())) });
+          savePrayers(list); toast('나만 보는 기도로 저장했어요 🔒'); route(); return;
+        }
+        if (scope === 'group' && !S.me.group) { toast(CLOUD ? '아직 목장이 정해지지 않았어요.' : '목장방에서 목장을 먼저 골라 주세요.'); return; }
+        var done = scope === 'pastor' ? '목사님께만 보냈어요 🙏' : scope === 'group' ? '목장 식구들과 나눴어요 🏡' : '교회와 나눴어요 ⛪';
+        if (CLOUD) { f.querySelector('.btn').disabled = true; put(YG.addPost({ cat: 'pray', head: head, scope: scope, text: v }), done); f.reset(); return; }
+        S.posts.unshift({ id: 'p' + Date.now(), cat: 'pray', head: head, scope: scope, group: scope === 'group' ? S.me.group : undefined, author: S.me.name, text: v, at: '방금', mine: true, count: 0, reacted: false, comments: [] });
+        save(); toast(done); route();
+      };
+    }
+    document.querySelectorAll('[data-pwith]').forEach(function (b) { b.onclick = function () { react(b.dataset.pwith); route(); }; });
     document.querySelectorAll('[data-pdone]').forEach(function (b) {
-      b.onclick = function () { var list = prayers(); list.forEach(function (x) { if (x.id === b.dataset.pdone) x.done = md(dayKey(new Date())); }); savePrayers(list); toast('응답된 기도로 옮겼어요 🙌'); route(); };
+      b.onclick = function () {
+        if (b.dataset.local) { var list = prayers(); list.forEach(function (x) { if (x.id === b.dataset.pdone) x.done = md(dayKey(new Date())); }); savePrayers(list); toast('응답된 기도로 옮겼어요 🙌'); route(); return; }
+        var p = postById(b.dataset.pdone); if (!p) return;
+        if (CLOUD) { put(YG.answer(p), '응답됐어요 🙌 함께 기도한 분들도 볼 수 있어요'); return; }
+        p.answered = Date.now(); save(); toast('응답됐어요 🙌'); route();
+      };
     });
     document.querySelectorAll('[data-pdel]').forEach(function (b) {
-      b.onclick = function () { if (!confirm('이 기도를 지울까요? 되돌릴 수 없어요.')) return; savePrayers(prayers().filter(function (x) { return x.id !== b.dataset.pdel; })); route(); };
+      b.onclick = function () {
+        if (!confirm('이 기도를 지울까요? 되돌릴 수 없어요.')) return;
+        if (b.dataset.local) { savePrayers(prayers().filter(function (x) { return x.id !== b.dataset.pdel; })); route(); return; }
+        var p = postById(b.dataset.pdel); if (!p) return;
+        if (CLOUD) { put(YG.removePost(p), '지웠어요'); return; }
+        S.posts = S.posts.filter(function (x) { return x !== p; }); save(); route();
+      };
     });
   }
 
