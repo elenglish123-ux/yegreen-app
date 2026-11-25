@@ -288,3 +288,20 @@ textarea { resize: none; line-height: 1.55; }
 
 .ph-pick .ph-b:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .seg.ph-tabs a { font-size: .8rem; } .seg.ph-tabs small { font-weight: 600; opacity: .7; }
+/* 기도 노트 (2026-11-25) */
+.card.note-cover { background: linear-gradient(150deg, var(--green-d), var(--green)); color: #fff; text-align: center; padding: 20px 16px; }
+.card.note-cover b { font-size: 1.2rem; display: block; margin: 4px 0; }
+.card.note-cover p { font-size: .88rem; opacity: .85; }
+.card.note-paper { background: #fffdf7; border: 1px solid #eee6d2; padding: 6px 14px 10px; }
+.note-sec + .note-sec { margin-top: 6px; }
+.note-h { font-weight: 800; color: var(--green-d); padding: 10px 0 4px; border-bottom: 2px solid #e8e0cc; }
+.note-h small { font-weight: 600; color: #8a8478; }
+.note-it { display: flex; gap: 10px; padding: 12px 0; border-bottom: 1px dashed #e8e0cc; }
+.note-it:last-child { border-bottom: 0; }
+.note-it.hard { background: #fff4f4; border-radius: 10px; padding-left: 8px; padding-right: 8px; }
+.note-n { flex: 0 0 26px; height: 26px; border-radius: 50%; background: var(--green-l); color: var(--green-d); font-weight: 800; font-size: .82rem; display: flex; align-items: center; justify-content: center; }
+.note-body { flex: 1; min-width: 0; }
+.note-meta { font-size: .76rem; color: #8a8478; margin-bottom: 3px; }
+.note-body p { font-size: 1.02rem; line-height: 1.6; margin: 0 0 6px; }
+.note-b { font: inherit; font-size: .8rem; padding: 5px 10px; border-radius: 999px; border: 1px solid #cfd8d2; background: #fff; color: var(--green-d); cursor: pointer; }
+.note-b.on { background: var(--green); border-color: var(--green); color: #fff; }

@@ -778,7 +778,33 @@
         '<textarea name="t" rows="4" maxlength="1000" required placeholder="' + pick[3] + '"></textarea>' +
         '<button class="btn">기도 드리기</button></form>';
     var TABN = { me: '🔒 나만', pastor: '🙏 목사님께', group: '🏡 목장', all: '⛪ 교회' };
-    var tabs = '<div class="sec-title" style="margin:6px 0 6px"><b>기도 모아 보기</b><span class="sub">열람 범위별로 보여요</span></div>' +
+    if (q.t === 'note') return prayerNote();
+    // 기도 노트 (나연 요청 2026-11-25): 기도할 때 펼쳐 보는 화면. 모든 범위의 기도를 한 번에, 응답된 기도는 따로
+    function prayerNote() {
+      var ans = q.a === '1', n = 0, total = 0, tot = { open: 0, done: 0 };
+      ['me', 'pastor', 'group', 'all'].forEach(function (k) { byScope[k].forEach(function (x) { tot[x.done ? 'done' : 'open']++; }); });
+      var secs = ['me', 'pastor', 'group', 'all'].map(function (k) {
+        var xs = byScope[k].filter(function (x) { return !!x.done === ans && (!hf || x.head === hf); });
+        if (!xs.length) return '';
+        total += xs.length;
+        return '<div class="note-sec"><div class="note-h">' + TABN[k] + ' <small>' + xs.length + '</small></div>' + xs.map(function (x) {
+          var h = headOf(x.head), act = '';
+          if (!ans && x.mine) act = '<button class="note-b" data-pdone="' + x.id + '"' + (x.local ? ' data-local="1"' : '') + '>🙌 응답됐어요</button>';
+          if (!ans && !x.mine && x.scope !== 'pastor') act = '<button class="note-b' + (x.reacted ? ' on' : '') + '" data-pwith="' + x.id + '">🙏 ' + (x.reacted ? '함께 기도했어요 ✓' : '함께 기도했어요') + '</button>';
+          return '<div class="note-it' + (x.head === 'hard' && k === 'pastor' && isPastor && !x.mine ? ' hard' : '') + '"><span class="note-n">' + (++n) + '</span><div class="note-body">' +
+            '<div class="note-meta">' + (h ? h[2] + ' ' + esc(h[1]) : '') + ' · ' + (x.mine ? '나' : esc(x.author || '')) + ' · ' + esc(x.at) + (ans ? ' · 🙌 ' + esc(x.doneAt || '응답됐어요') : '') + '</div>' +
+            '<p>' + esc(x.text) + '</p>' + act + '</div></div>';
+        }).join('') + '</div>';
+      }).join('');
+      var chipsN = '<div class="chips">' + [['', '모든 기도']].concat(HEADS.map(function (h) { return [h[0], h[2] + ' ' + h[1]]; }))
+        .map(function (c) { return '<a class="chip' + (c[0] === hf ? ' on' : '') + '" href="#/talk/prayer?t=note' + (ans ? '&a=1' : '') + (c[0] ? '&h=' + c[0] : '') + '">' + esc(c[1]) + '</a>'; }).join('') + '</div>';
+      return '<a class="btn small ghost" href="#/talk/prayer" style="align-self:flex-start">‹ 기도 공간으로</a>' +
+        '<div class="card note-cover"><div style="font-size:1.6rem">📒</div><b>나의 기도 노트</b><p>기도할 때 펼쳐 보세요. 한 제목씩 천천히 기도해요.</p></div>' +
+        '<div class="seg" style="grid-template-columns:1fr 1fr"><a href="#/talk/prayer?t=note"' + (ans ? '' : ' class="on"') + '>🙏 기도할 제목 ' + tot.open + '</a><a href="#/talk/prayer?t=note&a=1"' + (ans ? ' class="on"' : '') + '>🙌 응답된 기도 ' + tot.done + '</a></div>' +
+        chipsN + (secs ? '<div class="card note-paper">' + secs + '</div>' : '<p class="empty">' + (ans ? '아직 응답된 기도가 없어요. 응답되면 여기에 모여요.' : '기도할 제목이 없어요. 기도 공간에서 오늘의 기도를 적어 보세요.') + '</p>') +
+        (ans && total ? '<p class="sub" style="text-align:center;font-size:.82rem">하나님이 응답하신 기도 ' + total + '개, 감사해요 🙌</p>' : '');
+    }
+    var tabs = '<div class="sec-title" style="margin:6px 0 6px"><b>기도 모아 보기</b><a class="btn small" href="#/talk/prayer?t=note" style="flex:0 0 auto">📒 기도 노트</a></div>' +
       '<div class="seg ph-tabs">' + ['me', 'pastor', 'group', 'all'].map(function (k) {
         return '<a href="' + link(k, hf) + '"' + (k === tab ? ' class="on"' : '') + '>' + TABN[k] + ' <small>' + byScope[k].length + (k === 'pastor' && hard ? ' ❗' : '') + '</small></a>';
       }).join('') + '</div>' + '<div class="ph-help" style="margin-top:6px">' + (tab === 'pastor' && !isPastor ? '내가 목사님께만 보낸 기도예요. 목사님만 보실 수 있어요.' : pscopeOf(tab)[2]) + '</div>';
