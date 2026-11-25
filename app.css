@@ -229,6 +229,30 @@ textarea { resize: none; line-height: 1.55; }
 .card.ph-alert { background: #fff4f4; color: #8a2d3b; border: 1px solid #f3c7cd; font-size: .9rem; }
 .seg { grid-template-columns: repeat(4, 1fr); }
 .seg a { flex: 1 1 0; min-width: 0; padding-left: 2px; padding-right: 2px; font-size: .84rem; }
+/* 나눔 탭 5칸 + 성경읽기 (2026-11-25) */
+.seg.seg5 { grid-template-columns: repeat(5, 1fr); }
+.seg.seg5 a { font-size: .76rem; letter-spacing: -.03em; }
+.rd-stats { display: flex; gap: 10px; margin-bottom: 10px; }
+.rd-stats div { flex: 1; background: var(--green-l); border-radius: 12px; padding: 10px 12px; display: flex; align-items: baseline; gap: 6px; }
+.rd-stats b { font-size: 1.6rem; color: var(--green); line-height: 1; }
+.rd-stats span { font-size: .82rem; color: #3c4a42; }
+.rd-month { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+.rd-month i { font-style: normal; font-size: .72rem; color: #8a8478; font-weight: 700; }
+.rd-c { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: .78rem; color: #6f6a60; background: #f4f1ea; }
+.rd-c.on { background: var(--green); color: #fff; font-weight: 800; }
+.rd-c.today { box-shadow: 0 0 0 2px var(--green-d); }
+.rd-c.fut { opacity: .45; }
+.rd-day { display: flex; align-items: center; gap: 12px; padding: 9px 2px; border-top: 1px solid #eee9e0; }
+.rd-day:first-of-type { border-top: 0; }
+.rd-day.today { background: #f1f6f2; border-radius: 10px; padding-left: 8px; padding-right: 8px; }
+.rd-d { width: 34px; font-weight: 800; color: var(--green-d); display: flex; flex-direction: column; line-height: 1.15; }
+.rd-d small { font-weight: 500; font-size: .7rem; color: #8a8478; }
+.rd-t { flex: 1; font-weight: 700; color: inherit; }
+.rd-day.done .rd-t { color: #7c8a82; text-decoration: line-through; text-decoration-color: rgba(47,107,79,.5); }
+.rd-ck { width: 34px; height: 34px; border-radius: 50%; border: 2px solid #cfd8d2; background: #fff; color: #fff; font-weight: 900; font-size: 1rem; cursor: pointer; flex: 0 0 auto; }
+.rd-ck.on { background: var(--green); border-color: var(--green); }
+.rd-ck:disabled { opacity: .35; cursor: default; }
+#wordForm input { font: inherit; padding: 10px 12px; border: 1px solid #e3e0d8; border-radius: 10px; }
 /* 관리자 화면 (2026-11-18) */
 .card.admin-head { background: linear-gradient(150deg, var(--green-d), var(--green)); color: #fff; }
 .card.admin-head .chip { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.3); color: #fff; }
