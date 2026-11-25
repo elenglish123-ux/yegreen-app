@@ -449,3 +449,19 @@ textarea { resize: none; line-height: 1.55; }
 .jubo-t { width: 100%; border-collapse: collapse; font-size: .92rem; }
 .jubo-t td { padding: 5px 6px 5px 0; border-bottom: 1px dashed #eee9e0; }
 .jubo-fixed summary { cursor: pointer; font-weight: 700; color: var(--green-d); }
+/* 주보 뒷면·섬김 표 (2026-11-25) */
+.jserve-wrap { overflow-x: auto; }
+.jserve-t { width: 100%; border-collapse: collapse; font-size: .86rem; text-align: center; }
+.jserve-t th, .jserve-t td { border: 1px solid #e6e1d6; padding: 6px 4px; line-height: 1.45; }
+.jserve-t tr:first-child th { background: #eef5f0; color: var(--green-d); }
+.jserve-t th:first-child { background: #f6faf7; color: var(--green-d); white-space: nowrap; }
+.jvision div { padding: 6px 0; border-bottom: 1px dashed #eee9e0; display: flex; flex-direction: column; }
+.jvision b { color: var(--green-d); }
+.jvision span { font-size: .88rem; color: #6f6a60; }
+.jmis div { padding: 5px 0; font-size: .98rem; }
+.jmis b { color: var(--green-d); margin-right: 4px; }
+.jflow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.jflow span { background: #eef5f0; color: var(--green-d); font-weight: 700; border-radius: 999px; padding: 5px 11px; font-size: .9rem; }
+.jflow i { font-style: normal; color: #a07d2c; }
+.card.jubo-foot { text-align: center; font-size: .92rem; line-height: 1.8; background: #f6faf7; }
+.card.jubo-foot a { color: var(--green-d); font-weight: 700; }
