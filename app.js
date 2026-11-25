@@ -333,7 +333,6 @@
     return (s ? '<a class="card hero" href="#/sermons?v=' + s.videoId + '"><div class="thumb" style="background-image:url(' + thumb(s.videoId) + ')"><span class="play"></span></div>' +
         '<div class="txt"><div class="label">이번 주 말씀</div><div class="h1">' + esc(s.title) + '</div><div class="sub">' + [md(s.date), s.passage, s.preacher].filter(Boolean).map(esc).join(' · ') + '</div></div></a>' : '') +
       readingCard() +
-      '<div class="quick"><a href="#/worship"><i>⛪</i>예배 시간</a><a href="#/visit"><i>📍</i>오시는 길</a><a href="#/mission"><i>🌏</i>선교 소식</a></div>' +
       '<div class="card"><div class="h2" style="margin-bottom:4px">다가오는 일정</div>' + (ev || '<p class="sub">다가오는 일정이 없어요.</p>') + '</div>' +
       (news ? '<div class="card"><div class="sec-title" style="margin:0 0 4px"><b>교회 소식</b><a href="#/news">전체</a></div>' + news + '</div>' : '') +
       (S.me && S.me.approved && challengeNow() ? '<a class="card green" href="#/talk/prayer?p=vow&c=thanks" style="display:flex;align-items:center;gap:12px"><span style="font-size:1.6rem">🌾</span><div><b>감사 기도 챌린지로 함께해요</b><div class="sub" style="color:#55705f">' + (thanksDays()[dayKey(new Date())] ? '오늘 감사 기도를 드렸어요 ✓' : challengeNow().title + ' · ' + md(challengeNow().to) + '까지') + '</div></div></a>' : '');
@@ -430,9 +429,9 @@
 
   // ---------- 소식 ----------
   function news(q) {
-    var tab = q.tab === 'jubo' ? 'jubo' : 'notice';   // 사진 칸은 뺌 (나연 2026-11-25)
+    var tab = q.tab === 'jubo' || q.tab === 'mission' ? q.tab : 'notice';   // 사진 칸은 빼고 선교 소식을 넣음 (나연 2026-11-25)
     renderTop({ title: '교회 소식', bell: true });
-    var html = '<div class="chips">' + [['notice', '광고'], ['jubo', '주보']].map(function (t) { return '<a class="chip' + (t[0] === tab ? ' on' : '') + '" href="#/news?tab=' + t[0] + '">' + t[1] + '</a>'; }).join('') + '</div>';
+    var html = '<div class="chips">' + [['notice', '광고'], ['jubo', '주보'], ['mission', '선교 소식']].map(function (t) { return '<a class="chip' + (t[0] === tab ? ' on' : '') + '" href="#/news?tab=' + t[0] + '">' + t[1] + '</a>'; }).join('') + '</div>';
     var b = BULLETINS[0];
     if (tab === 'notice') {
       html += bulletinNews().map(function (n, i) {
@@ -443,7 +442,7 @@
     } else if (tab === 'jubo') {
       html += b ? juboText(b) : '<p class="empty">아직 올라온 주보가 없어요.</p>';
     } else {
-      html += '<a class="card" href="https://elenglish123-ux.github.io/yegreen-site/gallery.html" target="_blank" rel="noopener" style="display:block;text-align:center;padding:30px 20px"><div style="font-size:2rem">📷</div><b>사진첩은 홈페이지에 있어요</b><p class="sub">한 달에 한 번, 예배와 행사 사진을 골라 올려요. 눌러서 보기</p></a>';
+      html += missionBody();   // 선교 소식 (홈 바로가기에서 옮김, 나연 2026-11-25)
     }
     if (!S.alerts.notice) html += '<button class="card green" data-toggle-alert="notice" style="display:flex;justify-content:space-between;align-items:center;width:100%"><b style="color:var(--green-d)">🔔 새 소식 알림 받기</b><span class="tg"></span></button>';
     return html;
@@ -471,7 +470,6 @@
         '<label class="field"><span>이름</span><input name="name" maxlength="12" required placeholder="예: 홍길동"></label>' +
         '<label class="field"><span>휴대폰 번호</span><input name="phone" inputmode="tel" maxlength="13" placeholder="010-0000-0000"></label>' +
         '<label class="field"><span>비밀번호 정하기 (숫자 6자리)</span><input name="pin" type="password" inputmode="numeric" maxlength="6" placeholder="시안에서는 아무 숫자나 괜찮아요"></label>' +
-        '<label class="field"><span>목장 (모르면 비워 두세요)</span><input name="group" maxlength="12" placeholder="예: 기쁨목장"></label>' +
         '<label class="check"><input type="checkbox" required>개인정보 수집·이용 동의 (필수)</label>' +
         '<label class="check"><input type="checkbox" required>민감정보(신앙) 처리 동의 (필수)</label>' +
         '<button class="btn">승인 요청하기</button></form>';
@@ -499,7 +497,6 @@
         (join ? '<label class="field"><span>이름</span><input name="name" maxlength="12" required autocomplete="name" placeholder="예: 홍길동"></label>' : '') +
         phone + pin +
         (join ? '<label class="field"><span>비밀번호 한 번 더</span><input name="pin2" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" required></label>' +
-          '<label class="field"><span>목장 · 부서 (모르면 비워 두세요)</span><input name="group" maxlength="12" placeholder="예: 기쁨목장, 청년부"></label>' +
           '<details class="sub"><summary style="cursor:pointer">개인정보는 이렇게 써요</summary><p style="margin-top:6px">이름·휴대폰 번호·목장은 교인 확인과 앱 이용에만 써요. 나눔에 쓴 기도제목 같은 신앙 정보는 고른 범위(목사님께만·우리 목장·교회 전체)에만 보여요. 「나만의 기도 공간」과 「나만 보기」 감사일기는 서버에 올라가지 않아요. 교회를 떠나면 정보를 지워요.</p></details>' +
           '<label class="check"><input type="checkbox" name="a1" required>개인정보 수집·이용 동의 (필수)</label>' +
           '<label class="check"><input type="checkbox" name="a2" required>민감정보(신앙) 처리 동의 (필수)</label>' : '') +
@@ -524,7 +521,7 @@
       if (join && /^(\d)\1{5}$|^123456$|^654321$/.test(pin)) return say('너무 쉬운 비밀번호예요. 다른 숫자로 정해 주세요.');
       if (join && (!f.a1.checked || !f.a2.checked)) return say('필수 동의에 체크해 주세요.');
       btn.disabled = true; say('');
-      var p = join ? YG.join({ name: f.name.value.trim(), phone: phone, pin: pin, group: f.group.value.trim() }) : YG.login(phone, pin);
+      var p = join ? YG.join({ name: f.name.value.trim(), phone: phone, pin: pin })   /* 목장은 가입 때 묻지 않고 교회가 정해 줌 (나연 2026-11-25) */ : YG.login(phone, pin);
       p.then(function () { if (join) toast('가입 신청을 보냈어요 🙏'); }, function (err) { btn.disabled = false; say(YG.authMessage(err)); });
     };
   }
@@ -537,7 +534,7 @@
     var f = $('#joinForm');
     if (f) f.onsubmit = function (e) {
       e.preventDefault();
-      S.me = { name: f.name.value.trim(), group: f.group.value.trim(), approved: false };
+      S.me = { name: f.name.value.trim(), group: '', approved: false };
       save(); route();
     };
     var a = $('[data-approve]');
@@ -1792,8 +1789,8 @@
       '<div class="card"><div class="h2" style="margin-bottom:8px">섬기는 사람들</div><table class="wt"><tr><td>고용진 목사</td><td>담임목사</td></tr><tr><td>정하람 간사</td><td>간사</td></tr></table></div>' +
       '<div class="card"><div class="h2" style="margin-bottom:6px">함께하는 선교</div><p class="sub" style="font-size:.95rem">인도 · 필리핀 · 파푸아뉴기니 · 일본 · 북한(한국성결교회 협력) · 오픈도어선교회</p></div>';
   }
-  function mission() {
-    renderTop({ back: '뒤로', white: true });
+  function mission() { renderTop({ back: '뒤로', white: true }); return missionBody(); }
+  function missionBody() {   // 소식 › 선교 소식 칩에서도 씀
     return '<div class="card green"><div class="h2" style="color:var(--green-d)">함께하는 선교</div><p class="sub" style="color:#55705f;margin-top:4px">선교지 소식과 기도제목은 등록 교인만 보는 앱에만 올려요. 안전을 위해 선교사님 이름은 쓰지 않아요.</p></div>' +
       MISSIONS.map(function (m) {
         return '<div class="card"><div class="sec-title" style="margin:0 0 6px"><b>🌏 ' + esc(m[0]) + '</b><span class="sub">' + esc(m[1]) + '</span></div>' +
