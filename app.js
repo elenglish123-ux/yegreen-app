@@ -1073,6 +1073,95 @@
     for (var c = 0; c < 2; c++) { var d = b.getChannelData(c); for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6); }
     var cv = ctx.createConvolver(); cv.buffer = b; return cv;
   }
+  // ---------- 진짜 피아노 소리 + 기도 음악 편곡 (나연 2026-11-25: 「초딩 피아노 같아」) ----------
+  // 피아노 소리: Salamander Grand Piano (Alexander Holm, CC-BY 3.0) — 실제 그랜드 피아노를 건반마다 녹음한 것.
+  // 처음 틀 때 한 번 약 1.2MB를 받아 두고(브라우저가 저장), 그 뒤로는 바로 나옴. 못 받으면 예전 소리로 대신 연주.
+  var PIANO = { buf: {}, p: null, ok: false };
+  var PIANO_URL = 'https://tonejs.github.io/audio/salamander/';
+  function loadPiano(ctx) {
+    if (PIANO.p) return PIANO.p;
+    var names = [];
+    [2, 3, 4, 5].forEach(function (o) { ['C', 'Ds', 'Fs', 'A'].forEach(function (n) { names.push(n + o); }); });
+    names.push('C6', 'Ds6', 'A1');
+    PIANO.p = Promise.all(names.map(function (n) {
+      var m = n.match(/^([A-G])(s?)(\d)$/), midi = 12 * (+m[3] + 1) + { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] ? 1 : 0);
+      return fetch(PIANO_URL + n + '.mp3').then(function (r) { if (!r.ok) throw new Error(n); return r.arrayBuffer(); })
+        .then(function (a) { return new Promise(function (res, rej) { ctx.decodeAudioData(a, res, rej); }); })
+        .then(function (b) { PIANO.buf[midi] = b; });
+    })).then(function () { PIANO.ok = true; return true; }).catch(function () { PIANO.p = null; return false; });
+    return PIANO.p;
+  }
+  function pnote(ctx, out, m, t, len, vel) {   // 건반 하나: 가장 가까운 녹음을 높이만 살짝 바꿔서
+    var keys = Object.keys(PIANO.buf).map(Number), k = keys[0];
+    keys.forEach(function (x) { if (Math.abs(x - m) < Math.abs(k - m)) k = x; });
+    var src = ctx.createBufferSource(), g = ctx.createGain();
+    src.buffer = PIANO.buf[k]; src.playbackRate.value = Math.pow(2, (m - k) / 12);
+    g.gain.setValueAtTime(vel, t); g.gain.setTargetAtTime(0.0001, t + len, 0.28);   // 건반을 떼면 부드럽게 사라짐(페달 느낌)
+    src.connect(g); g.connect(out); src.start(t); src.stop(t + len + 2.2);
+  }
+  // 찬송 4부 악보 → 기도 음악 편곡. 절마다 모습이 바뀜:
+  //   1절 「고요히」 선율 + 아래 세 성부를 물결처럼 풀어 치기
+  //   2절 「4성 찬송」 네 성부 그대로, 이어지게
+  //   3절 「높은 곳에서」 선율 한 옥타브 위 + 마디마다 화음을 길게
+  //   4절 「마무리」 네 성부, 점점 느려지며 마지막 화음을 굴려 길게
+  function arrangeSong(h, t0) {
+    var vs = h.v.map(parseVoice), ev = [];
+    var meter = String(h.meter || '4/4').match(/(\d+)\/(\d+)/), bar = meter ? +meter[1] * 4 / +meter[2] : 4;
+    var mel = [], acc = [];   // [시작박, 길이박, midi]
+    vs.forEach(function (voice, vi) {
+      var b = 0;
+      voice.forEach(function (n) {
+        var ps = n[0].slice().sort(function (a, c) { return a - c; });
+        ps.forEach(function (m, i) { if (vi === 0 && i === ps.length - 1) mel.push([b, n[1], m]); else acc.push([b, n[1], m]); });
+        b += n[1];
+      });
+    });
+    var L = Math.max.apply(null, vs.map(function (v) { return v.reduce(function (s, n) { return s + n[1]; }, 0); }));
+    var breaths = mel.filter(function (n) { return n[1] >= 2; }).map(function (n) { return n[0] + n[1]; });   // 긴 음 뒤에 숨 고르기
+    var base = 60 / Math.min(70, Math.max(46, h.bpm * 0.62)), at = t0;
+    var STY = ['arp', 'chorale', 'high', 'end'];
+    function jit() { return Math.random() * 0.014; }
+    function vel(v) { return v * (0.9 + Math.random() * 0.16); }
+    for (var vi = 0; vi < h.vs; vi++) {
+      var sty = STY[Math.min(vi, 3)], slow = sty === 'end' ? 1.14 : sty === 'high' ? 1.05 : 1;
+      var T = (function (st, beat, isEnd) {
+        return function (b) {   // 박 → 초 (숨 고르기 + 마지막 절은 끝으로 갈수록 느려짐)
+          var s = b * beat;
+          breaths.forEach(function (e) { if (e < L - 0.01 && e <= b - 0.001) s += beat * 0.35; });
+          if (isEnd && b > L - 6) { var x = b - (L - 6); s += beat * x * x * 0.06; }
+          return st + s;
+        };
+      })(at, base * slow, sty === 'end');
+      if (sty === 'arp') {
+        mel.forEach(function (n) { ev.push({ at: T(n[0]) + jit(), m: n[2], len: T(n[0] + n[1]) - T(n[0]) + 0.12, vel: vel(0.42) }); });
+        for (var b = 0; b < L; b += 1) {   // 박마다 아래 성부를 「저-중-고」로 풀어서
+          var ps = acc.filter(function (n) { return n[0] <= b + 0.001 && n[0] + n[1] > b + 0.001; }).map(function (n) { return n[2]; }).sort(function (a, c) { return a - c; });
+          ps = ps.filter(function (m, i) { return ps.indexOf(m) === i; });
+          if (!ps.length) continue;
+          var step = 1 / Math.max(2, ps.length);
+          ps.forEach(function (m, i) { var s = b + i * step; ev.push({ at: T(s) + jit(), m: m, len: T(b + 1) - T(s) + base * 0.55, vel: vel(i === 0 ? 0.24 : 0.17) }); });
+        }
+      } else if (sty === 'high') {
+        mel.forEach(function (n) { ev.push({ at: T(n[0]) + jit(), m: n[2] + 12, len: T(n[0] + n[1]) - T(n[0]) + 0.2, vel: vel(0.3) }); });
+        for (var mb = 0; mb < L; mb += bar) {
+          var cs = acc.filter(function (n) { return n[0] <= mb + 0.001 && n[0] + n[1] > mb + 0.001; }).map(function (n) { return n[2]; });
+          cs.forEach(function (m, i) { ev.push({ at: T(mb) + i * 0.03, m: m, len: T(Math.min(L, mb + bar)) - T(mb) + 0.3, vel: vel(0.15) }); });
+        }
+      } else {   // chorale / end: 네 성부 그대로
+        mel.forEach(function (n) { ev.push({ at: T(n[0]) + jit(), m: n[2], len: T(n[0] + n[1]) - T(n[0]) + 0.1, vel: vel(sty === 'end' ? 0.34 : 0.4) }); });
+        acc.forEach(function (n) { ev.push({ at: T(n[0]) + jit() + 0.006, m: n[2], len: T(n[0] + n[1]) - T(n[0]) + 0.1, vel: vel(n[2] < 52 ? 0.26 : 0.2) }); });
+      }
+      var endAt = T(L);
+      if (sty === 'end') {   // 마지막 화음을 아래에서 위로 굴려 길게
+        var last = mel.concat(acc).filter(function (n) { return n[0] + n[1] >= L - 0.01; }).map(function (n) { return n[2]; }).sort(function (a, c) { return a - c; });
+        last.forEach(function (m, i) { ev.push({ at: endAt + 0.15 + i * 0.07, m: m, len: 4.5, vel: vel(0.2) }); });
+        endAt += 5;
+      }
+      at = endAt + base * 1.4;   // 절 사이 숨
+    }
+    ev.sort(function (a, c) { return a.at - c.at; });
+    return { ev: ev, end: at };
+  }
   function musicStart(key, vol, startAt, onSong) {
     musicStop();
     var mood = moodOf(key);
@@ -1097,8 +1186,18 @@
     } else {
       var list = hymnList(mood); if (!list.length) return;
       var si = Math.max(0, list.map(function (h) { return h.k; }).indexOf(startAt)), q = [], nt = t0;
+      var waiting = !PIANO.ok;   // 진짜 피아노 소리를 받는 동안은 기다렸다가 시작
+      if (waiting) loadPiano(ctx).then(function () { if (MUS !== M) return; waiting = false; nt = Math.max(nt, ctx.currentTime + 0.3); });
       function queueSong() {   // 한 곡(3~4절)을 음 목록으로 펼침
         var h = list[si % list.length];
+        if (PIANO.ok) {
+          q.push({ at: nt, title: h.t, idx: si % list.length });
+          var r = arrangeSong(h, nt);
+          r.ev.forEach(function (e) { q.push({ at: e.at, pm: e.m, len: e.len, vol: e.vel }); });
+          nt = r.end + 3; si++;
+          q.sort(function (a, c) { return a.at - c.at; });
+          return;
+        }
         var vs = h.v.map(parseVoice), base = 60 / Math.min(84, Math.max(52, h.bpm * 0.7));
         var title = h.t, at = nt;
         q.push({ at: at, title: title, idx: si % list.length });
@@ -1120,19 +1219,21 @@
         }
         nt += 2.5;   // 곡 사이
         si++;
+        q.sort(function (a, c) { return a.at - c.at; });   // 성부들이 박자에 맞게 (예전엔 아래 성부가 늦게 나오던 문제)
       }
       var qi = 0;
       var step = function () {
+        if (waiting) return;
         while (nt < ctx.currentTime + 6) queueSong();
         while (qi < q.length && q[qi].at < ctx.currentTime + 2) {
           var e = q[qi++];
           if (e.title) { (function (e) { setTimeout(function () { M.title = e.title; M.idx = e.idx; if (onSong) onSong(e.title); }, Math.max(0, (e.at - ctx.currentTime) * 1000)); })(e); continue; }
-          e.inst(ctx, master, e.f, e.at, e.len, e.vol);
+          if (e.pm) pnote(ctx, master, e.pm, e.at, e.len, e.vol); else e.inst(ctx, master, e.f, e.at, e.len, e.vol);
         }
         if (qi > 2000) { q = q.slice(qi); qi = 0; }
       };
       M.next = function () { var k2 = list[(M.idx + 1) % list.length].k; musicStart(mood, master.gain.value, k2, onSong); };
-      M.title = list[si].t;
+      M.title = PIANO.ok ? list[si].t : '🎹 피아노 소리를 준비하는 중… (처음 한 번만)';
     }
     step(); timer = setInterval(step, 250);
     M.stop = function () { clearInterval(timer); var at = ctx.currentTime; master.gain.cancelScheduledValues(at); master.gain.setValueAtTime(master.gain.value, at); master.gain.linearRampToValueAtTime(0.0001, at + 1); pads.forEach(function (p) { try { p.stop(at); } catch (e) {} }); setTimeout(function () { try { comp.disconnect(); } catch (e) {} }, 1600); };
@@ -1182,7 +1283,7 @@
       '<div class="pt-ring"><svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="' + R + '" class="bg"/><circle cx="100" cy="100" r="' + R + '" class="fg" stroke-dasharray="' + C + '" stroke-dashoffset="' + C + '" id="ptArc"/></svg>' +
         '<div class="pt-time"><b id="ptTime">' + (r.goal ? mmss(r.goal * 60) : '0:00') + '</b><span id="ptSub">' + (r.goal ? '남은 시간' : '기도한 시간') + '</span></div></div>' +
       '<div class="pt-meta">' + (r.goal ? '목표 ' + vowTime(r.goal) + ' · ' : '') + new Date(r.start).toTimeString().slice(0, 5) + '에 시작</div>' +
-      '<div class="pt-mus"><div class="pt-ml">🎵 배경 찬송 <small>저작권이 끝난 옛 찬송을 앱이 4부 화음 악기로 직접 연주해요 · 가사 없음</small></div>' +
+      '<div class="pt-mus"><div class="pt-ml">🎵 배경 찬송 <small>저작권이 끝난 옛 찬송을 그랜드 피아노 소리로 연주해요 · 가사 없음<br>피아노 소리: Salamander Grand Piano (Alexander Holm, CC-BY 3.0)</small></div>' +
         '<div class="pt-chips">' + MOODS.map(function (m) { return '<button class="' + ((MUS ? MUS.key : (r.playing ? moodOf(r.music) : 'none')) === m[0] ? 'on' : '') + '" data-ptm="' + m[0] + '">' + m[1] + '</button>'; }).join('') + '</div>' +
         '<div class="pt-now"><span id="ptNow">' + (MUS && MUS.title ? '♪ ' + esc(MUS.title) : '분위기를 고르면 그 분위기 찬송을 이어서 연주해요') + '</span><button id="ptNext"' + (MUS && MUS.next ? '' : ' hidden') + '>다음 곡 ⏭</button></div>' +
         '<label class="pt-vol">🔈<input type="range" min="0" max="100" value="' + Math.round((S.ptVol == null ? .6 : S.ptVol) * 100) + '" id="ptVol">🔊</label></div>' +
