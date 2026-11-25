@@ -705,6 +705,21 @@
     if (!l.some(function (x) { return x.id === 'qex'; })) { l.push({ id: 'qex', head: 'review', text: '(예시) 하나님, 오늘 아이에게 짜증을 많이 냈어요. 내일은 한 번 더 참고 안아 주는 부모가 되게 해 주세요.', at: md(dayKey(new Date())), day: '' }); savePrayers(l); }
     save();
   }
+  function prayerSeed3() {   // 시안: 진행 막대가 채워진 챌린지 예시 2개 (나연 요청 2026-11-25)
+    if (CLOUD || S.prayerSeed3) return;
+    S.prayerSeed3 = 1;
+    function ago(n) { var d = new Date(); d.setDate(d.getDate() - n); return dayKey(d); }
+    var l = prayers();
+    l.push({ id: 'qv1', head: 'vow', text: '(예시) 가족 구원을 위한 40일 작정 기도', at: md(ago(12)), day: ago(12), vow: { kind: 'vow', name: '', days: 40, mins: 30, start: ago(12) } },
+      { id: 'qv2', head: 'vow', text: '(예시) 21일 동안 날마다 감사 세 가지 찾기', at: md(ago(16)), day: ago(16), vow: { kind: 'thanks', name: '', days: 21, mins: 0, start: ago(16) } });
+    savePrayers(l);
+    S.vowDone = S.vowDone || {};
+    var a = {}, b = {};
+    for (var i = 1; i <= 12; i++) if (i !== 4 && i !== 9) a[ago(i)] = 1;   // 12일 중 10일
+    for (var j = 1; j <= 16; j++) if (j !== 7) b[ago(j)] = 1;             // 16일 중 15일
+    S.vowDone.qv1 = a; S.vowDone.qv2 = b;
+    save();
+  }
   // 화면에 그릴 한 줄: 「나만」(이 휴대폰) 기도와 서버(나눔) 기도를 같은 모양으로
   function pFromLocal(x) { return { id: x.id, local: true, head: x.head || '', text: x.text, at: x.at, done: !!x.done, doneAt: x.done || '', scope: 'me', mine: true, count: 0, vow: x.vow || null }; }
   function pFromPost(p) { return { id: p.id, post: p, head: p.head || '', text: p.text, at: p.at, done: !!p.answered, scope: p.scope, mine: !!p.mine, author: p.author, count: p.count || 0, reacted: !!p.reacted, vow: p.vow && p.vow.days ? p.vow : null }; }
@@ -768,7 +783,7 @@
   }
   function prayerRoom(q) {
     q = q || {};
-    prayerSeed(); prayerSeed2();
+    prayerSeed(); prayerSeed2(); prayerSeed3();
     var isPastor = CLOUD ? S.me.role === 'pastor' : S.adminRole === 'pastor' && S.admin;
     var server = S.posts.filter(function (p) { return p.cat === 'pray' && p.head && !p.hidden && canSee(p); });
     // 아래 목록은 열람 범위 탭으로 (나연 요청 2026-11-25): 나만 · 목사님께 · 우리 목장 · 교회 전체
@@ -803,7 +818,10 @@
         (acts ? '<div class="row" style="flex-wrap:wrap">' + acts + '</div>' : '') + '</div>';
     }
     var form = '<form class="card" id="prayForm" style="display:flex;flex-direction:column;gap:10px"><b>오늘의 기도</b>' +
-        '<div class="sub" style="font-weight:700">어떤 기도인가요?</div><div class="ph-pick" id="phPick">' + HEADS.map(function (h) { return '<button type="button" class="ph-b' + (h[0] === pick[0] ? ' on' : '') + '" data-v="' + h[0] + '">' + h[2] + ' ' + esc(h[1]) + '</button>'; }).join('') + '</div>' +
+        '<div class="sub" style="font-weight:700">어떤 기도인가요?</div><div class="ph-pick" id="phPick">' + HEADS.filter(function (h) { return h[0] !== 'vow'; }).map(function (h) { return '<button type="button" class="ph-b' + (h[0] === pick[0] ? ' on' : '') + (h[0] === 'etc' ? ' wide' : '') + '" data-v="' + h[0] + '">' + h[2] + ' ' + esc(h[1]) + '</button>'; }).join('') +
+          // 챌린지는 맨 아래 따로 (나연 2026-11-25): 하루 기도와 구분
+          '<div class="ph-or">꾸준히 이어 가고 싶다면</div>' +
+          '<button type="button" class="ph-b ph-ch wide' + (pick[0] === 'vow' ? ' on' : '') + '" data-v="vow">🏁 나의 기도 챌린지 만들기<small>작정 · 감사 · 아침 · 말씀 기도를 며칠 동안 이어 가요</small></button></div>' +
         '<div id="vowBox" class="vow-set"' + (pick[0] === 'vow' ? '' : ' hidden') + '><b>🏁 나의 기도 챌린지 만들기</b>' +
           (ch0 ? '<div class="ph-help">🌱 지금 교회는 「' + esc(ch0.title) + '」 기간이에요 (' + md(ch0.from) + ' ~ ' + md(ch0.to) + '). 감사 기도 챌린지로 함께해요!</div>' : '') +
           '<div class="sub" style="font-weight:700">어떤 챌린지인가요?</div><div class="chips" id="vkPick" style="margin:0;flex-wrap:wrap;overflow:visible">' +

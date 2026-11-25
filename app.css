@@ -326,3 +326,10 @@ textarea { resize: none; line-height: 1.55; }
 .vow-item + .vow-item { border-top: 1px dashed #eadbc8; padding-top: 10px; margin-top: 4px; }
 .vow-item p { font-weight: 700; margin: 4px 0 6px; }
 .sec-title a.btn { color: #fff; font-size: .82rem; padding: 7px 12px; }
+/* 챌린지 말머리는 맨 아래 따로 (2026-11-25) */
+.ph-pick .ph-b.wide { grid-column: 1 / -1; }
+.ph-or { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font-size: .76rem; color: #a08d78; margin: 6px 0 0; }
+.ph-or::before, .ph-or::after { content: ""; flex: 1; border-top: 1px dashed #e3d6c4; }
+.ph-b.ph-ch { background: #fff8f0; border: 1.5px dashed #e9b98f; color: #a2471f; font-weight: 700; text-align: center; padding: 11px 12px; }
+.ph-b.ph-ch small { display: block; font-weight: 500; font-size: .74rem; color: #a08d78; margin-top: 2px; }
+.ph-b.ph-ch.on { background: #fde9d6; border-style: solid; border-color: #d9773f; color: #8a3a17; }
