@@ -254,7 +254,8 @@
     subDoc('settings', 'settings', 'app');
     if (isStaff()) { sub('notices', 'notices', []); sub('members', 'members', []); sub('newcomers', 'newcomers', []); }
     else {
-      sub('notices', 'notices', [['to', 'in', g ? ['all', g] : ['all']]]);
+      // 「목자님만」 알림은 to = 'leader:목장이름' (2026-11-25)
+      sub('notices', 'notices', [['to', 'in', g ? ['all', g].concat(member.role === 'leader' ? ['leader:' + g] : []) : ['all']]]);
       if (g) sub('groupMembers', 'members', [['group', '==', g], ['status', '==', 'approved']]);
     }
   }
@@ -311,8 +312,8 @@
     S.notifRead = S.notifRead || {};
     var since = (member.approvedAt || member.ts || 0) - 864e5;
     var notes = (cache.notices || []).filter(function (n) { return (n.ts || 0) >= since; }).sort(byTs);
-    S.sent = notes.map(function (n) { return { title: n.title, body: n.body, to: n.to === 'all' ? '전체' : n.to, at: rel(n.ts) + (n.by ? ' · ' + n.by : '') }; });
-    S.notifs = notes.filter(function (n) { return !(n.kind && S.alerts && S.alerts[n.kind] === false); })
+    S.sent = notes.map(function (n) { return { title: n.title, body: n.body, to: n.to === 'all' ? '전체' : String(n.to).indexOf('leader:') === 0 ? n.to.slice(7) + ' 목자님' : n.to, at: rel(n.ts) + (n.by ? ' · ' + n.by : '') }; });
+    S.notifs = notes.filter(function (n) { return !(n.kind && S.alerts && S.alerts[n.kind] === false) && !(String(n.to || '').indexOf('leader:') === 0 && n.to !== 'leader:' + (member && member.group || '')); })
       .map(function (n) { return { id: n.id, kind: n.kind, title: n.title, body: n.body, url: n.url, at: rel(n.ts), read: !!S.notifRead[n.id] }; });
     if (cache.notices) {
       notes.forEach(function (n) {

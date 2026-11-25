@@ -694,8 +694,8 @@
         var wk = b.dataset.gpnudge;
         var groups = CLOUD ? (S.groups || []).map(function (g) { return g.name; }) : DEMO_GROUPS.map(function (g) { return g.name; });
         var miss = groups.filter(function (n) { return !gpOf(n, wk); });
-        var msg = { kind: 'group', title: '목장 기도제목을 올려 주세요 🙏', body: gpRange(wk) + ' 목장 기도제목이 아직 없어요. 목사님이 함께 기도하고 싶어 하세요. 눌러서 바로 올릴 수 있어요.', url: '#/talk/group?gpw=' + wk };
-        if (CLOUD) { put(Promise.all(miss.map(function (n) { return YG.notice(msg, n); })), miss.length + '개 목장에 알림을 보냈어요'); return; }
+        var msg = { kind: 'group', title: '목장 기도제목을 올려 주세요 🙏', body: '목자님, ' + gpRange(wk) + ' 목장 기도제목이 아직 없어요. 목사님이 함께 기도하고 싶어 하세요. 눌러서 바로 올릴 수 있어요.', url: '#/talk/group?gpw=' + wk };
+        if (CLOUD) { put(Promise.all(miss.map(function (n) { return YG.notice(msg, 'leader:' + n); })), miss.length + '개 목장 목자님께만 알림을 보냈어요'); return; }   // 목자님만 받음
         toast(miss.length + '개 목장 목자님께 알림을 보냈어요 (시안)');
       };
     });
