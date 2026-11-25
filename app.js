@@ -740,16 +740,21 @@
     prayerSeed(); prayerSeed2();
     var isPastor = CLOUD ? S.me.role === 'pastor' : S.adminRole === 'pastor' && S.admin;
     var server = S.posts.filter(function (p) { return p.cat === 'pray' && p.head && !p.hidden && canSee(p); });
-    var mine = prayers().map(pFromLocal).concat(server.filter(function (p) { return p.mine; }).map(pFromPost));
-    var withList = server.filter(function (p) { return !p.mine && p.scope !== 'pastor'; }).map(pFromPost);
-    var toPastor = isPastor ? server.filter(function (p) { return !p.mine && p.scope === 'pastor'; }).map(pFromPost)
-      .sort(function (a, b) { return (b.head === 'hard' ? 1 : 0) - (a.head === 'hard' ? 1 : 0); }) : [];
-    var tab = q.t === 'with' ? 'with' : q.t === 'pastor' && isPastor ? 'pastor' : 'mine';
+    // 아래 목록은 열람 범위 탭으로 (나연 요청 2026-11-25): 나만 · 목사님께 · 우리 목장 · 교회 전체
+    var byScope = {
+      me: prayers().map(pFromLocal),
+      pastor: server.filter(function (p) { return p.scope === 'pastor'; }).map(pFromPost)
+        .sort(function (a, b) { return (b.head === 'hard' && !b.mine ? 1 : 0) - (a.head === 'hard' && !a.mine ? 1 : 0); }),
+      group: server.filter(function (p) { return p.scope === 'group'; }).map(pFromPost),
+      all: server.filter(function (p) { return p.scope === 'all'; }).map(pFromPost),
+    };
+    var old = { mine: 'me', with: 'all' };
+    var tab = byScope[q.t] ? q.t : old[q.t] || 'all';
     var hf = q.h && headOf(q.h) ? q.h : '';
     var pick = headOf(q.p) || headOf(hf) || HEADS[0];   // ?p=thanks 로 들어오면 감사 기도가 골라진 채로
-    var list = (tab === 'with' ? withList : tab === 'pastor' ? toPastor : mine).filter(function (x) { return !hf || x.head === hf; });
+    var list = byScope[tab].filter(function (x) { return !hf || x.head === hf; });
     var open = list.filter(function (x) { return !x.done; }), done = list.filter(function (x) { return x.done; });
-    var hard = toPastor.filter(function (x) { return x.head === 'hard' && !x.done; }).length;
+    var hard = isPastor ? byScope.pastor.filter(function (x) { return !x.mine && x.head === 'hard' && !x.done; }).length : 0;
     function link(t, h) { return '#/talk/prayer?t=' + t + (h ? '&h=' + h : ''); }
     function item(x) {
       var h = headOf(x.head), sc = pscopeOf(x.scope);
@@ -757,7 +762,7 @@
       if (!x.mine && x.scope !== 'pastor') acts += '<button class="btn small' + (x.reacted ? '' : ' ghost') + '" data-pwith="' + x.id + '">🙏 함께 기도했어요 ' + x.count + '</button>';
       if (x.mine && !x.done) acts += '<button class="btn small ghost" data-pdone="' + x.id + '"' + (x.local ? ' data-local="1"' : '') + '>🙌 응답됐어요</button>';
       if (x.mine) acts += '<button class="btn small ghost" data-pdel="' + x.id + '"' + (x.local ? ' data-local="1"' : '') + ' style="flex:0 0 auto">지우기</button>';
-      return '<div class="card pray-item' + (x.done ? ' done' : '') + (x.head === 'hard' && tab === 'pastor' ? ' hard' : '') + '">' +
+      return '<div class="card pray-item' + (x.done ? ' done' : '') + (x.head === 'hard' && tab === 'pastor' && isPastor && !x.mine ? ' hard' : '') + '">' +
         '<div class="ph-top">' + (h ? '<span class="ph-head">' + h[2] + ' ' + esc(h[1]) + '</span>' : '') + '<span class="ph-scope">' + sc[1] + '</span></div>' +
         (x.mine ? '' : '<div class="sub" style="font-size:.8rem;margin-top:4px">' + esc(x.author || '') + '</div>') +
         '<p class="text" style="margin:6px 0 8px">' + esc(x.text) + '</p>' +
@@ -772,21 +777,27 @@
         '<div class="ph-help" id="psHelp">' + PSCOPES[0][2] + '</div>' +
         '<textarea name="t" rows="4" maxlength="1000" required placeholder="' + pick[3] + '"></textarea>' +
         '<button class="btn">기도 드리기</button></form>';
-    var tabs = '<div class="seg" style="margin-top:4px">' + [['mine', '내 기도 ' + mine.length]].concat([['with', '함께 기도해요 ' + withList.length]]).concat(isPastor ? [['pastor', '목사님께 온 기도 ' + toPastor.length + (hard ? ' ❗' : '')]] : [])
-      .map(function (t) { return '<a href="' + link(t[0], hf) + '"' + (t[0] === tab ? ' class="on"' : '') + '>' + t[1] + '</a>'; }).join('') + '</div>';
+    var TABN = { me: '🔒 나만', pastor: '🙏 목사님께', group: '🏡 목장', all: '⛪ 교회' };
+    var tabs = '<div class="sec-title" style="margin:6px 0 6px"><b>기도 모아 보기</b><span class="sub">열람 범위별로 보여요</span></div>' +
+      '<div class="seg ph-tabs">' + ['me', 'pastor', 'group', 'all'].map(function (k) {
+        return '<a href="' + link(k, hf) + '"' + (k === tab ? ' class="on"' : '') + '>' + TABN[k] + ' <small>' + byScope[k].length + (k === 'pastor' && hard ? ' ❗' : '') + '</small></a>';
+      }).join('') + '</div>' + '<div class="ph-help" style="margin-top:6px">' + (tab === 'pastor' && !isPastor ? '내가 목사님께만 보낸 기도예요. 목사님만 보실 수 있어요.' : pscopeOf(tab)[2]) + '</div>';
     var chips = '<div class="chips">' + [['', '모든 기도']].concat(HEADS.map(function (h) { return [h[0], h[2] + ' ' + h[1].replace(/^하나님, /, '')]; }))
       .map(function (c) { return '<a class="chip' + (c[0] === hf ? ' on' : '') + '" href="' + link(tab, c[0]) + '">' + esc(c[1]) + '</a>'; }).join('') + '</div>';
-    var empty = tab === 'with' ? '목장이나 교회에 올라온 기도가 아직 없어요.' : tab === 'pastor' ? '목사님께 온 기도가 없어요.' : '아직 적은 기도가 없어요. 위에서 오늘의 기도를 적어 보세요.';
-    return (tab === 'mine' ? form : '') + tabs +
-      (hf === 'thanks' && tab !== 'mine' ? '<div class="card">' + thanksCal() + '</div>' : '') +
+    var empty = { me: '나만 보는 기도가 아직 없어요.', pastor: isPastor ? '목사님께 온 기도가 없어요.' : '목사님께 보낸 기도가 아직 없어요.', group: '목장에 올라온 기도가 아직 없어요.', all: '교회에 올라온 기도가 아직 없어요.' }[tab];
+    return form + tabs +
       (tab === 'pastor' && hard ?'<div class="card ph-alert">❗ 「' + HEADS[1][1] + '」 기도가 <b>' + hard + '개</b> 있어요. 먼저 연락해 보세요.</div>' : '') + chips +
-      (open.length ? '<div class="sec-title"><b>' + (tab === 'with' ? '함께 기도해요' : '기도하고 있어요') + ' ' + open.length + '</b></div>' + open.map(item).join('') : '') +
+      (open.length ? '<div class="sec-title"><b>기도하고 있어요 ' + open.length + '</b></div>' + open.map(item).join('') : '') +
       (done.length ? '<div class="sec-title"><b>🙌 응답된 기도 ' + done.length + '</b></div>' + done.map(item).join('') : '') +
       (list.length ? '' : '<p class="empty">' + empty + '</p>') +
       '<p class="sub" style="text-align:center;font-size:.78rem">「나만」으로 적은 기도는 휴대폰을 바꾸거나 앱 데이터를 지우면 함께 지워져요.</p>';
   }
   function bindPrayer() {
     var f = $('#prayForm');
+    function goTab(s) {   // 기도를 드리면 그 열람 범위 탭으로
+      var h = '#/talk/prayer?t=' + s;
+      if (location.hash === h) route(); else location.hash = h;
+    }
     function postById(id) { return S.posts.filter(function (x) { return x.id === id; })[0]; }
     if (f) {
       $('#phPick').onclick = function (e) { var b = e.target.closest('[data-v]'); if (!b) return; $('#phPick').querySelectorAll('.ph-b').forEach(function (c) { c.classList.toggle('on', c === b); }); f.t.placeholder = headOf(b.dataset.v)[3]; $('#thxBox').hidden = b.dataset.v !== 'thanks'; };
@@ -805,13 +816,13 @@
         if (head === 'thanks') { S.thanksDays = S.thanksDays || {}; S.thanksDays[dayKey(new Date())] = 1; save(); }
         if (scope === 'me') {
           var list = prayers(); list.unshift({ id: 'q' + Date.now(), head: head, text: v, at: md(dayKey(new Date())), day: dayKey(new Date()) });
-          savePrayers(list); toast(thx ? '오늘 감사 도장을 찍었어요 🌾' : '나만 보는 기도로 저장했어요 🔒'); route(); return;
+          savePrayers(list); toast(thx ? '오늘 감사 도장을 찍었어요 🌾' : '나만 보는 기도로 저장했어요 🔒'); goTab('me'); return;
         }
         var done = scope === 'pastor' ? '목사님께만 보냈어요 🙏' : scope === 'group' ? '목장 식구들과 나눴어요 🏡' : '교회와 나눴어요 ⛪';
         if (thx) done = '오늘 감사 도장을 찍었어요 🌾 ' + done.replace(/ \S+$/, '');
-        if (CLOUD) { f.querySelector('.btn').disabled = true; put(YG.addPost({ cat: 'pray', head: head, scope: scope, text: v }), done); f.reset(); return; }
+        if (CLOUD) { f.querySelector('.btn').disabled = true; put(YG.addPost({ cat: 'pray', head: head, scope: scope, text: v }), done); f.reset(); goTab(scope); return; }
         S.posts.unshift({ id: 'p' + Date.now(), cat: 'pray', head: head, scope: scope, group: scope === 'group' ? S.me.group : undefined, author: S.me.name, text: v, at: '방금', mine: true, count: 0, reacted: false, comments: [] });
-        save(); toast(done); route();
+        save(); toast(done); goTab(scope);
       };
     }
     document.querySelectorAll('[data-pwith]').forEach(function (b) { b.onclick = function () { react(b.dataset.pwith); route(); }; });

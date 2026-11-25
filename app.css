@@ -287,3 +287,4 @@ textarea { resize: none; line-height: 1.55; }
 .rn-steps span { display: block; font-size: .8rem; color: var(--muted); }
 
 .ph-pick .ph-b:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.seg.ph-tabs a { font-size: .8rem; } .seg.ph-tabs small { font-weight: 600; opacity: .7; }
