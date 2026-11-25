@@ -52,15 +52,15 @@
       { id: 'a1', name: '예시 신청자 1', group: '', at: '11월 17일', memo: '11월 첫 주부터 출석 · 김○○ 집사 소개' },
       { id: 'a2', name: '예시 신청자 2', group: '소망목장', at: '11월 16일', memo: '청년부' },
     ];
-    if (!S.groups) S.groups = [
-      { name: '기쁨목장', leader: '예시 목자 1', count: 8 }, { name: '소망목장', leader: '예시 목자 2', count: 7 },
-      { name: '사랑목장', leader: '예시 목자 3', count: 9 }, { name: '청년목장', leader: '', count: 5 },
-    ];
-    if (!S.people) S.people = [
-      { name: '고용진', role: 'pastor', group: '' }, { name: '정하람', role: 'admin', group: '' },
-      { name: '예시 목자 1', role: 'leader', group: '기쁨목장' }, { name: '예시 목자 2', role: 'leader', group: '소망목장' }, { name: '예시 목자 3', role: 'leader', group: '사랑목장' },
-      { name: '예시 성도 1', role: 'member', group: '기쁨목장' }, { name: '예시 성도 2', role: 'member', group: '사랑목장' },
-    ];
+    if (!S.groups || S.groupSeedV !== 2) {   // 예시 목장 10개 (앱 app.js DEMO_GROUPS와 같은 이름·목자)
+      var DG = [['기쁨목장', '김은혜', 8, '박하늘'], ['소망목장', '박한결', 7, '서지안'], ['사랑목장', '이다정', 9, '홍새벽'], ['은혜목장', '최선한', 6, '안요셉'], ['믿음목장', '정바울', 8, '고은찬'],
+        ['감사목장', '윤미소', 7, '우채원'], ['평강목장', '한지혜', 10, '길도현'], ['온유목장', '오정민', 5, '채온새'], ['빛과소금목장', '서빛나', 6, '감주원'], ['청년목장', '강하준', 12, '류민준']];
+      S.groups = DG.map(function (g) { return { name: g[0], leader: g[1], count: g[2] }; });
+      S.people = [{ name: '고용진', role: 'pastor', group: '' }, { name: '정하람', role: 'admin', group: '' }]
+        .concat(DG.map(function (g) { return { name: g[1], role: 'leader', group: g[0] }; }))
+        .concat(DG.map(function (g) { return { name: g[3], role: 'member', group: g[0] }; }));
+      S.groupSeedV = 2;
+    }
     if (!S.challenges) S.challenges = [{ title: '추수감사 감사 챌린지', from: '2026-11-09', to: '2026-11-22' }];
     if (!S.missionNews) S.missionNews = [];
     if (!S.adminRole) S.adminRole = 'admin';

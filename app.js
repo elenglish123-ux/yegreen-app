@@ -45,6 +45,20 @@
       sent: [],
     };
   }
+  // 시안용 예시 목장 10개 (2026-11-25) — 이름·목자·모임·식구가 모두 다름. 사람 이름은 지어낸 예시
+  var DEMO_GROUPS = [
+    { name: '기쁨목장', leader: '김은혜', meet: '금요일 저녁 7:30 · 김은혜 집사님 댁', members: ['박하늘', '이소망', '최다윗', '정유진', '한믿음', '오세린', '윤찬양'] },
+    { name: '소망목장', leader: '박한결', meet: '토요일 오전 10:00 · 교회 카페', members: ['서지안', '임도윤', '강나래', '조은별', '신하람', '문예준'] },
+    { name: '사랑목장', leader: '이다정', meet: '주일 오후 1:30 · 교회 소그룹실', members: ['홍새벽', '배온유', '노하은', '남기쁨', '유시온', '권다온', '황주아', '송바름'] },
+    { name: '은혜목장', leader: '최선한', meet: '목요일 저녁 8:00 · 줌(온라인)', members: ['안요셉', '구아름', '민서하', '양예린', '장루아'] },
+    { name: '믿음목장', leader: '정바울', meet: '금요일 저녁 8:00 · 정바울 집사님 댁', members: ['고은찬', '하지율', '변세움', '어다엘', '진소율', '탁이안', '표하린'] },
+    { name: '감사목장', leader: '윤미소', meet: '수요일 오전 11:00 · 교회 카페 (주부 모임)', members: ['우채원', '곽서윤', '편하나', '봉예서', '석지아', '천수아'] },
+    { name: '평강목장', leader: '한지혜', meet: '토요일 저녁 6:00 · 함께 식사하며', members: ['길도현', '나윤호', '도한별', '라온유', '모세빈', '보람찬', '소예담', '오늘봄', '주하늘'] },
+    { name: '온유목장', leader: '오정민', meet: '주일 오후 2:00 · 교회 2층', members: ['채온새', '추하람', '피예안', '하늘빛'] },
+    { name: '빛과소금목장', leader: '서빛나', meet: '금요일 저녁 7:00 · 서빛나 집사님 댁', members: ['감주원', '경시우', '공하율', '단지후', '동새롬'] },
+    { name: '청년목장', leader: '강하준', meet: '토요일 오후 4:00 · 교회 청년실', members: ['류민준', '마서진', '반지호', '선예찬', '설하윤', '성태오', '시은우', '엄채아', '여도하', '옥지민', '왕소담'] },
+  ];
+  function demoGroup(name) { return DEMO_GROUPS.filter(function (g) { return g.name === name; })[0] || null; }
   // 서버 연결(cloud.js): 켜져 있으면 공유 데이터(글·교인·알림…)는 서버에서 오고, 이 기기엔 개인 설정만 남음
   var YG = window.YG || { on: false };
   var CLOUD = !!YG.on;
@@ -490,14 +504,17 @@
     }
     if (CLOUD) return cloudGroupRoom();
     if (!S.me.group) {
-      return '<form class="card" id="groupForm" style="display:flex;flex-direction:column;gap:12px"><div class="h2">아직 목장이 없어요</div><p class="sub">실제로는 교회가 목장을 배정해 드려요. 시안에서는 목장 이름을 넣어 보세요.</p><input name="g" maxlength="12" required placeholder="예: 기쁨목장"><button class="btn">목장방 들어가기</button></form>';
+      return '<div class="card" style="display:flex;flex-direction:column;gap:12px"><div class="h2">목장을 골라 들어가 보세요</div><p class="sub">실제로는 교회가 목장을 정해 드려요. 시안에서는 예시 목장 10곳 중 하나를 눌러 둘러볼 수 있어요.</p>' +
+        '<div class="gpick">' + DEMO_GROUPS.map(function (g) { return '<button class="gpick-b" data-pickg="' + esc(g.name) + '"><b>🏡 ' + esc(g.name) + '</b><span>목자 ' + esc(g.leader) + ' · ' + (g.members.length + 1) + '명</span><small>' + esc(g.meet) + '</small></button>'; }).join('') + '</div></div>';
     }
-    var m = S.meeting, going = m.going;
+    var dg = demoGroup(S.me.group) || { leader: '예시 목자', meet: S.meeting.text, members: ['예시 식구 1', '예시 식구 2', '예시 식구 3'] };
+    var m = S.meeting, going = m.going, meetText = m.custom ? m.text : '(예시) 이번 주 ' + dg.meet;
     var posts = S.posts.filter(function (p) { return p.scope === 'group' && canSee(p); });
-    var members = ['예시 목자', S.me.name, '예시 식구 1', '예시 식구 2', '예시 식구 3'];
-    return '<div class="card group-card"><div class="sub" style="color:#cfe3d6">우리 목장</div><div class="big">' + esc(S.me.group) + '</div><div style="font-size:.9rem;opacity:.85">목자 (예시) · 식구 ' + members.length + '명 · 우리 목장 사람만 볼 수 있어요</div></div>' +
+    var members = [dg.leader + ' (목자)', S.me.name].concat(dg.members);
+    return '<div class="card group-card"><div class="sub" style="color:#cfe3d6">우리 목장 · 예시</div><div class="big">' + esc(S.me.group) + '</div><div style="font-size:.9rem;opacity:.85">목자 ' + esc(dg.leader) + ' · 식구 ' + members.length + '명 · 우리 목장 사람만 볼 수 있어요</div>' +
+        '<button class="gpick-leave" data-leaveg>다른 목장 둘러보기 ›</button></div>' +
       gvCard() +
-      '<div class="card meet"><div style="font-size:.8rem;font-weight:800;color:#a07d2c">📌 목장 모임 · 목자가 올려요</div><b style="font-size:1.05rem">' + esc(m.text) + '</b>' +
+      '<div class="card meet"><div style="font-size:.8rem;font-weight:800;color:#a07d2c">📌 목장 모임 · 목자가 올려요</div><b style="font-size:1.05rem">' + esc(meetText) + '</b>' +
         '<div class="row" style="margin-top:10px"><button class="btn small' + (going === true ? '' : ' ghost') + '" data-rsvp="yes">참석' + (going === true ? ' ✓' : '') + '</button><button class="btn small' + (going === false ? '' : ' ghost') + '" data-rsvp="no">불참' + (going === false ? ' ✓' : '') + '</button></div>' +
         '<div class="sub" style="margin-top:6px">참석 ' + (3 + (going === true ? 1 : 0)) + ' · 불참 ' + (1 + (going === false ? 1 : 0)) + '</div></div>' +
       (posts.map(function (p) { return postCard(p, true); }).join('') || '<p class="empty">목장에 첫 나눔을 남겨 보세요.</p>') +
@@ -541,6 +558,8 @@
     document.querySelectorAll('[data-gv]').forEach(function (b) { b.onclick = function () { gvOpen(b.dataset.gv); }; });
     var gf = $('#groupForm');
     if (gf) gf.onsubmit = function (e) { e.preventDefault(); S.me.group = gf.g.value.trim(); save(); route(); };
+    document.querySelectorAll('[data-pickg]').forEach(function (b) { b.onclick = function () { S.me.group = b.dataset.pickg; S.meeting = { text: '', going: null }; save(); route(); window.scrollTo(0, 0); }; });
+    var lg = $('[data-leaveg]'); if (lg) lg.onclick = function () { S.me.group = ''; save(); route(); window.scrollTo(0, 0); };
     bindDiary();
     bindPrayer();
   }
@@ -909,15 +928,13 @@
       { id: 'a1', name: '예시 신청자 1', group: '', at: '11월 17일', memo: '11월 첫 주부터 출석 · 김○○ 집사 소개' },
       { id: 'a2', name: '예시 신청자 2', group: '소망목장', at: '11월 16일', memo: '청년부' },
     ];
-    if (!S.groups) S.groups = [
-      { name: '기쁨목장', leader: '예시 목자 1', count: 8 }, { name: '소망목장', leader: '예시 목자 2', count: 7 },
-      { name: '사랑목장', leader: '예시 목자 3', count: 9 }, { name: '청년목장', leader: '', count: 5 },
-    ];
-    if (!S.people) S.people = [
-      { name: '고용진', role: 'pastor', group: '' }, { name: '정하람', role: 'admin', group: '' },
-      { name: '예시 목자 1', role: 'leader', group: '기쁨목장' }, { name: '예시 목자 2', role: 'leader', group: '소망목장' }, { name: '예시 목자 3', role: 'leader', group: '사랑목장' },
-      { name: '예시 성도 1', role: 'member', group: '기쁨목장' }, { name: '예시 성도 2', role: 'member', group: '사랑목장' },
-    ];
+    if (!S.groups || S.groupSeedV !== 2) {   // 예시 목장 10개 (2026-11-25, 예전 4개 시안에서 바꿈)
+      S.groups = DEMO_GROUPS.map(function (g) { return { name: g.name, leader: g.leader, count: g.members.length + 1 }; });
+      S.people = [{ name: '고용진', role: 'pastor', group: '' }, { name: '정하람', role: 'admin', group: '' }]
+        .concat(DEMO_GROUPS.map(function (g) { return { name: g.leader, role: 'leader', group: g.name }; }))
+        .concat(DEMO_GROUPS.map(function (g) { return { name: g.members[0], role: 'member', group: g.name }; }));
+      S.groupSeedV = 2;
+    }
     if (!S.challenges) S.challenges = CHALLENGES.map(function (c) { return { title: c.title, from: c.from, to: c.to }; });
     if (!S.missionNews) S.missionNews = [];
     if (!S.adminRole) S.adminRole = 'admin';
