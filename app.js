@@ -300,7 +300,7 @@
       '<input id="sq" placeholder="제목·본문으로 찾기" hidden>';
     if (cur) {
       html += '<div class="player"><iframe src="https://www.youtube.com/embed/' + cur.videoId + '?rel=0&playsinline=1" title="' + esc(cur.title) + '" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>' +
-        '<div>' + (cur.series ? '<div class="label">' + esc(cur.series) + '</div>' : '') + '<div class="h1">' + esc(cur.title) + '</div><div class="sub">' + [md(cur.date), cur.passage, cur.preacher].filter(Boolean).map(esc).join(' · ') + '</div></div>';
+        '<div>' + (cur.series ? '<div class="label">' + esc(cur.series) + '</div>' : '') + '<div class="h1">' + esc(cur.title) + '</div><div class="sub">' + [md(cur.date), cur.passage, cur.preacher].filter(Boolean).map(esc).join(' · ') + '</div></div>' + graceBox(cur);
     }
     html += '<div class="vlist" id="vlist">' + list.map(function (i) {
       return '<a class="vrow' + (cur && i.videoId === cur.videoId ? ' on' : '') + '" href="#/sermons?kind=' + kind + '&v=' + i.videoId + '" data-s="' + esc((i.title + ' ' + (i.passage || '')).toLowerCase()) + '"><div class="thumb" style="background-image:url(' + thumb(i.videoId) + ')"></div><div><b>' + esc(i.title) + '</b><div class="sub">' + [md(i.date), i.passage].filter(Boolean).map(esc).join(' · ') + '</div></div></a>';
@@ -308,8 +308,67 @@
       '<a class="btn ghost" href="https://www.youtube.com/@yegrin" target="_blank" rel="noopener">유튜브 채널에서 더 보기</a>';
     return html;
   }
+  // ---------- 영상 아래 「이 말씀으로 받은 은혜」 (나연 2026-11-25) ----------
+  // 은혜 글은 cat 'grace' + vid(영상 번호). 교회 나눔 「말씀 은혜」에도 함께 보임. 「나만 보기」는 이 휴대폰에(yegreen-grace-v1)
+  var GKEY = 'yegreen-grace-v1';
+  function graces() { try { return JSON.parse(localStorage.getItem(GKEY)) || []; } catch (e) { return []; } }
+  function graceSeed() {
+    var s = (MEDIA.sunday || [])[0];
+    if (CLOUD || S.graceSeed || !s) return;
+    S.graceSeed = 1;
+    S.posts.push(
+      { id: 'gs1', cat: 'grace', vid: s.videoId, scope: 'all', author: '예시 집사', text: '(예시) 「범사에 감사하라」는 말씀이 이번 주 내내 마음에 남았어요. 불평이 나올 때마다 감사 한 가지를 먼저 찾아보기로 했어요.', at: '어제', count: 8, reacted: false, comments: [] },
+      { id: 'gs2', cat: 'grace', vid: s.videoId, scope: 'all', author: '예시 청년', text: '(예시) 감사가 환경이 아니라 하나님을 바라보는 데서 나온다는 말씀이 좋았어요. 적용: 매일 밤 감사 세 줄 쓰기!', at: '2일 전', count: 5, reacted: false, comments: [] });
+    save();
+  }
+  function graceBox(cur) {
+    if (!S.me || !S.me.approved) return '<a class="card grace-box" href="#/talk" style="display:block"><b>💬 이 말씀으로 받은 은혜</b><p class="sub" style="margin:4px 0 0">교인 등록을 하면 은혜를 나누고 다른 분들 나눔도 볼 수 있어요 ›</p></a>';
+    graceSeed();
+    var list = graces().filter(function (x) { return x.vid === cur.videoId; }).map(function (x) { return { id: x.id, local: true, mine: true, text: x.text, at: x.at, scope: 'me', count: 0 }; })
+      .concat(S.posts.filter(function (p) { return p.cat === 'grace' && p.vid === cur.videoId && !p.hidden && canSee(p); }).map(function (p) { return { id: p.id, mine: !!p.mine, text: p.text, at: p.at, scope: p.scope, author: p.author, count: p.count || 0, reacted: !!p.reacted }; }));
+    var items = list.map(function (x) {
+      return '<div class="gr-item"><div class="gr-top"><b>' + (x.mine ? '나' : esc(x.author || '')) + '</b><span>' + esc(x.at) + '</span><span class="ph-scope">' + wscopeOf(x.scope)[1] + '</span></div>' +
+        '<p>' + esc(x.text) + '</p><div class="row">' +
+        (!x.mine ? '<button class="btn small' + (x.reacted ? '' : ' ghost') + '" data-gamen="' + x.id + '">🙌 아멘 ' + x.count + '</button>' : (x.count ? '<span class="sub" style="font-size:.8rem">🙌 ' + x.count + '명이 아멘했어요</span>' : '')) +
+        (x.mine ? '<button class="btn small ghost" data-gdel="' + x.id + '"' + (x.local ? ' data-local="1"' : '') + ' style="flex:0 0 auto">지우기</button>' : '') + '</div></div>';
+    }).join('');
+    return '<div class="card grace-box"><div class="sec-title" style="margin:0 0 8px"><b>💬 이 말씀으로 받은 은혜</b><span class="sub">' + list.length + '개</span></div>' +
+      '<form id="grForm" style="display:flex;flex-direction:column;gap:8px">' +
+        '<textarea name="t" rows="3" maxlength="1000" required placeholder="이 말씀으로 받은 은혜와 이번 주 적용을 나눠 주세요."></textarea>' +
+        '<div class="chips" id="grPick" style="margin:0;flex-wrap:wrap;overflow:visible">' + WSCOPES.map(function (s) { return '<button type="button" class="chip' + (s[0] === 'all' ? ' on' : '') + '" data-v="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div>' +
+        '<button class="btn">은혜 나누기</button></form>' +
+      (items ? '<div class="gr-list">' + items + '</div>' : '<p class="sub" style="text-align:center;margin:12px 0 2px">아직 나눈 은혜가 없어요. 첫 은혜를 나눠 주세요 🙏</p>') + '</div>';
+  }
+  function bindGrace() {
+    var f = $('#grForm'); if (!f) return;
+    var vid = (location.hash.match(/[?&]v=([^&]+)/) || [])[1] || ((MEDIA.sunday || [])[0] || {}).videoId;
+    var cur = $('.player iframe'); if (cur) { var m = cur.src.match(/embed\/([^?]+)/); if (m) vid = m[1]; }
+    $('#grPick').onclick = function (e) { var b = e.target.closest('[data-v]'); if (!b) return; $('#grPick').querySelectorAll('.chip').forEach(function (c) { c.classList.toggle('on', c === b); }); };
+    f.onsubmit = function (e) {
+      e.preventDefault();
+      var t = f.t.value.trim(); if (!t) return;
+      var scope = $('#grPick .on').dataset.v;
+      if (scope === 'me') { var l = graces(); l.unshift({ id: 'gr' + Date.now(), vid: vid, text: t, at: md(dayKey(new Date())) }); try { localStorage.setItem(GKEY, JSON.stringify(l)); } catch (x) {} toast('나만 보는 은혜로 저장했어요 🔒'); route(); return; }
+      if (scope === 'group' && !S.me.group) { toast(CLOUD ? '아직 목장이 정해지지 않았어요.' : '목장방에서 목장을 먼저 골라 주세요.'); return; }
+      var msg = scope === 'group' ? '목장 식구들과 은혜를 나눴어요 🏡' : '교회와 은혜를 나눴어요 ⛪';
+      if (CLOUD) { f.querySelector('.btn').disabled = true; put(YG.addPost({ cat: 'grace', scope: scope, text: t, vid: vid }), msg); return; }
+      S.posts.unshift({ id: 'p' + Date.now(), cat: 'grace', vid: vid, scope: scope, group: scope === 'group' ? S.me.group : undefined, author: S.me.name, text: t, at: '방금', mine: true, count: 0, reacted: false, comments: [] });
+      save(); toast(msg); route();
+    };
+    document.querySelectorAll('[data-gamen]').forEach(function (b) { b.onclick = function () { react(b.dataset.gamen); route(); }; });
+    document.querySelectorAll('[data-gdel]').forEach(function (b) {
+      b.onclick = function () {
+        if (!confirm('이 나눔을 지울까요? 되돌릴 수 없어요.')) return;
+        if (b.dataset.local) { try { localStorage.setItem(GKEY, JSON.stringify(graces().filter(function (x) { return x.id !== b.dataset.gdel; }))); } catch (x) {} route(); return; }
+        var p = S.posts.filter(function (x) { return x.id === b.dataset.gdel; })[0]; if (!p) return;
+        if (CLOUD) { put(YG.removePost(p), '지웠어요'); return; }
+        S.posts = S.posts.filter(function (x) { return x !== p; }); save(); route();
+      };
+    });
+  }
   function bindSermons() {
     var b = $('[data-search]'), input = $('#sq');
+    bindGrace();
     if (!b) return;
     b.onclick = function () { input.hidden = !input.hidden; if (!input.hidden) input.focus(); };
     input.oninput = function () {
