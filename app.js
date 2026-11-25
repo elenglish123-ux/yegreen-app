@@ -705,8 +705,33 @@
     save();
   }
   // 화면에 그릴 한 줄: 「나만」(이 휴대폰) 기도와 서버(나눔) 기도를 같은 모양으로
-  function pFromLocal(x) { return { id: x.id, local: true, head: x.head || '', text: x.text, at: x.at, done: !!x.done, doneAt: x.done || '', scope: 'me', mine: true, count: 0 }; }
-  function pFromPost(p) { return { id: p.id, post: p, head: p.head || '', text: p.text, at: p.at, done: !!p.answered, scope: p.scope, mine: !!p.mine, author: p.author, count: p.count || 0, reacted: !!p.reacted }; }
+  function pFromLocal(x) { return { id: x.id, local: true, head: x.head || '', text: x.text, at: x.at, done: !!x.done, doneAt: x.done || '', scope: 'me', mine: true, count: 0, vow: x.vow || null }; }
+  function pFromPost(p) { return { id: p.id, post: p, head: p.head || '', text: p.text, at: p.at, done: !!p.answered, scope: p.scope, mine: !!p.mine, author: p.author, count: p.count || 0, reacted: !!p.reacted, vow: p.vow && p.vow.days ? p.vow : null }; }
+  // ---------- 작정 기도 (나연 요청 2026-11-25) ----------
+  // 기간(일)·하루 시간(분)·시작일은 기도와 함께 저장, 날마다 체크한 기록(S.vowDone)은 이 휴대폰에 (성경읽기 기록과 같은 방식)
+  function vowInfo(x) {
+    var v = x.vow, start = new Date(v.start + 'T00:00:00'), end = new Date(start); end.setDate(end.getDate() + v.days - 1);
+    var today = dayKey(new Date()), D = (S.vowDone || {})[x.id] || {}, n = 0, cells = '';
+    for (var i = 0; i < v.days; i++) {
+      var d = new Date(start); d.setDate(d.getDate() + i); var k = dayKey(d), on = !!D[k]; if (on) n++;
+      cells += '<i class="' + (on ? 'on' : '') + (k === today ? ' t' : '') + (k > today ? ' f' : '') + '" title="' + (i + 1) + '일째"></i>';
+    }
+    var day = Math.floor((new Date(today + 'T00:00:00') - start) / 864e5) + 1;
+    return { n: n, day: day, end: dayKey(end), active: day >= 1 && day <= v.days, over: day > v.days, todayOn: !!D[today], cells: cells };
+  }
+  function vowTime(m) { return m >= 60 ? (m % 60 ? Math.floor(m / 60) + '시간 ' + (m % 60) + '분' : (m / 60) + '시간') : m + '분'; }
+  function vowTrack(x, small) {
+    if (!x.vow) return '';
+    var v = x.vow, f = vowInfo(x);
+    var line = '🔥 ' + v.days + '일 작정 · 하루 ' + vowTime(v.mins) + ' · ' + md(v.start) + ' ~ ' + md(f.end);
+    if (!x.mine) return '<div class="vow-line">' + line + (f.active ? ' · ' + f.day + '일째' : '') + '</div>';
+    var pct = Math.round(f.n / v.days * 100);
+    return '<div class="vow' + (small ? ' sm' : '') + '"><div class="vow-line">' + line + '</div>' +
+      '<div class="vow-bar"><span style="width:' + pct + '%"></span></div>' +
+      '<div class="vow-st"><b>' + f.n + '</b> / ' + v.days + '일 드렸어요' + (f.active ? ' · 오늘 ' + f.day + '일째' : f.over ? ' · 작정 기간이 끝났어요' : ' · ' + md(v.start) + '에 시작해요') + '</div>' +
+      (small ? '' : '<div class="vow-dots">' + f.cells + '</div>') +
+      (f.active ? '<button class="btn small' + (f.todayOn ? '' : ' ghost') + '" data-vowck="' + x.id + '">' + (f.todayOn ? '오늘 ' + vowTime(v.mins) + ' 기도했어요 ✓' : '오늘 ' + vowTime(v.mins) + ' 기도했어요') + '</button>' : '') + '</div>';
+  }
   // 감사 도장: 감사 기도를 쓴 날 (예전 감사일기 S.diary도 이어서 셈)
   function thanksDays() {
     var R = {};
@@ -804,7 +829,7 @@
     }
     var tabs = '<div class="sec-title" style="margin:6px 0 6px"><b>기도 모아 보기</b><a class="btn small" href="#/talk/prayer?t=note" style="flex:0 0 auto">📒 기도 노트</a></div>' +
       '<div class="seg ph-tabs">' + ['me', 'pastor', 'group', 'all'].map(function (k) {
-        return '<a href="' + link(k, hf) + '"' + (k === tab ? ' class="on"' : '') + '>' + TABN[k] + ' <small>' + byScope[k].length + (k === 'pastor' && hard ? ' ❗' : '') + '</small></a>';
+        return '<a href="' + link(k, hf) + '"' + (k === tab ? ' class="on"' : '') + '>' + TABN[k] + ' <small>' + byScope[k].filter(function (x) { return !x.done; }).length +(k === 'pastor' && hard ? ' ❗' : '') + '</small></a>';
       }).join('') + '</div>' + '<div class="ph-help" style="margin-top:6px">' + (tab === 'pastor' && !isPastor ? '내가 목사님께만 보낸 기도예요. 목사님만 보실 수 있어요.' : pscopeOf(tab)[2]) + '</div>';
     var chips = '<div class="chips">' + [['', '모든 기도']].concat(HEADS.map(function (h) { return [h[0], h[2] + ' ' + h[1].replace(/^하나님, /, '')]; }))
       .map(function (c) { return '<a class="chip' + (c[0] === hf ? ' on' : '') + '" href="' + link(tab, c[0]) + '">' + esc(c[1]) + '</a>'; }).join('') + '</div>';
@@ -812,8 +837,8 @@
     return form + tabs +
       (tab === 'pastor' && hard ?'<div class="card ph-alert">❗ 「' + HEADS[1][1] + '」 기도가 <b>' + hard + '개</b> 있어요. 먼저 연락해 보세요.</div>' : '') + chips +
       (open.length ? '<div class="sec-title"><b>기도하고 있어요 ' + open.length + '</b></div>' + open.map(item).join('') : '') +
-      (done.length ? '<div class="sec-title"><b>🙌 응답된 기도 ' + done.length + '</b></div>' + done.map(item).join('') : '') +
-      (list.length ? '' : '<p class="empty">' + empty + '</p>') +
+      (open.length ? '' : '<p class="empty">' + empty + '</p>') +
+      (done.length ? '<a class="card" href="#/talk/prayer?t=note&a=1" style="display:block;text-align:center;font-weight:700;color:var(--green-d)">🙌 응답된 기도 ' + done.length + '개는 기도 노트에서 볼 수 있어요 ›</a>' : '') +
       '<p class="sub" style="text-align:center;font-size:.78rem">「나만」으로 적은 기도는 휴대폰을 바꾸거나 앱 데이터를 지우면 함께 지워져요.</p>';
   }
   function bindPrayer() {
