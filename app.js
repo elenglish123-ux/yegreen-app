@@ -896,6 +896,7 @@
     }
     clearInterval(PT_TICK); PT_TICK = setInterval(tick, 1000); tick();
   }
+  window.addEventListener('hashchange', function () { if (!S.ptRun && document.getElementById('pt')) ptClose(); });   // 다 끝난 기도 화면은 다른 곳으로 가면 닫힘
   document.addEventListener('visibilitychange', function () { if (!document.hidden && S.ptRun && document.getElementById('pt')) { /* 화면이 다시 켜지면 바로 시간 맞춤 */ ptOpen(); } });
   // 감사 도장: 감사 기도를 쓴 날 (예전 감사일기 S.diary도 이어서 셈)
   function thanksDays() {
