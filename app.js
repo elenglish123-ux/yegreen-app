@@ -663,15 +663,17 @@
 
   // 기도 공간 (2026-11-25 개편, 나연 아이디어): 말머리 7개 + 열람 범위 4가지
   // 「나만」은 예전처럼 이 휴대폰 안에만 저장(서버로 보내지 않음). 목사님만·목장만·전체는 나눔 글(cat 'pray' + head)로 서버에.
+  // 이름 다듬기(2026-11-25): 모두 하나님께 건네는 말투로, 「기타」는 「자유롭게 기도해요」
   var HEADS = [
-    ['joy', '예수님 기쁘게 해 드리기', '😊'], ['hard', '하나님 저 오늘 너무 힘들어요', '😢'], ['help', '하나님 도와주세요', '🙏'],
-    ['review', '하나님 오늘 저 어땠나요', '🌙'], ['thanks', '하나님 감사해요', '🌾'], ['inter', '이 사람을 위해 기도해요', '🤝'], ['sorry', '하나님 잘못했어요', '💧'],
+    ['joy', '예수님을 기쁘시게 하고 싶어요', '😊'], ['hard', '하나님, 오늘 너무 힘들어요', '😢'], ['help', '하나님, 도와주세요', '🙏'],
+    ['review', '하나님, 오늘 저 어땠나요?', '🌙'], ['thanks', '하나님, 감사해요', '🌾'], ['inter', '이 사람을 위해 기도해요', '🤝'],
+    ['sorry', '하나님, 잘못했어요', '💧'], ['etc', '자유롭게 기도해요', '✏️'],
   ];
   var PSCOPES = [
-    ['me', '🔒 나만', '이 휴대폰 안에만 저장돼요. 목사님·운영자도 볼 수 없어요.'],
-    ['pastor', '🙏 목사님만', '담임목사님만 볼 수 있어요.'],
-    ['group', '🏡 목장만', '우리 목장 식구만 볼 수 있어요.'],
-    ['all', '⛪ 전체', '등록 교인 모두 볼 수 있어요.'],
+    ['me', '🔒 나만 보기', '이 휴대폰 안에만 저장돼요. 목사님도 운영자도 볼 수 없어요.'],
+    ['pastor', '🙏 목사님께만', '담임목사님만 보실 수 있어요.'],
+    ['group', '🏡 우리 목장', '우리 목장 식구만 볼 수 있어요.'],
+    ['all', '⛪ 교회 전체', '등록 교인 모두 볼 수 있어요.'],
   ];
   function headOf(k) { return HEADS.filter(function (h) { return h[0] === k; })[0] || null; }
   function pscopeOf(k) { return PSCOPES.filter(function (s) { return s[0] === k; })[0] || PSCOPES[0]; }
@@ -720,14 +722,14 @@
         (acts ? '<div class="row" style="flex-wrap:wrap">' + acts + '</div>' : '') + '</div>';
     }
     var form = '<form class="card" id="prayForm" style="display:flex;flex-direction:column;gap:10px"><b>오늘의 기도</b>' +
-        '<div class="sub" style="font-weight:700">말머리</div><div class="ph-pick" id="phPick">' + HEADS.map(function (h, i) { return '<button type="button" class="ph-b' + (i === 0 ? ' on' : '') + '" data-v="' + h[0] + '">' + h[2] + ' ' + esc(h[1]) + '</button>'; }).join('') + '</div>' +
-        '<div class="sub" style="font-weight:700">누가 볼까요?</div><div class="chips" id="psPick" style="margin:0;flex-wrap:wrap;overflow:visible">' + PSCOPES.map(function (s, i) { return '<button type="button" class="chip' + (i === 0 ? ' on' : '') + '" data-v="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div>' +
+        '<div class="sub" style="font-weight:700">어떤 기도인가요?</div><div class="ph-pick" id="phPick">' + HEADS.map(function (h, i) { return '<button type="button" class="ph-b' + (i === 0 ? ' on' : '') + '" data-v="' + h[0] + '">' + h[2] + ' ' + esc(h[1]) + '</button>'; }).join('') + '</div>' +
+        '<div class="sub" style="font-weight:700">누구와 나눌까요?</div><div class="chips" id="psPick" style="margin:0;flex-wrap:wrap;overflow:visible">' + PSCOPES.map(function (s, i) { return '<button type="button" class="chip' + (i === 0 ? ' on' : '') + '" data-v="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div>' +
         '<div class="ph-help" id="psHelp">' + PSCOPES[0][2] + '</div>' +
         '<textarea name="t" rows="4" maxlength="1000" required placeholder="하나님께 드리는 기도를 적어 보세요."></textarea>' +
-        '<button class="btn">기도 올리기</button></form>';
+        '<button class="btn">기도 드리기</button></form>';
     var tabs = '<div class="seg" style="margin-top:4px">' + [['mine', '내 기도 ' + mine.length]].concat([['with', '함께 기도해요 ' + withList.length]]).concat(isPastor ? [['pastor', '목사님께 온 기도 ' + toPastor.length + (hard ? ' ❗' : '')]] : [])
       .map(function (t) { return '<a href="' + link(t[0], hf) + '"' + (t[0] === tab ? ' class="on"' : '') + '>' + t[1] + '</a>'; }).join('') + '</div>';
-    var chips = '<div class="chips">' + [['', '전체']].concat(HEADS.map(function (h) { return [h[0], h[2] + ' ' + h[1].replace(/^하나님 /, '')]; }))
+    var chips = '<div class="chips">' + [['', '모든 기도']].concat(HEADS.map(function (h) { return [h[0], h[2] + ' ' + h[1].replace(/^하나님, /, '')]; }))
       .map(function (c) { return '<a class="chip' + (c[0] === hf ? ' on' : '') + '" href="' + link(tab, c[0]) + '">' + esc(c[1]) + '</a>'; }).join('') + '</div>';
     var empty = tab === 'with' ? '목장이나 교회에 올라온 기도가 아직 없어요.' : tab === 'pastor' ? '목사님께 온 기도가 없어요.' : '아직 적은 기도가 없어요. 위에서 오늘의 기도를 적어 보세요.';
     return (tab === 'mine' ? form : '') + tabs +
