@@ -430,9 +430,9 @@
 
   // ---------- 소식 ----------
   function news(q) {
-    var tab = q.tab || 'notice';
+    var tab = q.tab === 'jubo' ? 'jubo' : 'notice';   // 사진 칸은 뺌 (나연 2026-11-25)
     renderTop({ title: '교회 소식', bell: true });
-    var html = '<div class="chips">' + [['notice', '광고'], ['jubo', '주보'], ['photo', '사진']].map(function (t) { return '<a class="chip' + (t[0] === tab ? ' on' : '') + '" href="#/news?tab=' + t[0] + '">' + t[1] + '</a>'; }).join('') + '</div>';
+    var html = '<div class="chips">' + [['notice', '광고'], ['jubo', '주보']].map(function (t) { return '<a class="chip' + (t[0] === tab ? ' on' : '') + '" href="#/news?tab=' + t[0] + '">' + t[1] + '</a>'; }).join('') + '</div>';
     var b = BULLETINS[0];
     if (tab === 'notice') {
       html += bulletinNews().map(function (n, i) {
