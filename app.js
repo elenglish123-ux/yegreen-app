@@ -30,7 +30,7 @@
       admin: false,
       alerts: { notice: true, event: true, sermon: false, talk: true, group: true, diary: false, quiet: true },
       notifs: [
-        { id: 'n1', kind: 'notice', title: '감사주간이 시작됐어요', body: '11월 9일부터 21일까지, 감사일기로 함께해요.', url: '#/talk/diary', at: '11월 9일', read: false },
+        { id: 'n1', kind: 'notice', title: '감사주간이 시작됐어요', body: '11월 9일부터 21일까지, 감사일기로 함께해요.', url: '#/talk/prayer?p=thanks', at: '11월 9일', read: false },
       ],
       posts: [
         { id: 'p0', notice: true, cat: 'thanks', scope: 'all', author: '교회 공지', text: '11월 9일부터 21일까지 감사주간이에요. 감사일기에 오늘의 감사를 적고 나눠 주세요.', at: '공지', count: 0, reacted: false, comments: [] },
@@ -285,7 +285,7 @@
       '<div class="quick"><a href="#/worship"><i>⛪</i>예배 시간</a><a href="#/visit"><i>📍</i>오시는 길</a><a href="#/mission"><i>🌏</i>선교 소식</a></div>' +
       '<div class="card"><div class="h2" style="margin-bottom:4px">다가오는 일정</div>' + (ev || '<p class="sub">다가오는 일정이 없어요.</p>') + '</div>' +
       (news ? '<div class="card"><div class="sec-title" style="margin:0 0 4px"><b>교회 소식</b><a href="#/news">전체</a></div>' + news + '</div>' : '') +
-      (S.me && S.me.approved && challengeNow() ? '<a class="card green" href="#/talk/diary" style="display:flex;align-items:center;gap:12px"><span style="font-size:1.6rem">🌱</span><div><b>오늘의 감사를 적어 보세요</b><div class="sub" style="color:#55705f">' + (S.diary[dayKey(new Date())] ? '오늘 감사일기를 썼어요 ✓' : challengeNow().title + ' · ' + md(challengeNow().to) + '까지') + '</div></div></a>' : '');
+      (S.me && S.me.approved && challengeNow() ? '<a class="card green" href="#/talk/prayer?p=thanks" style="display:flex;align-items:center;gap:12px"><span style="font-size:1.6rem">🌾</span><div><b>오늘의 감사 기도를 드려 보세요</b><div class="sub" style="color:#55705f">' + (thanksDays()[dayKey(new Date())] ? '오늘 감사 도장을 찍었어요 ✓' : challengeNow().title + ' · ' + md(challengeNow().to) + '까지') + '</div></div></a>' : '');
   }
 
   // ---------- 말씀 ----------
@@ -455,13 +455,13 @@
       '<span class="rx' + (p.reacted ? ' on' : '') + '" data-react="' + p.id + '">' + (p.cat === 'pray' ? (p.head ? '🙏 함께 기도했어요' : '🙏 기도했어요') : '🙌 아멘') + ' ' + p.count + '</span> <span class="rx">💬 ' + p.comments.length + '</span>') + '</a>';
   }
   function segs(on) {
-    return '<div class="seg seg5">' + [['church', '교회 나눔'], ['group', '목장방'], ['bible', '성경읽기'], ['prayer', '기도 공간'], ['diary', '감사 챌린지']].map(function (s) { return '<a href="#/talk/' + s[0] + '"' + (s[0] === on ? ' class="on"' : '') + '>' + s[1] + '</a>'; }).join('') + '</div>';
+    return '<div class="seg">' + [['church', '교회 나눔'], ['group', '목장방'], ['bible', '성경읽기'], ['prayer', '기도 공간']].map(function (s) { return '<a href="#/talk/' + s[0] + '"' + (s[0] === on ? ' class="on"' : '') + '>' + s[1] + '</a>'; }).join('') + '</div>';
   }
   function talk(sub, q) {
     if (!S.me || !S.me.approved) return gate();
     sub = sub || 'church';
     renderTop({ title: '나눔', right: sub === 'diary' || sub === 'prayer' || sub === 'bible' ? '' : '<a class="icon-btn" href="#/write?to=' + (sub === 'group' ? 'group' : 'all') + '" aria-label="글쓰기">' + svg('pen', 2) + '</a>', bell: true });
-    if (sub === 'diary') return segs(sub) + diary();
+    if (sub === 'diary') { sub = 'prayer'; q = { p: 'thanks' }; }   // 감사 챌린지 탭은 기도 공간 「감사 기도」로 합침 (2026-11-25)
     if (sub === 'prayer') return segs(sub) + prayerRoom(q);
     if (sub === 'bible') return segs(sub) + bibleRoom();
     if (sub === 'group') return segs(sub) + groupRoom();
@@ -666,6 +666,7 @@
     ['hard', '마음이 힘들어요', '😢', '힘든 마음을 있는 그대로 털어놓아도 괜찮아요.'],
     ['help', '도와주세요', '🙏', '주님의 도우심이 필요한 일을 구체적으로 적어 보세요.'],
     ['review', '하루를 돌아보며', '🌙', '하나님, 오늘 저 어땠나요? 하루를 돌아보며 적어 보세요.'],
+    ['thanks', '감사 기도', '🌾', '오늘 감사한 일을 하나님께 올려 드려요. 쓰면 달력에 감사 도장이 찍혀요.'],
     ['inter', '중보 기도', '🤝', '누구를 위해, 무엇을 기도할지 적어 보세요.'],
     ['sorry', '회개 기도', '💧', '주님 앞에 내려놓고 싶은 것을 적어 보세요.'],
     ['etc', '자유 기도', '✏️', '하나님께 드리고 싶은 기도를 자유롭게 적어 보세요.'],
@@ -687,12 +688,40 @@
     S.posts.push(
       { id: 'h1', cat: 'pray', head: 'help', scope: 'group', group: null, author: '예시 목장 식구', text: '(예시) 다음 주 이사를 해요. 좋은 이웃을 만나고 아이들이 새 학교에 잘 적응하도록 도와주세요.', at: '오늘', count: 4, reacted: false, comments: [] },
       { id: 'h2', cat: 'pray', head: 'inter', scope: 'all', author: '예시 성도', text: '(예시) 투병 중인 친구 ○○를 위해 기도해요. 치료가 잘 되고 마음에 평안이 있기를.', at: '어제', count: 11, reacted: false, comments: [] },
-      { id: 'h3', cat: 'pray', head: 'help', scope: 'all', author: '예시 청년', text: '(예시) 취업 소식 기다리던 것, 오늘 합격했어요! 함께 기도해 주신 분들 감사해요.', at: '2일 전', count: 15, reacted: false, comments: [], answered: 1 });
+      { id: 'h3', cat: 'pray', head: 'thanks', scope: 'all', author: '예시 청년', text: '(예시) 취업 소식 기다리던 것, 오늘 합격했어요! 함께 기도해 주신 분들 감사해요.', at: '2일 전', count: 15, reacted: false, comments: [], answered: 1 });
     save();
   }
   // 화면에 그릴 한 줄: 「나만」(이 휴대폰) 기도와 서버(나눔) 기도를 같은 모양으로
   function pFromLocal(x) { return { id: x.id, local: true, head: x.head || '', text: x.text, at: x.at, done: !!x.done, doneAt: x.done || '', scope: 'me', mine: true, count: 0 }; }
   function pFromPost(p) { return { id: p.id, post: p, head: p.head || '', text: p.text, at: p.at, done: !!p.answered, scope: p.scope, mine: !!p.mine, author: p.author, count: p.count || 0, reacted: !!p.reacted }; }
+  // 감사 도장: 감사 기도를 쓴 날 (예전 감사일기 S.diary도 이어서 셈)
+  function thanksDays() {
+    var R = {};
+    Object.keys(S.diary || {}).forEach(function (k) { R[k] = 1; });
+    Object.keys(S.thanksDays || {}).forEach(function (k) { R[k] = 1; });
+    prayers().forEach(function (x) { if (x.head === 'thanks' && x.day) R[x.day] = 1; });
+    S.posts.forEach(function (p) { if (p.mine && p.cat === 'pray' && p.head === 'thanks' && p.ts) R[dayKey(new Date(p.ts))] = 1; });
+    return R;
+  }
+  function monthGrid(R, mark) {   // 이번 달 도장 달력 (성경읽기·감사 기도 함께 씀)
+    var now = new Date(), today = dayKey(now), y = now.getFullYear(), m = now.getMonth(), last = new Date(y, m + 1, 0).getDate(), first = new Date(y, m, 1).getDay(), n = 0, cells = '';
+    for (var i = 0; i < first; i++) cells += '<span></span>';
+    for (var dd = 1; dd <= last; dd++) {
+      var k = dayKey(new Date(y, m, dd)), on = !!R[k]; if (on) n++;
+      cells += '<span class="rd-c' + (on ? ' on' : '') + (k === today ? ' today' : '') + (k > today ? ' fut' : '') + '">' + (on ? mark : dd) + '</span>';
+    }
+    var d = new Date(), st = 0;
+    if (!R[dayKey(d)]) d.setDate(d.getDate() - 1);
+    while (R[dayKey(d)]) { st++; d.setDate(d.getDate() - 1); }
+    return { month: n, streak: st, html: '<div class="rd-month">' + ['일', '월', '화', '수', '목', '금', '토'].map(function (w) { return '<i>' + w + '</i>'; }).join('') + cells + '</div>' };
+  }
+  function thanksCal() {
+    var g = monthGrid(thanksDays(), '🌾'), ch = challengeNow(), now = new Date();
+    return '<div class="thx-cal"><div class="sec-title" style="margin:0 0 8px"><b>🌾 나의 감사 도장</b><span class="sub">' + (now.getMonth() + 1) + '월</span></div>' +
+      (ch ? '<div class="ph-help" style="margin-bottom:8px">🌱 지금은 「' + esc(ch.title) + '」 기간이에요 (' + md(ch.from) + ' ~ ' + md(ch.to) + '). 매일 감사 기도로 함께해요!</div>' : '') +
+      '<div class="rd-stats"><div><b>' + g.streak + '</b><span>일 연속 감사</span></div><div><b>' + g.month + '</b><span>이번 달 감사한 날</span></div></div>' + g.html +
+      '<p class="sub" style="margin-top:8px;font-size:.76rem">감사 기도를 쓴 날에 🌾 도장이 찍혀요. 도장은 나만 볼 수 있어요.</p></div>';
+  }
   function prayerRoom(q) {
     q = q || {};
     prayerSeed();
@@ -704,6 +733,7 @@
       .sort(function (a, b) { return (b.head === 'hard' ? 1 : 0) - (a.head === 'hard' ? 1 : 0); }) : [];
     var tab = q.t === 'with' ? 'with' : q.t === 'pastor' && isPastor ? 'pastor' : 'mine';
     var hf = q.h && headOf(q.h) ? q.h : '';
+    var pick = headOf(q.p) || headOf(hf) || HEADS[0];   // ?p=thanks 로 들어오면 감사 기도가 골라진 채로
     var list = (tab === 'with' ? withList : tab === 'pastor' ? toPastor : mine).filter(function (x) { return !hf || x.head === hf; });
     var open = list.filter(function (x) { return !x.done; }), done = list.filter(function (x) { return x.done; });
     var hard = toPastor.filter(function (x) { return x.head === 'hard' && !x.done; }).length;
@@ -723,10 +753,11 @@
         (acts ? '<div class="row" style="flex-wrap:wrap">' + acts + '</div>' : '') + '</div>';
     }
     var form = '<form class="card" id="prayForm" style="display:flex;flex-direction:column;gap:10px"><b>오늘의 기도</b>' +
-        '<div class="sub" style="font-weight:700">어떤 기도인가요?</div><div class="ph-pick" id="phPick">' + HEADS.map(function (h, i) { return '<button type="button" class="ph-b' + (i === 0 ? ' on' : '') + '" data-v="' + h[0] + '">' + h[2] + ' ' + esc(h[1]) + '</button>'; }).join('') + '</div>' +
+        '<div class="sub" style="font-weight:700">어떤 기도인가요?</div><div class="ph-pick" id="phPick">' + HEADS.map(function (h) { return '<button type="button" class="ph-b' + (h[0] === pick[0] ? ' on' : '') + '" data-v="' + h[0] + '">' + h[2] + ' ' + esc(h[1]) + '</button>'; }).join('') + '</div>' +
+        '<div id="thxBox"' + (pick[0] === 'thanks' ? '' : ' hidden') + '>' + thanksCal() + '</div>' +
         '<div class="sub" style="font-weight:700">누구와 나눌까요?</div><div class="chips" id="psPick" style="margin:0;flex-wrap:wrap;overflow:visible">' + PSCOPES.map(function (s, i) { return '<button type="button" class="chip' + (i === 0 ? ' on' : '') + '" data-v="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div>' +
         '<div class="ph-help" id="psHelp">' + PSCOPES[0][2] + '</div>' +
-        '<textarea name="t" rows="4" maxlength="1000" required placeholder="' + HEADS[0][3] + '"></textarea>' +
+        '<textarea name="t" rows="4" maxlength="1000" required placeholder="' + pick[3] + '"></textarea>' +
         '<button class="btn">기도 드리기</button></form>';
     var tabs = '<div class="seg" style="margin-top:4px">' + [['mine', '내 기도 ' + mine.length]].concat([['with', '함께 기도해요 ' + withList.length]]).concat(isPastor ? [['pastor', '목사님께 온 기도 ' + toPastor.length + (hard ? ' ❗' : '')]] : [])
       .map(function (t) { return '<a href="' + link(t[0], hf) + '"' + (t[0] === tab ? ' class="on"' : '') + '>' + t[1] + '</a>'; }).join('') + '</div>';
@@ -734,7 +765,8 @@
       .map(function (c) { return '<a class="chip' + (c[0] === hf ? ' on' : '') + '" href="' + link(tab, c[0]) + '">' + esc(c[1]) + '</a>'; }).join('') + '</div>';
     var empty = tab === 'with' ? '목장이나 교회에 올라온 기도가 아직 없어요.' : tab === 'pastor' ? '목사님께 온 기도가 없어요.' : '아직 적은 기도가 없어요. 위에서 오늘의 기도를 적어 보세요.';
     return (tab === 'mine' ? form : '') + tabs +
-      (tab === 'pastor' && hard ? '<div class="card ph-alert">❗ 「' + HEADS[1][1] + '」 기도가 <b>' + hard + '개</b> 있어요. 먼저 연락해 보세요.</div>' : '') + chips +
+      (hf === 'thanks' && tab !== 'mine' ? '<div class="card">' + thanksCal() + '</div>' : '') +
+      (tab === 'pastor' && hard ?'<div class="card ph-alert">❗ 「' + HEADS[1][1] + '」 기도가 <b>' + hard + '개</b> 있어요. 먼저 연락해 보세요.</div>' : '') + chips +
       (open.length ? '<div class="sec-title"><b>' + (tab === 'with' ? '함께 기도해요' : '기도하고 있어요') + ' ' + open.length + '</b></div>' + open.map(item).join('') : '') +
       (done.length ? '<div class="sec-title"><b>🙌 응답된 기도 ' + done.length + '</b></div>' + done.map(item).join('') : '') +
       (list.length ? '' : '<p class="empty">' + empty + '</p>') +
@@ -744,7 +776,7 @@
     var f = $('#prayForm');
     function postById(id) { return S.posts.filter(function (x) { return x.id === id; })[0]; }
     if (f) {
-      $('#phPick').onclick = function (e) { var b = e.target.closest('[data-v]'); if (!b) return; $('#phPick').querySelectorAll('.ph-b').forEach(function (c) { c.classList.toggle('on', c === b); }); f.t.placeholder = headOf(b.dataset.v)[3]; };
+      $('#phPick').onclick = function (e) { var b = e.target.closest('[data-v]'); if (!b) return; $('#phPick').querySelectorAll('.ph-b').forEach(function (c) { c.classList.toggle('on', c === b); }); f.t.placeholder = headOf(b.dataset.v)[3]; $('#thxBox').hidden = b.dataset.v !== 'thanks'; };
       $('#psPick').onclick = function (e) {
         var b = e.target.closest('[data-v]'); if (!b) return;
         $('#psPick').querySelectorAll('.chip').forEach(function (c) { c.classList.toggle('on', c === b); });
@@ -755,12 +787,15 @@
         e.preventDefault();
         var v = f.t.value.trim(); if (!v) return;
         var head = $('#phPick .on').dataset.v, scope = $('#psPick .on').dataset.v;
-        if (scope === 'me') {
-          var list = prayers(); list.unshift({ id: 'q' + Date.now(), head: head, text: v, at: md(dayKey(new Date())) });
-          savePrayers(list); toast('나만 보는 기도로 저장했어요 🔒'); route(); return;
-        }
         if (scope === 'group' && !S.me.group) { toast(CLOUD ? '아직 목장이 정해지지 않았어요.' : '목장방에서 목장을 먼저 골라 주세요.'); return; }
+        var thx = head === 'thanks' && !thanksDays()[dayKey(new Date())];
+        if (head === 'thanks') { S.thanksDays = S.thanksDays || {}; S.thanksDays[dayKey(new Date())] = 1; save(); }
+        if (scope === 'me') {
+          var list = prayers(); list.unshift({ id: 'q' + Date.now(), head: head, text: v, at: md(dayKey(new Date())), day: dayKey(new Date()) });
+          savePrayers(list); toast(thx ? '오늘 감사 도장을 찍었어요 🌾' : '나만 보는 기도로 저장했어요 🔒'); route(); return;
+        }
         var done = scope === 'pastor' ? '목사님께만 보냈어요 🙏' : scope === 'group' ? '목장 식구들과 나눴어요 🏡' : '교회와 나눴어요 ⛪';
+        if (thx) done = '오늘 감사 도장을 찍었어요 🌾 ' + done.replace(/ \S+$/, '');
         if (CLOUD) { f.querySelector('.btn').disabled = true; put(YG.addPost({ cat: 'pray', head: head, scope: scope, text: v }), done); f.reset(); return; }
         S.posts.unshift({ id: 'p' + Date.now(), cat: 'pray', head: head, scope: scope, group: scope === 'group' ? S.me.group : undefined, author: S.me.name, text: v, at: '방금', mine: true, count: 0, reacted: false, comments: [] });
         save(); toast(done); route();
@@ -1359,7 +1394,7 @@
       e.preventDefault();
       if (cf.to.value < cf.from.value) { toast('끝나는 날이 시작보다 빨라요'); return; }
       var c = { title: cf.title.value.trim(), from: cf.from.value, to: cf.to.value }, job = YG.addChallenge(c);
-      if (cf.push.checked && cf.from.value <= dayKey(new Date())) job = job.then(function () { return YG.notice({ kind: 'notice', title: c.title + '가 시작됐어요', body: md(c.from) + ' ~ ' + md(c.to) + ' · 나눔에서 오늘의 감사를 적어 보세요', url: '#/talk/diary' }, 'all'); });
+      if (cf.push.checked && cf.from.value <= dayKey(new Date())) job = job.then(function () { return YG.notice({ kind: 'notice', title: c.title + '가 시작됐어요', body: md(c.from) + ' ~ ' + md(c.to) + ' · 기도 공간에서 감사 기도로 함께해요', url: '#/talk/prayer?p=thanks' }, 'all'); });
       put(job, '챌린지를 만들었어요');
     };
     var mk = $('#mnKind');
@@ -1449,7 +1484,7 @@
       if (cf.to.value < cf.from.value) { toast('끝나는 날이 시작보다 빨라요'); return; }
       S.challenges.unshift({ title: cf.title.value.trim(), from: cf.from.value, to: cf.to.value });
       save();
-      if (cf.push.checked && cf.from.value <= dayKey(new Date())) receive({ kind: 'notice', title: cf.title.value.trim() + '가 시작됐어요', body: md(cf.from.value) + ' ~ ' + md(cf.to.value) + ' · 나눔에서 오늘의 감사를 적어 보세요', url: '#/talk/diary' });
+      if (cf.push.checked && cf.from.value <= dayKey(new Date())) receive({ kind: 'notice', title: cf.title.value.trim() + '가 시작됐어요', body: md(cf.from.value) + ' ~ ' + md(cf.to.value) + ' · 기도 공간에서 감사 기도로 함께해요', url: '#/talk/prayer?p=thanks' });
       else toast('챌린지를 만들었어요');
       route();
     };
@@ -1489,7 +1524,7 @@
         '<div class="row"><label class="field"><span>종류</span><select name="kind">' + ALERT_KINDS.map(function (k) { return '<option value="' + k[0] + '">' + k[1].split(' ·')[0] + '</option>'; }).join('') + '</select></label>' +
         '<label class="field"><span>받는 사람</span><select name="to">' + (CLOUD ? (S.adminRole === 'leader' ? '<option value="' + esc(S.me.group) + '">우리 목장</option>' : '<option value="all">전체</option>' + S.groups.map(function (g) { return '<option value="' + esc(g.name) + '">' + esc(g.name) + '</option>'; }).join(''))
           : (S.adminRole === 'leader' ? '<option>우리 목장</option>' : '<option>전체</option><option>목장별</option><option>부서별</option>')) + '</select></label></div>' +
-        '<label class="field"><span>누르면 열 화면</span><select name="url"><option value="#/news">교회 소식</option><option value="#/sermons">말씀</option><option value="#/worship">예배·모임 안내</option><option value="#/talk">나눔</option><option value="#/talk/group">목장방</option><option value="#/talk/diary">감사일기</option></select></label>' +
+        '<label class="field"><span>누르면 열 화면</span><select name="url"><option value="#/news">교회 소식</option><option value="#/sermons">말씀</option><option value="#/worship">예배·모임 안내</option><option value="#/talk">나눔</option><option value="#/talk/group">목장방</option><option value="#/talk/prayer?p=thanks">감사 기도</option></select></label>' +
         '<div class="push-preview"><div style="color:#fff;font-size:.78rem;font-weight:700;margin-bottom:8px;opacity:.85">휴대폰에 이렇게 보여요</div><div class="push"><img src="icon-192.png" alt=""><div style="flex:1"><div class="app"><span>예그린교회</span><span>지금</span></div><b id="pt">제목</b><p id="pb">내용</p></div></div></div>' +
         '<button class="btn">보내기</button></form>' +
       (S.sent.length ? '<div class="sec-title"><b>보낸 기록</b></div>' + S.sent.map(function (s) { return '<div class="card"><b>' + esc(s.title) + '</b><div class="sub">' + esc(s.body) + '</div><div class="sub" style="font-size:.75rem">' + esc(s.at) + ' · ' + esc(s.to) + '</div></div>'; }).join('') : '');

@@ -172,7 +172,7 @@
           '<label class="f">제목 (30자)<input name="title" maxlength="30" required></label>' +
           '<label class="f">내용 (120자)<textarea name="body" rows="3" maxlength="120" required></textarea></label>' +
           '<div class="row"><label class="f">받는 사람<select name="to">' + (leader ? '<option>우리 목장</option>' : '<option>전체 교인</option>' + S.groups.map(function (g) { return '<option>' + esc(g.name) + '</option>'; }).join('')) + '</select></label>' +
-          '<label class="f">누르면 열 화면<select name="url"><option value="#/news">교회 소식</option><option value="#/sermons">말씀</option><option value="#/worship">예배 안내</option><option value="#/talk">나눔</option><option value="#/talk/diary">감사 챌린지</option><option value="#/mission">선교 소식</option></select></label>' +
+          '<label class="f">누르면 열 화면<select name="url"><option value="#/news">교회 소식</option><option value="#/sermons">말씀</option><option value="#/worship">예배 안내</option><option value="#/talk">나눔</option><option value="#/talk/prayer?p=thanks">감사 기도</option><option value="#/mission">선교 소식</option></select></label>' +
           '<label class="f">보낼 때<select name="when"><option value="now">지금 바로</option><option value="later">예약 (시안)</option></select></label></div>' +
           '<button class="btn" style="justify-self:start">보내기</button></form></div>' +
       '<div class="grid" style="align-content:start"><div class="card"><h2>휴대폰에 이렇게 보여요</h2><div class="phone"><div class="push"><img src="icon-192.png" alt=""><div><b id="pt">제목</b><p id="pb">내용</p></div></div></div></div>' +
@@ -557,7 +557,7 @@
       e.preventDefault();
       if (cf.to.value < cf.from.value) { toast('끝나는 날이 시작보다 빨라요'); return; }
       S.challenges.unshift({ title: cf.title.value.trim(), from: cf.from.value, to: cf.to.value });
-      if (cf.push.checked && cf.from.value <= dayKey(new Date())) deliver({ kind: 'notice', title: cf.title.value.trim() + '가 시작됐어요', body: md(cf.from.value) + ' ~ ' + md(cf.to.value) + ' · 나눔에서 오늘의 감사를 적어 보세요', url: '#/talk/diary' });
+      if (cf.push.checked && cf.from.value <= dayKey(new Date())) deliver({ kind: 'notice', title: cf.title.value.trim() + '가 시작됐어요', body: md(cf.from.value) + ' ~ ' + md(cf.to.value) + ' · 기도 공간에서 감사 기도로 함께해요', url: '#/talk/prayer?p=thanks' });
       save(); toast('챌린지를 만들었어요'); route();
     };
     var gvf = $('#gvForm');
@@ -614,7 +614,7 @@
       e.preventDefault();
       if (cf.to.value < cf.from.value) { toast('끝나는 날이 시작보다 빨라요'); return; }
       var c = { title: cf.title.value.trim(), from: cf.from.value, to: cf.to.value }, push = cf.push.checked && cf.from.value <= dayKey(new Date());
-      put(YG.addChallenge(c).then(function () { if (push) return YG.notice({ kind: 'notice', title: c.title + '가 시작됐어요', body: md(c.from) + ' ~ ' + md(c.to) + ' · 나눔에서 오늘의 감사를 적어 보세요', url: '#/talk/diary' }, 'all'); }), '챌린지를 만들었어요');
+      put(YG.addChallenge(c).then(function () { if (push) return YG.notice({ kind: 'notice', title: c.title + '가 시작됐어요', body: md(c.from) + ' ~ ' + md(c.to) + ' · 기도 공간에서 감사 기도로 함께해요', url: '#/talk/prayer?p=thanks' }, 'all'); }), '챌린지를 만들었어요');
     };
     var gvf = $('#gvForm');
     if (gvf) gvf.onsubmit = function (e) {
