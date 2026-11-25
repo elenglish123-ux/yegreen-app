@@ -305,3 +305,24 @@ textarea { resize: none; line-height: 1.55; }
 .note-body p { font-size: 1.02rem; line-height: 1.6; margin: 0 0 6px; }
 .note-b { font: inherit; font-size: .8rem; padding: 5px 10px; border-radius: 999px; border: 1px solid #cfd8d2; background: #fff; color: var(--green-d); cursor: pointer; }
 .note-b.on { background: var(--green); border-color: var(--green); color: #fff; }
+/* 작정 기도 (2026-11-25) */
+.vow-set { display: flex; flex-direction: column; gap: 8px; background: #fff8f0; border: 1px solid #f3dcc4; border-radius: 12px; padding: 12px; }
+.vow-in { display: inline-flex; align-items: center; gap: 4px; font-size: .85rem; color: #6f6a60; }
+.vow-in input { width: 64px; font: inherit; padding: 6px 8px; border: 1px solid #e3e0d8; border-radius: 999px; text-align: center; }
+.vow { background: #fff8f0; border-radius: 12px; padding: 10px 12px; margin: 0 0 8px; display: flex; flex-direction: column; gap: 6px; }
+.vow.sm { padding: 8px 10px; margin-bottom: 6px; }
+.vow-line { font-size: .8rem; font-weight: 700; color: #b5542a; }
+.vow-bar { height: 8px; background: #f1e3d3; border-radius: 99px; overflow: hidden; }
+.vow-bar span { display: block; height: 100%; background: linear-gradient(90deg, #e9883f, #c9502a); border-radius: 99px; }
+.vow-st { font-size: .8rem; color: #6f6a60; }
+.vow-st b { color: #c9502a; font-size: 1rem; }
+.vow-dots { display: flex; flex-wrap: wrap; gap: 4px; }
+.vow-dots i { width: 14px; height: 14px; border-radius: 50%; background: #f1e3d3; }
+.vow-dots i.on { background: #e9883f; }
+.vow-dots i.t { box-shadow: 0 0 0 2px #c9502a; }
+.vow-dots i.f { opacity: .45; }
+.vow .btn { align-self: flex-start; }
+.card.vow-card { border: 1px solid #f3dcc4; }
+.vow-item + .vow-item { border-top: 1px dashed #eadbc8; padding-top: 10px; margin-top: 4px; }
+.vow-item p { font-weight: 700; margin: 4px 0 6px; }
+.sec-title a.btn { color: #fff; font-size: .82rem; padding: 7px 12px; }
