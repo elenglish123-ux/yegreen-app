@@ -372,3 +372,18 @@ textarea { resize: none; line-height: 1.55; }
 .qt-full { position: fixed; inset: 0; z-index: 210; background: rgba(0,0,0,.88); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 16px; }
 .qt-full img { max-width: 100%; max-height: 88vh; border-radius: 8px; }
 .qt-full span { color: #ddd; font-size: .85rem; }
+.pt-now { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; font-size: .84rem; color: #f6c99c; }
+.pt-now button { font: inherit; font-size: .78rem; color: #fff; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: 5px 10px; cursor: pointer; flex: 0 0 auto; }
+/* 기도 챌린지 한 줄 띠 (2026-11-25) */
+.card.vow-band { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #fff8f0; border: 1px solid #f3dcc4; color: inherit; position: relative; }
+.vb-ic { font-size: 1.3rem; }
+.vb-tx { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.vb-tx b { font-size: .95rem; color: #a2471f; }
+.vb-tx small { font-size: .78rem; color: #8a7a68; }
+.vb-go { font-size: .82rem; font-weight: 700; color: #c9502a; white-space: nowrap; }
+.vb-dot { position: absolute; top: 10px; left: 30px; width: 9px; height: 9px; border-radius: 50%; background: #e9883f; box-shadow: 0 0 0 2px #fff8f0; }
+.card.vow-item-card .vow-title { font-weight: 700; margin: 0 0 8px; }
+.qt-text { white-space: pre-wrap; }
+.qt-pick small { margin-top: 3px; }
+#qtForm textarea { font: inherit; padding: 10px 12px; border: 1px solid #e3e0d8; border-radius: 10px; resize: vertical; }
+.ph-photo { display: block; border: 1.5px dashed #cfd8d2; border-radius: 12px; padding: 10px; text-align: center; color: var(--green-d); font-size: .88rem; font-weight: 700; cursor: pointer; background: #f9fbf9; } .ph-photo img { display: block; max-width: 100%; max-height: 200px; margin: 0 auto 4px; border-radius: 8px; } .ph-photo small { display: block; font-weight: 500; font-size: .74rem; color: #6f6a60; } .pr-img { max-height: 260px; margin: 0 0 8px; }
