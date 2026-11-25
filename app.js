@@ -442,7 +442,8 @@
   }
 
   function canSee(p) {
-    if (p.scope === 'group') return !!S.me.group && (p.group === null || p.group === S.me.group);
+    if (p.scope === 'group' && p.group === null && !CLOUD) return true;   // 시안 예시 목장 글은 목장을 안 골라도 보이게
+    if (p.scope === 'group') return !!S.me.group &&(p.group === null || p.group === S.me.group);
     if (p.scope === 'pastor') return !!p.mine || (CLOUD && S.me.role === 'pastor');
     return true;
   }
@@ -665,6 +666,7 @@
     ['joy', '주님을 기쁘시게', '😊', '오늘 주님을 기쁘시게 해 드린 일, 해 드리고 싶은 일을 적어 보세요.'],
     ['hard', '마음이 힘들어요', '😢', '힘든 마음을 있는 그대로 털어놓아도 괜찮아요.'],
     ['help', '도와주세요', '🙏', '주님의 도우심이 필요한 일을 구체적으로 적어 보세요.'],
+    ['morning', '하루를 시작하며', '🌅', '오늘 하루를 주님께 맡겨요. 오늘 할 일과 만날 사람을 올려 드려 보세요.'],
     ['review', '하루를 돌아보며', '🌙', '하나님, 오늘 저 어땠나요? 하루를 돌아보며 적어 보세요.'],
     ['thanks', '감사 기도', '🌾', '오늘 감사한 일을 하나님께 올려 드려요. 쓰면 달력에 감사 도장이 찍혀요.'],
     ['inter', '중보 기도', '🤝', '누구를 위해, 무엇을 기도할지 적어 보세요.'],
@@ -689,6 +691,17 @@
       { id: 'h1', cat: 'pray', head: 'help', scope: 'group', group: null, author: '예시 목장 식구', text: '(예시) 다음 주 이사를 해요. 좋은 이웃을 만나고 아이들이 새 학교에 잘 적응하도록 도와주세요.', at: '오늘', count: 4, reacted: false, comments: [] },
       { id: 'h2', cat: 'pray', head: 'inter', scope: 'all', author: '예시 성도', text: '(예시) 투병 중인 친구 ○○를 위해 기도해요. 치료가 잘 되고 마음에 평안이 있기를.', at: '어제', count: 11, reacted: false, comments: [] },
       { id: 'h3', cat: 'pray', head: 'thanks', scope: 'all', author: '예시 청년', text: '(예시) 취업 소식 기다리던 것, 오늘 합격했어요! 함께 기도해 주신 분들 감사해요.', at: '2일 전', count: 15, reacted: false, comments: [], answered: 1 });
+    save();
+  }
+  function prayerSeed2() {   // 시안: 열람 범위마다 예시 하나씩 (나연 요청 2026-11-25)
+    if (CLOUD || S.prayerSeed2) return;
+    S.prayerSeed2 = 1;
+    S.posts.push(
+      { id: 'h4', cat: 'pray', head: 'hard', scope: 'pastor', author: S.me.name, mine: true, text: '(예시) 목사님, 요즘 회사 일로 마음이 많이 지쳐 있어요. 주일에 잠깐 이야기 나눌 수 있을까요?', at: '오늘', count: 0, reacted: false, comments: [] },
+      { id: 'h5', cat: 'pray', head: 'inter', scope: 'group', group: null, author: '예시 목장 식구', text: '(예시) 이번 주 목장 모임에 처음 오시는 새가족이 편안하게 마음 열 수 있도록 함께 기도해 주세요.', at: '오늘', count: 2, reacted: false, comments: [] },
+      { id: 'h6', cat: 'pray', head: 'joy', scope: 'all', author: '예시 권사', text: '(예시) 성탄절 새생명축제에 초대할 이웃 한 사람을 주님께서 보여 주세요. 주님 기뻐하실 선물을 드리고 싶어요.', at: '오늘', count: 7, reacted: false, comments: [] });
+    var l = prayers();
+    if (!l.some(function (x) { return x.id === 'qex'; })) { l.push({ id: 'qex', head: 'review', text: '(예시) 하나님, 오늘 아이에게 짜증을 많이 냈어요. 내일은 한 번 더 참고 안아 주는 부모가 되게 해 주세요.', at: md(dayKey(new Date())), day: '' }); savePrayers(l); }
     save();
   }
   // 화면에 그릴 한 줄: 「나만」(이 휴대폰) 기도와 서버(나눔) 기도를 같은 모양으로
@@ -724,7 +737,7 @@
   }
   function prayerRoom(q) {
     q = q || {};
-    prayerSeed();
+    prayerSeed(); prayerSeed2();
     var isPastor = CLOUD ? S.me.role === 'pastor' : S.adminRole === 'pastor' && S.admin;
     var server = S.posts.filter(function (p) { return p.cat === 'pray' && p.head && !p.hidden && canSee(p); });
     var mine = prayers().map(pFromLocal).concat(server.filter(function (p) { return p.mine; }).map(pFromPost));
