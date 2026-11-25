@@ -28,7 +28,21 @@
   ];
 
   var S;
+  // ---------- 서버 모드 (2026-11-25) ----------
+  // server-config.js 에 주소가 있거나 ?mock=1 이면 앱과 같은 서버(cloud.js)를 쓴다. 휴대폰 번호 + 숫자 6자리로 로그인,
+  // 담임목사·관리자·목자만 들어올 수 있고, 메뉴는 서버에 저장된 실제 역할을 따른다. 아니면 예전 시안(이 기기 저장)으로 돈다.
+  var CLOUD = !!(window.YG && window.YG.on);
+  function cloudInit() {
+    S = { posts: [], notifs: [], sent: [], pending: [], groups: [], people: [], challenges: [], missionNews: [], groupVideos: [], reads: {}, juboOpen: true, adminRole: 'member', cloudReady: false };
+    YG.onError = function (where) { if (/members|notices|posts/.test(where)) toast('서버에서 자료를 받지 못했어요 (' + where + ')'); };
+    YG.start(S, function () { route(); }, null);
+  }
+  // 서버에 쓰고, 끝나면 알림 · 실패하면 이유
+  function put(job, ok) {
+    return Promise.resolve(job).then(function () { if (ok) toast(ok); }, function (e) { toast('저장하지 못했어요: ' + (e && e.message || e)); });
+  }
   function load() {
+    if (CLOUD) return;
     try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
     if (!S) S = { posts: [], notifs: [], diary: {}, sent: [], alerts: {}, firstRun: true };
     if (!S.posts) S.posts = [];
@@ -63,10 +77,11 @@
     }];
   }
 
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
-  load();
-  // 앱을 다른 탭에서 쓰면 바로 다시 읽기
-  window.addEventListener('storage', function (e) { if (e.key === KEY) { load(); route(); } });
+  function save() { if (CLOUD) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  if (CLOUD) S = { posts: [], notifs: [], sent: [], pending: [], groups: [], people: [], challenges: [], missionNews: [], groupVideos: [], reads: {}, juboOpen: true, adminRole: 'member' };
+  else load();
+  // 앱을 다른 탭에서 쓰면 바로 다시 읽기 (시안 모드)
+  window.addEventListener('storage', function (e) { if (!CLOUD && e.key === KEY) { load(); route(); } });
 
   // ---------- 도구 ----------
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -77,13 +92,15 @@
   var WEEK = '일월화수목금토';
   function av(name) { var h = 0; for (var i = 0; i < name.length; i++) h += name.charCodeAt(i); return '<span class="av" style="background:' + COLORS[h % COLORS.length] + '">' + esc(name.replace(/^예시\s*/, '').charAt(0)) + '</span>'; }
   function toast(t) { var o = $('.toast'); if (o) o.remove(); var d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.append(d); setTimeout(function () { d.remove(); }, 2600); }
+  function readCount(k) { return CLOUD ? (S.reads && S.reads[k] || 0) : seedCount(k) + (S.readDone && S.readDone[k] ? 1 : 0); }
   function seedCount(k) { var n = Math.floor(new Date(k + 'T00:00:00') / 864e5); return 24 + (n * 7919) % 13 - (new Date(k + 'T00:00:00').getDay() === 0 ? 6 : 0); }
   function now() { var d = new Date(); return md(dayKey(d)) + ' ' + (d.getHours() < 12 ? '오전 ' : '오후 ') + ((d.getHours() + 11) % 12 + 1) + ':' + pad(d.getMinutes()); }
   function hidden() { return S.posts.filter(function (p) { return p.hidden; }); }
   function challengeNow() { var t = dayKey(new Date()); return S.challenges.filter(function (c) { return t >= c.from && t <= c.to && !c.closed; })[0] || null; }
   function can(k) { var m = MENUS.filter(function (x) { return x[0] === k; })[0]; return m && m[3].indexOf(S.adminRole) >= 0; }
   // 같은 기기의 앱 알림함에 넣기 (실제로는 서버가 성도 휴대폰으로 보냄)
-  function deliver(msg) {
+  function deliver(msg, to) {
+    if (CLOUD) return YG.notice(msg, to || 'all');   // 서버 모드: 알림함 문서로 (성도 앱이 받아 보여 줌)
     S.notifs.unshift({ id: 'n' + Date.now(), kind: msg.kind, title: msg.title, body: msg.body, url: msg.url, at: '방금', read: false });
   }
 
@@ -99,7 +116,7 @@
     return '<div class="grid g4">' +
         '<a class="card stat' + (S.pending.length ? ' alert' : '') + '" href="#/members"><div class="k">가입 승인 대기</div><div class="v">' + S.pending.length + '</div><div class="s">눌러서 승인하기</div></a>' +
         '<a class="card stat' + (hidden().length ? ' alert' : '') + '" href="#/reports"><div class="k">신고된 글</div><div class="v">' + hidden().length + '</div><div class="s">확인 후 숨김 풀기·지우기</div></a>' +
-        '<a class="card stat" href="#/reading"><div class="k">오늘 성경읽기</div><div class="v">' + (seedCount(t) + (S.readDone && S.readDone[t] ? 1 : 0)) + '명</div><div class="s">시안 숫자</div></a>' +
+        '<a class="card stat" href="#/reading"><div class="k">오늘 성경읽기</div><div class="v">' + readCount(t) + '명</div><div class="s">' + (CLOUD ? '「다 읽었어요」 누른 수' : '시안 숫자') + '</div></a>' +
         '<a class="card stat" href="#/people"><div class="k">등록 교인</div><div class="v">' + S.people.length + '</div><div class="s">목장 ' + S.groups.length + '개</div></a>' +
       '</div>' +
       '<div class="grid g2" style="margin-top:16px">' +
@@ -204,20 +221,20 @@
     var days = [], max = 0;
     for (var i = 13; i >= 0; i--) {
       var d = new Date(); d.setDate(d.getDate() - i);
-      var k = dayKey(d), n = seedCount(k) + (S.readDone && S.readDone[k] ? 1 : 0);
+      var k = dayKey(d), n = readCount(k);
       days.push([(d.getMonth() + 1) + '/' + d.getDate() + ' ' + WEEK[d.getDay()], n, i === 0]); if (n > max) max = n;
     }
     var week = days.slice(7), avg = Math.round(week.reduce(function (a, x) { return a + x[1]; }, 0) / 7);
     var r = (MEDIA.reading || [])[0];
     return '<div class="grid g4" style="grid-template-columns:repeat(3,1fr)"><div class="card stat"><div class="k">오늘</div><div class="v">' + days[13][1] + '명</div></div><div class="card stat"><div class="k">이번 주 하루 평균</div><div class="v">' + avg + '명</div></div><div class="card stat"><div class="k">최근 통독 영상</div><div class="v" style="font-size:18px;margin-top:10px">' + (r ? esc(r.passage || r.title) : '—') + '</div></div></div>' +
       '<div class="card" style="margin-top:16px"><h2>최근 2주 함께 읽은 사람</h2><div class="bars">' + days.map(function (x) { return '<div><span>' + x[1] + '</span><i style="height:' + Math.round(x[1] / max * 100) + '%"' + (x[2] ? ' class="t"' : '') + '></i><small>' + x[0] + '</small></div>'; }).join('') + '</div>' +
-        '<p style="color:var(--muted);font-size:13px;margin-top:10px">시안 숫자예요. 서버를 연결하면 실제 수가 나와요. 관리자 화면에도 이름은 보이지 않고 숫자만 보여요.</p></div>';
+        '<p style="color:var(--muted);font-size:13px;margin-top:10px">' + (CLOUD ? '앱에서 「다 읽었어요」를 누른 사람 수예요.' : '시안 숫자예요. 서버를 연결하면 실제 수가 나와요.') + ' 관리자 화면에도 이름은 보이지 않고 숫자만 보여요.</p></div>';
   }
 
   function nextSunday() { var d = new Date(); d.setDate(d.getDate() + ((7 - d.getDay()) % 7 || 7)); return dayKey(d); }
   function gvideo() {
     var leader = S.adminRole === 'leader';
-    var targets = leader ? ['기쁨목장'] : ['전체 목장'].concat(S.groups.map(function (g) { return g.name; }));
+    var targets = leader ? [CLOUD ? (S.me.group || '우리 목장') : '기쁨목장'] : ['전체 목장'].concat(S.groups.map(function (g) { return g.name; }));
     return '<div class="grid g2"><div class="card"><h2>이번 주 목장 영상 올리기</h2><form class="form" id="gvForm">' +
         '<label class="f">영상 링크 (유튜브 「공유」 → 링크 복사 · 교회 영상은 「일부 공개」로 올려도 돼요)<input name="url" type="url" required placeholder="https://youtu.be/..."></label>' +
         '<div class="row"><label class="f">제목<input name="title" required maxlength="40"></label><label class="f">시리즈 · 회차<input name="series" maxlength="40"></label></div>' +
@@ -442,7 +459,39 @@
   var VIEWS = { '': dashboard, members: members, people: people, groups: groups, send: send, jubo: jubo, mission: mission, challenge: challenge, reports: reports, reading: reading, gvideo: gvideo, videomake: videomake };
 
   // ---------- 화면 전환 ----------
+  // 서버 모드에서 메뉴 없이 한 화면만 보여 줄 때 (불러오는 중 · 로그인 · 권한 없음)
+  function shell(title, html) {
+    $('#nav').innerHTML = '';
+    $('#rolePick').innerHTML = S.me && !S.me.missing ? esc(S.me.name || '') + ' <button data-logout>로그아웃</button>' : '';
+    $('#title').textContent = title; document.title = title + ' — 예그린교회 관리자';
+    $('#view').innerHTML = html;
+    var lo = $('[data-logout]'); if (lo) lo.onclick = function () { YG.logout(); };
+    var lf = $('#loginForm');
+    if (lf) lf.onsubmit = function (e) {
+      e.preventDefault();
+      var b = lf.querySelector('button'); b.disabled = true; b.textContent = '들어가는 중…';
+      YG.login(lf.phone.value, lf.pin.value).catch(function (er) { toast(YG.authMessage(er)); b.disabled = false; b.textContent = '로그인'; });
+    };
+  }
+  function cloudGate() {
+    if (S.cloudError) { shell('서버 연결 안 됨', '<div class="card"><p>' + esc(S.cloudError) + '</p></div>'); return true; }
+    if (!S.cloudReady) { shell('불러오는 중', '<div class="card"><p class="empty">서버에서 교회 자료를 불러오는 중이에요…</p></div>'); return true; }
+    if (!S.me) {
+      shell('관리자 로그인', '<div class="card" style="max-width:420px"><h2>예그린교회 관리자</h2><p style="color:var(--muted);font-size:14px;margin:-4px 0 14px">앱에 가입한 휴대폰 번호와 숫자 6자리 비밀번호로 들어와요. 담임목사님 · 관리자 · 목자만 열려요.</p>' +
+        '<form class="form" id="loginForm"><label class="f">휴대폰 번호<input name="phone" type="tel" inputmode="numeric" autocomplete="username" required placeholder="010-0000-0000"></label>' +
+        '<label class="f">비밀번호 (숫자 6자리)<input name="pin" type="password" inputmode="numeric" maxlength="6" pattern="\\d{6}" autocomplete="current-password" required></label><button class="btn" style="justify-self:start">로그인</button></form>' +
+        '<p style="color:var(--muted);font-size:13px;margin-top:12px">아직 가입 전이면 휴대폰에서 예그린 앱으로 먼저 가입해 주세요.</p></div>');
+      return true;
+    }
+    if (S.me.missing || !S.me.approved || ['pastor', 'admin', 'leader'].indexOf(S.me.role) < 0) {
+      shell('권한이 없어요', '<div class="card" style="max-width:480px"><p>' + (S.me.missing ? '교인 정보가 없어요.' : !S.me.approved ? '아직 가입 승인 전이에요. 간사님 승인 뒤에 다시 들어와 주세요.' : '관리자 화면은 담임목사님 · 관리자 · 목자만 볼 수 있어요.') + '</p><p style="margin-top:12px"><button class="btn ghost sm" data-logout>다른 번호로 로그인</button></p></div>');
+      return true;
+    }
+    return false;
+  }
+
   function route() {
+    if (CLOUD && cloudGate()) return;
     var k = location.hash.replace(/^#\/?/, '');
     if (!VIEWS[k]) k = '';
     if (!can(k)) { location.hash = '#/'; k = ''; }
@@ -453,7 +502,8 @@
       var ok = m[3].indexOf(S.adminRole) >= 0;
       return head + '<a href="#/' + m[0] + '" class="' + (m[0] === k ? 'on' : '') + (ok ? '' : ' locked') + '">' + m[1] + ' ' + m[2] + (ok ? '' : ' 🔒') + (counts[m[0]] && ok ? '<span class="n">' + counts[m[0]] + '</span>' : '') + '</a>';
     }).join('');
-    $('#rolePick').innerHTML = '시안 역할' + Object.keys(ROLES).map(function (r) { return '<button data-role="' + r + '" class="' + (S.adminRole === r ? 'on' : '') + '">' + ROLES[r] + '</button>'; }).join('');
+    $('#rolePick').innerHTML = CLOUD ? esc(S.me.name) + ' · ' + (ROLE_ALL[S.me.role] || '') + ' <button data-logout>로그아웃</button>'
+      : '시안 역할' + Object.keys(ROLES).map(function (r) { return '<button data-role="' + r + '" class="' + (S.adminRole === r ? 'on' : '') + '">' + ROLES[r] + '</button>'; }).join('');
     var m = MENUS.filter(function (x) { return x[0] === k; })[0];
     $('#title').textContent = m[2];
     document.title = m[2] + ' — 예그린교회 관리자';
@@ -465,6 +515,8 @@
   function bind() {
     var on = function (sel, fn) { document.querySelectorAll(sel).forEach(function (b) { b.onclick = function (e) { fn(b, e); }; }); };
     on('[data-role]', function (b) { S.adminRole = b.dataset.role; save(); route(); });
+    on('[data-logout]', function () { if (CLOUD) YG.logout(); });
+    if (CLOUD) return bindCloud(on);
     on('[data-ok]', function (b) {
       var a = S.pending.filter(function (x) { return x.id === b.dataset.ok; })[0], g = $('[data-pg="' + a.id + '"]').value;
       S.pending = S.pending.filter(function (x) { return x !== a; });
@@ -522,6 +574,63 @@
     on('[data-remove]', function (b) { if (!confirm('이 글을 지울까요? 되돌릴 수 없어요.')) return; S.posts = S.posts.filter(function (p) { return p.id !== b.dataset.remove; }); save(); route(); });
   }
 
+  // ---------- 서버 모드 버튼들: 같은 화면, 저장만 서버(cloud.js)로 ----------
+  function bindCloud(on) {
+    function byId(list, id) { return list.filter(function (x) { return x.id === id; })[0]; }
+    on('[data-ok]', function (b) {
+      var a = byId(S.pending, b.dataset.ok), g = $('[data-pg="' + a.id + '"]').value;
+      b.disabled = true; put(YG.approve(a.id, g), a.name + '님을 승인했어요' + (g ? ' · ' + g : ''));
+    });
+    on('[data-deny]', function (b) { if (!confirm('등록 교인이 아니라고 안내할까요?')) return; put(YG.deny(b.dataset.deny), '가입을 거절했어요'); });
+    document.querySelectorAll('[data-prole]').forEach(function (s) { s.onchange = function () { var p = S.people[s.dataset.prole]; put(YG.setRole(p.id, s.value), p.name + '님 권한을 바꿨어요'); }; });
+    var pq = $('#pq'); if (pq) pq.oninput = function () { var v = pq.value.trim(); document.querySelectorAll('[data-pname]').forEach(function (r) { r.hidden = v && r.dataset.pname.indexOf(v) < 0; }); };
+    document.querySelectorAll('[data-leader]').forEach(function (s) { s.onchange = function () { put(YG.setLeader(S.groups[s.dataset.leader].name, s.value), '목자를 정했어요'); }; });
+    var gf = $('#gForm'); if (gf) gf.onsubmit = function (e) { e.preventDefault(); var n = gf.g.value.trim(); if (S.groups.some(function (g) { return g.name === n; })) { toast('이미 있는 목장이에요'); return; } put(YG.addGroup(n), n + '을 만들었어요'); gf.reset(); };
+    var sf = $('#sendForm');
+    if (sf) {
+      var sync = function () { $('#pt').textContent = sf.title.value || '제목'; $('#pb').textContent = sf.body.value || '내용'; };
+      sf.oninput = sync;
+      on('#tpl [data-i]', function (b) { var t = TEMPLATES[b.dataset.i]; sf.title.value = t[2]; sf.body.value = t[3]; sf.url.value = t[4]; sf.dataset.kind = t[1]; sync(); });
+      sf.onsubmit = function (e) {
+        e.preventDefault();
+        if (sf.when.value === 'later') { toast('예약 보내기는 아직 준비 중이에요. 「지금 바로」로 보내 주세요.'); return; }
+        var to = S.adminRole === 'leader' ? (S.me.group || '') : sf.to.value === '전체 교인' ? 'all' : sf.to.value;
+        if (!to) { toast('목장이 정해지지 않아 보낼 곳이 없어요'); return; }
+        if (!confirm('「' + (to === 'all' ? '전체 교인' : to) + '」에게 보낼까요?')) return;
+        put(YG.notice({ kind: sf.dataset.kind || 'notice', title: sf.title.value.trim(), body: sf.body.value.trim(), url: sf.url.value }, to), '보냈어요. 성도 앱 알림함에 들어가요.');
+        sf.reset(); sync();
+      };
+    }
+    on('[data-jubo]', function () { put(YG.setJubo(!S.juboOpen), S.juboOpen ? '주보 공개를 멈췄어요' : '주보를 공개했어요'); });
+    on('[data-jubo-push]', function () {
+      var b = BULLETINS[0];
+      put(YG.notice({ kind: 'notice', title: '이번 주 주보가 올라왔어요', body: b ? md(b.date) + ' 주보 · ' + (b.title || '') : '이번 주 주보를 확인해 보세요', url: '#/news?tab=jubo' }, 'all'), '주보 알림을 보냈어요');
+    });
+    var mf = $('#mnForm'); if (mf) mf.onsubmit = function (e) { e.preventDefault(); put(YG.addMission({ country: mf.country.value, kind: mf.kind.value, text: mf.text.value.trim(), at: md(dayKey(new Date())) }), mf.country.value + ' 소식을 올렸어요'); mf.reset(); };
+    on('[data-mdel]', function (b) { if (!confirm('이 소식을 지울까요?')) return; put(YG.delMission(S.missionNews[Number(b.dataset.mdel)]), '지웠어요'); });
+    on('[data-close-ch]', function (b) { put(YG.closeChallenge(S.challenges[b.dataset.closeCh]), '챌린지를 닫았어요'); });
+    var cf = $('#chForm');
+    if (cf) cf.onsubmit = function (e) {
+      e.preventDefault();
+      if (cf.to.value < cf.from.value) { toast('끝나는 날이 시작보다 빨라요'); return; }
+      var c = { title: cf.title.value.trim(), from: cf.from.value, to: cf.to.value }, push = cf.push.checked && cf.from.value <= dayKey(new Date());
+      put(YG.addChallenge(c).then(function () { if (push) return YG.notice({ kind: 'notice', title: c.title + '가 시작됐어요', body: md(c.from) + ' ~ ' + md(c.to) + ' · 나눔에서 오늘의 감사를 적어 보세요', url: '#/talk/diary' }, 'all'); }), '챌린지를 만들었어요');
+    };
+    var gvf = $('#gvForm');
+    if (gvf) gvf.onsubmit = function (e) {
+      e.preventDefault();
+      var v = { week: gvf.week.value, title: gvf.title.value.trim(), series: gvf.series.value.trim(), speaker: gvf.speaker.value.trim(), mins: Number(gvf.mins.value) || 0,
+        url: gvf.url.value.trim(), target: gvf.target.value, qs: [gvf.q1.value.trim(), gvf.q2.value.trim(), gvf.q3.value.trim()] };
+      var push = gvf.push.checked, to = v.target === '전체 목장' ? 'all' : v.target;
+      put(YG.addVideo(v).then(function () { if (push) return YG.notice({ kind: 'group', title: '이번 주 목장 영상이 올라왔어요', body: v.title + ' · ' + md(v.week) + ' 모임', url: '#/talk/group' }, to); }), '목장 영상을 올렸어요');
+      gvf.reset();
+    };
+    on('[data-gvdel]', function (b) { if (!confirm('이 영상을 지울까요?')) return; put(YG.delVideo(S.groupVideos[Number(b.dataset.gvdel)]), '지웠어요'); });
+    on('[data-restore]', function (b) { put(YG.restore(byId(S.posts, b.dataset.restore)), '다시 보이게 했어요'); });
+    on('[data-remove]', function (b) { if (!confirm('이 글을 지울까요? 되돌릴 수 없어요.')) return; put(YG.removePost(byId(S.posts, b.dataset.remove)), '지웠어요'); });
+  }
+
   window.addEventListener('hashchange', route);
+  if (CLOUD) cloudInit();
   route();
 })();
