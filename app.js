@@ -260,7 +260,7 @@
       (chips ? '<div class="chips" style="margin-bottom:10px">' + chips + '</div>' : '') +
       '<div class="row">' + (video ? '<a class="btn small ghost" href="#/sermons?kind=reading&v=' + video + '">▶ 통독 영상</a>' : '') +
         '<button class="btn small' + (done ? '' : ' ghost') + '" data-readdone>' + (done ? '다 읽었어요 ✓' : '다 읽었어요') + '</button>' +
-        '<a class="btn small ghost" href="#/talk/bible">읽기표·묵상 ›</a></div>' +
+        '<a class="btn small ghost" href="#/talk/bible?s=read">읽기표·묵상 ›</a></div>' +
       '<div class="together"><b>' + readCount(done) + '명</b><span>오늘 함께 읽었어요<small>이름 없이 숫자만 보여요' + (CLOUD ? '' : ' · 시안 숫자') + '</small></span></div>' +
       (p ? '<p class="sub" style="margin-top:8px;font-size:.78rem">장을 누르면 대한성서공회 개역개정 성경이 열려요.</p>' : '') + '</div>';
   }
@@ -445,6 +445,7 @@
     if (p.scope === 'group' && p.group === null && !CLOUD) return true;   // 시안 예시 목장 글은 목장을 안 골라도 보이게
     if (p.scope === 'group') return !!S.me.group &&(p.group === null || p.group === S.me.group);
     if (p.scope === 'pastor') return !!p.mine || (CLOUD && S.me.role === 'pastor');
+    if (p.scope === 'qt') return !CLOUD || !!S.me.qt || S.me.role === 'admin' || S.me.role === 'pastor';   // 큐티 모임 (목장과 따로)
     return true;
   }
   function postCard(p, clamp) {
@@ -456,7 +457,7 @@
       '<span class="rx' + (p.reacted ? ' on' : '') + '" data-react="' + p.id + '">' + (p.cat === 'pray' ? (p.head ? '🙏 함께 기도했어요' : '🙏 기도했어요') : '🙌 아멘') + ' ' + p.count + '</span> <span class="rx">💬 ' + p.comments.length + '</span>') + '</a>';
   }
   function segs(on) {
-    return '<div class="seg">' + [['church', '교회 나눔'], ['group', '목장방'], ['bible', '성경읽기'], ['prayer', '기도 공간']].map(function (s) { return '<a href="#/talk/' + s[0] + '"' + (s[0] === on ? ' class="on"' : '') + '>' + s[1] + '</a>'; }).join('') + '</div>';
+    return '<div class="seg">' + [['church', '교회 나눔'], ['group', '목장방'], ['bible', '큐티·성경'], ['prayer', '기도 공간']].map(function (s) { return '<a href="#/talk/' + s[0] + '"' + (s[0] === on ? ' class="on"' : '') + '>' + s[1] + '</a>'; }).join('') + '</div>';
   }
   function talk(sub, q) {
     if (!S.me || !S.me.approved) return gate();
@@ -464,10 +465,10 @@
     renderTop({ title: '나눔', right: sub === 'diary' || sub === 'prayer' || sub === 'bible' ? '' : '<a class="icon-btn" href="#/write?to=' + (sub === 'group' ? 'group' : 'all') + '" aria-label="글쓰기">' + svg('pen', 2) + '</a>', bell: true });
     if (sub === 'diary') { sub = 'prayer'; q = { p: 'vow', c: 'thanks' }; }   // 감사 챌린지 탭은 기도 공간 「감사 기도」로 합침 (2026-11-25)
     if (sub === 'prayer') return segs(sub) + prayerRoom(q);
-    if (sub === 'bible') return segs(sub) + bibleRoom();
+    if (sub === 'bible') return segs(sub) + bibleRoom(q);
     if (sub === 'group') return segs(sub) + groupRoom();
     var f = q.cat || 'all';
-    var list = S.posts.filter(function (p) { return p.scope !== 'group' && canSee(p) && (f === 'all' || p.cat === f || p.notice); });
+    var list = S.posts.filter(function (p) { return p.scope !== 'group' && p.scope !== 'qt' && canSee(p) && (f === 'all' || p.cat === f || p.notice); });
     list.sort(function (a, b) { return (b.notice ? 1 : 0) - (a.notice ? 1 : 0); });
     var ser = (MEDIA.sunday || [])[0];
     var graceTop = ser && (f === 'all' || f === 'grace') ? '<a class="card grace" href="#/write?to=all&cat=grace"><div class="label" style="color:#cfe3d6">이번 주 설교 · ' + md(ser.date) + '</div><b>' + esc(ser.title) + '</b><div style="font-size:.88rem;opacity:.85;margin-top:4px">이 말씀으로 받은 은혜와 이번 주 적용을 나눠 주세요 ✎</div></a>' : '';
@@ -1173,7 +1174,128 @@
       { id: 'w2', cat: 'word', verse: '요한복음 6장', scope: 'group', group: null, author: '예시 목장 식구', text: '(예시) 오병이어. 작은 것이라도 주님 손에 드리면 넉넉해진다는 걸 다시 배웠어요.', at: '어제', count: 3, reacted: false, comments: [] });
     save();
   }
-  function bibleRoom() {
+  // ---------- 큐티 (나연 2026-11-25): 큐티인 책에 쓰고 사진 찍어 올리는 방식 ----------
+  // 교재 본문·해설은 저작권이 있어 넣지 않음. 사진은 올리기 전에 긴 쪽 1200px·약 100KB로 줄임
+  // 「나만 보기」는 이 휴대폰에(yegreen-qt-v1), 목장·교회는 cat 'qt' 글(img 칸)로 서버에
+  var QKEY = 'yegreen-qt-v1';
+  var QSCOPES = [['me', '🔒 나만 보기', '이 휴대폰에만 저장돼요. 아무도 볼 수 없어요.'], ['qt', '📖 큐티 모임', '큐티 모임 식구만 봐요. (목장과 따로예요)'], ['all', '⛪ 교회 전체', '등록 교인 모두가 볼 수 있어요.']];
+  function qscopeOf(k) { return QSCOPES.filter(function (s) { return s[0] === k; })[0] || QSCOPES[0]; }
+  function qts() { try { return JSON.parse(localStorage.getItem(QKEY)) || []; } catch (e) { return []; } }
+  function saveQts(l) { try { localStorage.setItem(QKEY, JSON.stringify(l)); return true; } catch (e) { return false; } }
+  function shrinkPhoto(file, cb) {
+    var rd = new FileReader();
+    rd.onload = function () {
+      var im = new Image();
+      im.onload = function () {
+        var max = 1200, w = im.width, h = im.height, s = Math.min(1, max / Math.max(w, h));
+        var c = document.createElement('canvas'); c.width = Math.round(w * s); c.height = Math.round(h * s);
+        var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+        var q = 0.62, url = c.toDataURL('image/jpeg', q);
+        while (url.length > 140000 && q > 0.3) { q -= 0.08; url = c.toDataURL('image/jpeg', q); }   // 약 100KB 안쪽
+        cb(url);
+      };
+      im.onerror = function () { cb(null); };
+      im.src = rd.result;
+    };
+    rd.readAsDataURL(file);
+  }
+  function qtDays() {
+    var R = {};
+    qts().forEach(function (x) { R[x.day] = 1; });
+    S.posts.forEach(function (p) { if (p.mine && p.cat === 'qt') R[p.qday || (p.ts ? dayKey(new Date(p.ts)) : dayKey(new Date()))] = 1; });
+    return R;
+  }
+  function qtSeed() {   // 시안: 다른 성도의 예시 큐티 사진 (그림으로 만든 공책 모양)
+    if (CLOUD || S.qtSeed) return;
+    S.qtSeed = 1;
+    function fake(lines, color) {
+      var c = document.createElement('canvas'); c.width = 600; c.height = 800; var g = c.getContext('2d');
+      g.fillStyle = '#fbf7ee'; g.fillRect(0, 0, 600, 800); g.strokeStyle = '#d9cfbc';
+      for (var y = 120; y < 780; y += 44) { g.beginPath(); g.moveTo(40, y); g.lineTo(560, y); g.stroke(); }
+      g.fillStyle = color; g.font = 'bold 30px sans-serif'; g.fillText('QT  (예시)', 40, 80);
+      g.fillStyle = '#3b3b3b'; g.font = '24px sans-serif'; lines.forEach(function (t, i) { g.fillText(t, 48, 112 + 44 * (i + 1)); });
+      return c.toDataURL('image/jpeg', 0.6);
+    }
+    S.posts.push(
+      { id: 'qt1', cat: 'qt', scope: 'qt', author: '예시 권사', text: '(예시) 오늘 말씀 앞에서 내 고집을 내려놓아요.', img: fake(['본문 요약 …', '마음에 남은 말씀 …', '오늘 적용: 먼저 사과하기', '기도: 주님 겸손하게 해 주세요'], '#2f6b4f'), at: '오늘', count: 5, reacted: false, comments: [] },
+      { id: 'qt2', cat: 'qt', scope: 'all', author: '예시 청년', text: '', img: fake(['오늘 본문을 읽고 …', '나에게 하시는 말씀 …', '적용: 출근길에 감사 3가지'], '#b5542a'), at: '오늘', count: 3, reacted: false, comments: [] });
+    save();
+  }
+  function qtRoom() {
+    qtSeed();
+    var now = new Date(), today = dayKey(now), R = qtDays(), done = !!R[today];
+    var g = monthGrid(R, '📷');
+    var top = '<div class="card qt-top"><div class="sec-title" style="margin:0 0 6px"><b>📷 오늘의 큐티</b><span class="sub">' + (now.getMonth() + 1) + '월 ' + now.getDate() + '일 ' + WEEK[now.getDay()] + '</span></div>' +
+      '<p class="sub" style="margin:0 0 10px">큐티인 책에 묵상하고, 그 쪽을 사진으로 찍어 올려요.</p>' +
+      '<form id="qtForm" style="display:flex;flex-direction:column;gap:10px">' +
+        '<label class="qt-pick" id="qtPickL"><input type="file" accept="image/*" id="qtFile" hidden><span id="qtPrev">' + (done ? '✓ 오늘 큐티를 올렸어요<br><small>한 장 더 올릴 수도 있어요</small>' : '📷 사진 찍기 · 앨범에서 고르기') + '</span></label>' +
+        '<input name="t" maxlength="100" placeholder="한 줄 나눔 (선택) · 예: 오늘 붙잡은 말씀">' +
+        '<div class="chips" id="qsPick" style="margin:0;flex-wrap:wrap;overflow:visible">' + QSCOPES.map(function (s, i) { return '<button type="button" class="chip' + (i === 1 ? ' on' : '') + '" data-v="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div>' +
+        '<div class="ph-help" id="qsHelp">' + QSCOPES[1][2] + '</div><button class="btn" id="qtBtn" disabled>큐티 올리기</button></form></div>';
+    var rec = '<div class="card"><div class="sec-title" style="margin:0 0 8px"><b>🌱 나의 큐티 기록</b><span class="sub">' + (now.getMonth() + 1) + '월</span></div>' +
+      '<div class="rd-stats"><div><b>' + g.streak + '</b><span>일 연속 큐티</span></div><div><b>' + g.month + '</b><span>이번 달 큐티한 날</span></div></div>' + g.html + '</div>';
+    var list = qts().map(function (x) { return { id: x.id, local: true, mine: true, img: x.img, text: x.text, at: md(x.day), scope: 'me', count: 0 }; })
+      .concat(S.posts.filter(function (p) { return p.cat === 'qt' && !p.hidden && canSee(p); }).map(function (p) { return { id: p.id, mine: !!p.mine, img: p.img, text: p.text, at: p.at, scope: p.scope, author: p.author, count: p.count || 0, reacted: !!p.reacted }; }));
+    var feed = list.map(function (x) {
+      return '<div class="card qt-item"><div class="ph-top"><b style="font-size:.9rem">' + (x.mine ? '나' : esc(x.author || '')) + '</b><span class="sub" style="font-size:.76rem">' + esc(x.at) + '</span><span class="ph-scope">' + qscopeOf(x.scope)[1] + '</span></div>' +
+        (x.img ? '<img class="qt-img" src="' + x.img + '" alt="큐티 사진" data-qtview="' + x.id + '">' : '') +
+        (x.text ? '<p class="text" style="margin:8px 0">' + esc(x.text) + '</p>' : '') +
+        '<div class="row">' + (!x.mine ? '<button class="btn small' + (x.reacted ? '' : ' ghost') + '" data-wamen="' + x.id + '">🙌 아멘 ' + x.count + '</button>' : (x.count ? '<span class="sub" style="font-size:.8rem">🙌 ' + x.count + '명이 아멘했어요</span>' : '')) +
+        (x.mine ? '<button class="btn small ghost" data-qtdel="' + x.id + '"' + (x.local ? ' data-local="1"' : '') + ' style="flex:0 0 auto">지우기</button>' : '') + '</div></div>';
+    }).join('');
+    return top + rec + '<div class="sec-title"><b>💬 함께 나눈 큐티 ' + list.length + '</b></div>' + (feed || '<p class="empty">아직 올라온 큐티가 없어요.</p>');
+  }
+  function bindQt() {
+    var f = $('#qtForm'); if (!f) return;
+    var shot = null;
+    $('#qtFile').onchange = function () {
+      var file = this.files && this.files[0]; if (!file) return;
+      $('#qtPrev').textContent = '사진을 줄이는 중…';
+      shrinkPhoto(file, function (url) {
+        if (!url) { $('#qtPrev').textContent = '사진을 읽지 못했어요. 다시 골라 주세요.'; return; }
+        shot = url; $('#qtPrev').innerHTML = '<img src="' + url + '" alt="고른 사진"><small>' + Math.round(url.length * 0.75 / 1024) + 'KB로 줄였어요 · 다시 누르면 바꿀 수 있어요</small>';
+        $('#qtBtn').disabled = false;
+      });
+    };
+    $('#qsPick').onclick = function (e) { var b = e.target.closest('[data-v]'); if (!b) return; $('#qsPick').querySelectorAll('.chip').forEach(function (c) { c.classList.toggle('on', c === b); }); $('#qsHelp').textContent = qscopeOf(b.dataset.v)[2]; };
+    f.onsubmit = function (e) {
+      e.preventDefault(); if (!shot) return;
+      var scope = $('#qsPick .on').dataset.v, t = f.t.value.trim(), k = dayKey(new Date());
+      if (scope === 'me') {
+        var l = qts(); l.unshift({ id: 'k' + Date.now(), img: shot, text: t, day: k });
+        if (!saveQts(l)) { toast('휴대폰 저장 공간이 부족해요. 오래된 「나만 보기」 큐티를 지워 주세요.'); return; }
+        toast('오늘 큐티를 저장했어요 📷'); route(); return;
+      }
+      if (scope === 'qt' && CLOUD && !S.me.qt) { toast('큐티 모임 식구로 등록되면 나눌 수 있어요. 관리자에게 말씀해 주세요.'); return; }
+      var msg = scope === 'qt' ? '큐티 모임과 나눴어요 📖' : '교회와 큐티를 나눴어요 ⛪';
+      if (CLOUD) { $('#qtBtn').disabled = true; put(YG.addPost({ cat: 'qt', scope: scope, text: t || '오늘의 큐티', img: shot, qday: k }), msg); return; }
+      S.posts.unshift({ id: 'p' + Date.now(), cat: 'qt', scope: scope, author: S.me.name, text: t, img: shot, qday: k, at: '방금', mine: true, count: 0, reacted: false, comments: [] });
+      if (!save()) {}
+      toast(msg); route();
+    };
+    document.querySelectorAll('[data-qtdel]').forEach(function (b) {
+      b.onclick = function () {
+        if (!confirm('이 큐티 사진을 지울까요? 되돌릴 수 없어요.')) return;
+        if (b.dataset.local) { saveQts(qts().filter(function (x) { return x.id !== b.dataset.qtdel; })); route(); return; }
+        var p = S.posts.filter(function (x) { return x.id === b.dataset.qtdel; })[0]; if (!p) return;
+        if (CLOUD) { put(YG.removePost(p), '지웠어요'); return; }
+        S.posts = S.posts.filter(function (x) { return x !== p; }); save(); route();
+      };
+    });
+    document.querySelectorAll('[data-qtview]').forEach(function (im) {
+      im.onclick = function () {
+        var v = document.createElement('div'); v.className = 'qt-full'; v.innerHTML = '<img src="' + im.src + '" alt="큐티 사진 크게 보기"><span>눌러서 닫기</span>';
+        v.onclick = function () { v.remove(); }; document.body.appendChild(v);
+      };
+    });
+  }
+  function bibleRoom(q) {   // 큐티·성경 탭: 큐티(기본) / 성경읽기
+    q = q || {};
+    var sub = q.s === 'read' ? 'read' : 'qt';
+    return '<div class="seg qt-seg"><a href="#/talk/bible"' + (sub === 'qt' ? ' class="on"' : '') + '>📷 큐티</a><a href="#/talk/bible?s=read"' + (sub === 'read' ? ' class="on"' : '') + '>📖 성경읽기</a></div>' +
+      (sub === 'qt' ? qtRoom() : readRoom());
+  }
+  function readRoom() {
     wordSeed();
     var now = new Date(), today = dayKey(now), R = S.readDone || {};
     var r = todayReading(), p = r && parseRange(r.text), done = !!R[today];
@@ -1236,6 +1358,7 @@
       '<div class="sec-title"><b>💬 함께 나누는 묵상 ' + list.length + '</b></div>' + (feed || '<p class="empty">아직 남긴 묵상이 없어요.</p>');
   }
   function bindBible() {
+    bindQt();
     document.querySelectorAll('[data-readday]').forEach(function (b) {
       b.onclick = function () { if (toggleRead(b.dataset.readday)) toast(b.dataset.readday === dayKey(new Date()) ? '오늘 성경읽기를 마쳤어요 📖' : '읽은 날로 체크했어요 ✓'); };
     });

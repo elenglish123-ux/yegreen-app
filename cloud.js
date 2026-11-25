@@ -268,6 +268,7 @@
       head: d.head || '', answered: d.answered || 0,   // 기도 공간 말머리 · 응답됐어요 (2026-11-25)
       verse: d.verse || '',                             // 성경읽기 묵상 구절 (2026-11-25)
       vow: d.vow && d.vow.days ? d.vow : null,          // 작정 기도 {days, mins, start}
+      img: d.img || '', qday: d.qday || '',              // 큐티 사진 (약 100KB로 줄인 것) · 큐티한 날
       mine: d.uid === uid, count: rx.length, reacted: rx.indexOf(uid) >= 0,
       comments: (d.comments || []).map(function (c) { return { author: c.author, text: c.text, uid: c.uid, ts: c.ts }; }),
     };
@@ -280,7 +281,7 @@
       S.me = uid && member === false ? { uid: uid, missing: true } : null;
       S.admin = false;
     } else {
-      S.me = { uid: uid, name: member.name, group: member.group || '', approved: member.status === 'approved', status: member.status, role: member.role || 'member' };
+      S.me = { uid: uid, name: member.name, group: member.group || '', qt: !!member.qt, approved: member.status === 'approved', status: member.status, role: member.role || 'member' };
       S.admin = isLeader();
       S.adminRole = S.admin ? member.role : 'member';
     }
@@ -293,7 +294,7 @@
     S.missionNews = (cache.mission || []).slice().sort(byTs).map(function (n) { n.at = n.at || rel(n.ts); return n; });
     S.challenges = (cache.challenges || []).slice().sort(byTs);
     var ms = cache.members || cache.groupMembers || [];
-    S.people = ms.filter(function (m) { return m.status === 'approved'; }).map(function (m) { return { id: m.id, name: m.name, role: m.role, group: m.group || '' }; });
+    S.people = ms.filter(function (m) { return m.status === 'approved'; }).map(function (m) { return { id: m.id, name: m.name, role: m.role, group: m.group || '', qt: !!m.qt }; });
     S.pending = ms.filter(function (m) { return m.status === 'pending'; }).sort(byTs).map(function (m) { return { id: m.id, name: m.name, group: m.wantGroup || '', at: rel(m.ts), memo: m.memo || '' }; });
     S.groups = (cache.groups || []).map(function (g) {
       return { id: g.id, name: g.name || g.id, leader: g.leader || '', count: S.people.filter(function (p) { return p.group === (g.name || g.id); }).length };
@@ -374,7 +375,7 @@
   YG.addPost = function (p) {
     return need() || A.add(p.scope === 'pastor' ? 'pastorNotes' : 'posts', {
       uid: uid, author: myName(), cat: p.cat, scope: p.scope === 'pastor' ? 'pastor' : p.scope, group: p.scope === 'group' ? member.group : '',
-      text: p.text, diary: p.diary || '', head: p.head || '', verse: String(p.verse || '').slice(0, 40), vow: p.vow ? { days: +p.vow.days, mins: +p.vow.mins, start: String(p.vow.start) } : null, notice: !!p.notice && isStaff(), reactors: [], comments: [], hidden: false, ts: now(),
+      text: p.text, diary: p.diary || '', head: p.head || '', verse: String(p.verse || '').slice(0, 40), vow: p.vow ? { kind: String(p.vow.kind || 'vow'), name: String(p.vow.name || '').slice(0, 20), days: +p.vow.days, mins: +p.vow.mins, start: String(p.vow.start) } : null, img: String(p.img || '').slice(0, 200000), qday: String(p.qday || ''), notice: !!p.notice && isStaff(), reactors: [], comments: [], hidden: false, ts: now(),
     });
   };
   YG.answer = function (p) { return need() || A.update(p._col || 'posts', p.id, { answered: now() }); };   // 내 기도 「응답됐어요」
@@ -392,6 +393,7 @@
   YG.approve = function (id, group) { return A.update('members', id, { status: 'approved', group: group || '', approvedAt: now() }); };
   YG.deny = function (id) { return A.update('members', id, { status: 'denied' }); };
   YG.setRole = function (id, role) { return A.update('members', id, { role: role }); };
+  YG.setQt = function (id, on) { return A.update('members', id, { qt: !!on }); };   // 큐티 모임 식구 (목장과 따로)
   YG.setGroup = function (id, group) { return A.update('members', id, { group: group }); };
   YG.removeMember = function (id) { return A.update('members', id, { status: 'removed', group: '' }); };
   YG.addGroup = function (name) { return A.set('groups', name, { name: name, leader: '', meeting: '', rsvp: {} }); };

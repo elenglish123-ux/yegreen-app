@@ -140,9 +140,9 @@
   }
 
   function people() {
-    return '<div class="card"><h2>교인 ' + S.people.length + '명<span style="margin-left:auto;width:220px"><input id="pq" placeholder="이름으로 찾기"></span></h2><table><tr><th>이름</th><th>목장</th><th>권한</th></tr>' +
+    return '<div class="card"><h2>교인 ' + S.people.length + '명<span style="margin-left:auto;width:220px"><input id="pq" placeholder="이름으로 찾기"></span></h2><table><tr><th>이름</th><th>목장</th><th>큐티 모임</th><th>권한</th></tr>' +
       S.people.map(function (x, i) {
-        return '<tr data-pname="' + esc(x.name) + '"><td>' + av(x.name) + '<b>' + esc(x.name) + '</b></td><td>' + esc(x.group || '—') + '</td><td><select class="inline" data-prole="' + i + '"' + (x.role === 'pastor' ? ' disabled' : '') + '>' +
+        return '<tr data-pname="' + esc(x.name) + '"><td>' + av(x.name) + '<b>' + esc(x.name) + '</b></td><td>' + esc(x.group || '—') + '</td><td><label style="display:inline-flex;gap:4px;align-items:center"><input type="checkbox" data-pqt="' + i + '"' + (x.qt ? ' checked' : '') + '>📖</label></td><td><select class="inline" data-prole="' + i + '"' + (x.role === 'pastor' ? ' disabled' : '') + '>' +
           Object.keys(ROLE_ALL).map(function (k) { return '<option value="' + k + '"' + (k === x.role ? ' selected' : '') + '>' + ROLE_ALL[k] + '</option>'; }).join('') + '</select></td></tr>';
       }).join('') + '</table></div>' +
       '<p style="color:var(--muted);font-size:13.5px;margin-top:10px">연락처·생일 같은 개인정보를 둘지는 2차 미팅에서 정해요. 지금은 이름·목장·권한만 보여요.</p>';
@@ -526,6 +526,7 @@
     });
     on('[data-deny]', function (b) { if (!confirm('등록 교인이 아니라고 안내할까요?')) return; S.pending = S.pending.filter(function (x) { return x.id !== b.dataset.deny; }); save(); toast('안내 알림을 보냈어요 (시안)'); route(); });
     document.querySelectorAll('[data-prole]').forEach(function (s) { s.onchange = function () { S.people[s.dataset.prole].role = s.value; save(); toast('권한을 바꿨어요'); }; });
+    document.querySelectorAll('[data-pqt]').forEach(function (c) { c.onchange = function () { S.people[c.dataset.pqt].qt = c.checked; save(); toast(c.checked ? '큐티 모임에 넣었어요 📖' : '큐티 모임에서 뺐어요'); }; });
     var pq = $('#pq'); if (pq) pq.oninput = function () { var v = pq.value.trim(); document.querySelectorAll('[data-pname]').forEach(function (r) { r.hidden = v && r.dataset.pname.indexOf(v) < 0; }); };
     document.querySelectorAll('[data-leader]').forEach(function (s) { s.onchange = function () { S.groups[s.dataset.leader].leader = s.value; save(); toast('목자를 정했어요'); }; });
     var gf = $('#gForm'); if (gf) gf.onsubmit = function (e) { e.preventDefault(); S.groups.push({ name: gf.g.value.trim(), leader: '', count: 0 }); save(); route(); };
@@ -583,6 +584,7 @@
     });
     on('[data-deny]', function (b) { if (!confirm('등록 교인이 아니라고 안내할까요?')) return; put(YG.deny(b.dataset.deny), '가입을 거절했어요'); });
     document.querySelectorAll('[data-prole]').forEach(function (s) { s.onchange = function () { var p = S.people[s.dataset.prole]; put(YG.setRole(p.id, s.value), p.name + '님 권한을 바꿨어요'); }; });
+    document.querySelectorAll('[data-pqt]').forEach(function (c) { c.onchange = function () { var p = S.people[c.dataset.pqt]; put(YG.setQt(p.id, c.checked), p.name + (c.checked ? '님을 큐티 모임에 넣었어요 📖' : '님을 큐티 모임에서 뺐어요')); }; });
     var pq = $('#pq'); if (pq) pq.oninput = function () { var v = pq.value.trim(); document.querySelectorAll('[data-pname]').forEach(function (r) { r.hidden = v && r.dataset.pname.indexOf(v) < 0; }); };
     document.querySelectorAll('[data-leader]').forEach(function (s) { s.onchange = function () { put(YG.setLeader(S.groups[s.dataset.leader].name, s.value), '목자를 정했어요'); }; });
     var gf = $('#gForm'); if (gf) gf.onsubmit = function (e) { e.preventDefault(); var n = gf.g.value.trim(); if (S.groups.some(function (g) { return g.name === n; })) { toast('이미 있는 목장이에요'); return; } put(YG.addGroup(n), n + '을 만들었어요'); gf.reset(); };
