@@ -626,17 +626,17 @@
     [['소망목장', '박한결', [['서지안', '이직 준비 중, 길을 열어 주세요'], ['임도윤', '아버지 건강 회복'], ['강나래', '아이들 학교 적응']]],
      ['사랑목장', '이다정', [['홍새벽', '새벽기도 꾸준히 나가도록'], ['배온유', '가정의 평안'], ['노하은', '수술 후 회복']]],
      ['청년목장', '강하준', [['류민준', '취업 면접'], ['마서진', '신앙 공동체에 잘 정착하도록']]]].forEach(function (g, i) {
-      S.posts.push({ id: 'gp' + i, cat: 'gpray', scope: 'group', group: g[0], week: wk, author: g[1], items: g[2].map(function (x) { return { n: x[0], t: x[1] }; }), text: '', at: '지난주', count: 0, reacted: false, comments: [] });
+      S.posts.push({ id: 'gp' + i, cat: 'gpray', scope: 'group', group: g[0], week: wk, author: g[1], lead: g[1], items: g[2].map(function (x) { return { n: x[0], t: x[1] }; }), text: '', at: '지난주', count: 0, reacted: false, comments: [] });
     });
     save();
   }
   function gpList(p) {
     return (p.img ? '<img class="qt-img pr-img" src="' + p.img + '" alt="목장 기도제목 사진" data-qtview="1">' : '') +
-      ((p.items || []).filter(function (x) { return x.t; }).length ? '<ol class="gp-list">' + p.items.filter(function (x) { return x.t; }).map(function (x) { return '<li><b>' + esc(x.n) + '</b><span>' + esc(x.t) + '</span></li>'; }).join('') + '</ol>' : '') +
+      ((p.items || []).filter(function (x) { return x.t; }).length ? '<ol class="gp-list">' + p.items.filter(function (x) { return x.t; }).map(function (x) { return '<li><b>' + esc(x.n) + (p.lead && x.n === p.lead ? '<em class="gp-lead">목자</em>' : '') + '</b><span>' + esc(x.t) + '</span></li>'; }).join('') + '</ol>' : '') +
       (p.common ? '<div class="gp-common"><b>🏡 목장 함께</b> ' + esc(p.common) + '</div>' : '');
   }
   // 목장방 카드
-  function gpCard(group, names, q) {
+  function gpCard(group, names, q, leader) {
     gpSeed();
     var wk = gpWeek(), prev = gpPrevWeek(), lead = amLeaderOf(group);
     var cur = gpOf(group, wk), last = gpOf(group, prev);
@@ -645,9 +645,9 @@
     var mine = gpOf(group, target);
     var form = function () {
       var old = {}; (mine && mine.items || []).forEach(function (x) { old[x.n] = x.t; });
-      return '<form id="gpForm" data-week="' + target + '" style="display:flex;flex-direction:column;gap:8px;margin-top:8px">' +
+      return '<form id="gpForm" data-lead="' + esc(leader || '') + '" data-week="' + target + '" style="display:flex;flex-direction:column;gap:8px;margin-top:8px">' +
         '<div class="sub" style="font-size:.8rem">' + gpRange(target) + ' 주 · 식구마다 한 줄씩 적어 주세요 (빈칸은 빼고 올라가요)</div>' +
-        names.map(function (n, i) { return '<label class="gp-row"><span>' + esc(n) + '</span><input name="m' + i + '" data-n="' + esc(n) + '" maxlength="150" value="' + esc(old[n] || '') + '" placeholder="기도제목"></label>'; }).join('') +
+        names.map(function (n, i) { return '<label class="gp-row"><span>' + esc(n) + (leader && n === leader ? '<em class="gp-lead">목자</em>' : '') + '</span><input name="m' + i + '" data-n="' + esc(n) + '" maxlength="150" value="' + esc(old[n] || '') + '" placeholder="기도제목"></label>'; }).join('') +
         '<label class="gp-row"><span>🏡 함께</span><input name="common" maxlength="200" value="' + esc(mine && mine.common || '') + '" placeholder="목장 공동 기도제목 (선택)"></label>' +
         '<label class="ph-photo"><input type="file" accept="image/*" id="gpFile" hidden><span id="gpPrev">📷 손으로 쓴 기도제목 사진으로 올리기 (선택)</span></label>' +
         '<button class="btn">🙏 목사님께 기도제목 올리기</button>' +
@@ -655,7 +655,7 @@
     };
     var body;
     if (cur && !editing) {
-      body = '<div class="gp-done">✓ ' + esc(cur.author || '목자') + ' 목자님이 올렸어요 · 목사님께 전달됐어요</div>' + gpList(cur) +
+      body = '<div class="gp-done">✓ ' + esc(cur.lead || cur.author || '목자') + ' 목자님이 올렸어요 · 목사님께 전달됐어요</div>' + gpList(cur) +
         (lead ? '<a class="btn small ghost" href="#/talk/group?gp=edit" style="margin-top:8px">고쳐 쓰기</a>' : '');
     } else if (lead) {
       body = (cur ? '' : '<p class="sub" style="margin:0">목장 모임 때 이 칸을 열고 식구들 기도제목을 적어 올려 주세요. 목사님이 모든 목장의 기도제목을 보고 함께 기도하세요.</p>') + form();
@@ -682,7 +682,7 @@
       if (!items.length && !common && !shot) { toast('기도제목을 한 줄 이상 적거나 사진을 올려 주세요.'); return; }
       var old = gpOf(group, wk);
       var text = items.map(function (x) { return x.n + ': ' + x.t; }).concat(common ? ['함께: ' + common] : []).join('\n').slice(0, 3000) || '목장 기도제목 사진';
-      var doc = { cat: 'gpray', scope: 'group', week: wk, items: items, common: common, img: shot || (old && old.img) || '', text: text };
+      var doc = { cat: 'gpray', scope: 'group', week: wk, lead: f.dataset.lead || '', items: items, common: common, img: shot || (old && old.img) || '', text: text };
       var back = function () { if (location.hash === '#/talk/group') route(); else location.hash = '#/talk/group'; };
       var done = function () { toast('목사님께 기도제목을 올렸어요 🙏'); back(); };
       if (CLOUD) {
@@ -748,7 +748,7 @@
     var members = [dg.leader + ' (목자)', S.me.name].concat(dg.members);
     return '<div class="card group-card"><div class="sub" style="color:#cfe3d6">우리 목장 · 예시</div><div class="big">' + esc(S.me.group) + '</div><div style="font-size:.9rem;opacity:.85">목자 ' + esc(dg.leader) + ' · 식구 ' + members.length + '명 · 우리 목장 사람만 볼 수 있어요</div>' +
         '<button class="gpick-leave" data-leaveg>다른 목장 둘러보기 ›</button></div>' +
-      gpCard(S.me.group, [S.me.name].concat(dg.members), q) +
+      gpCard(S.me.group, [dg.leader].concat(S.me.name && S.me.name !== dg.leader ? [S.me.name] : [], dg.members), q, dg.leader) +   // 목자님 줄도 맨 앞에
       gvCard() +
       '<div class="card meet"><div style="font-size:.8rem;font-weight:800;color:#a07d2c">📌 목장 모임 · 목자가 올려요</div><b style="font-size:1.05rem">' + esc(meetText) + '</b>' +
         '<div class="row" style="margin-top:10px"><button class="btn small' + (going === true ? '' : ' ghost') + '" data-rsvp="yes">참석' + (going === true ? ' ✓' : '') + '</button><button class="btn small' + (going === false ? '' : ' ghost') + '" data-rsvp="no">불참' + (going === false ? ' ✓' : '') + '</button></div>' +
@@ -764,7 +764,7 @@
     var leaderName = (members.filter(function (x) { return x.role === 'leader'; })[0] || {}).name || ((S.groups || []).filter(function (g) { return g.name === S.me.group; })[0] || {}).leader || '';
     var amLeader = S.me.role !== 'member';
     return '<div class="card group-card"><div class="sub" style="color:#cfe3d6">우리 목장</div><div class="big">' + esc(S.me.group) + '</div><div style="font-size:.9rem;opacity:.85">' + (leaderName ? '목자 ' + esc(leaderName) + ' · ' : '') + '식구 ' + members.length + '명 · 우리 목장 사람만 볼 수 있어요</div></div>' +
-      gpCard(S.me.group, members.map(function (x) { return x.name; }), q) +
+      gpCard(S.me.group, (function (ns) { return leaderName && ns.indexOf(leaderName) >= 0 ? [leaderName].concat(ns.filter(function (n) { return n !== leaderName; })) : ns; })(members.map(function (x) { return x.name; })), q, leaderName) +
       gvCard() +
       '<div class="card meet"><div style="font-size:.8rem;font-weight:800;color:#a07d2c">📌 목장 모임 · 목자가 올려요</div>' +
         (m.text ? '<b style="font-size:1.05rem">' + esc(m.text) + '</b>' +
