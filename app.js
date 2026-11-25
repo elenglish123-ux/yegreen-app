@@ -1096,6 +1096,7 @@
     if (el) el.querySelector('[data-ptclose]').onclick = function () { ptClose(); route(); };
   }
   function ptOpen() {
+    var pill = document.getElementById('ptPill'); if (pill) pill.remove(); clearInterval(PILL_TICK); PILL_TICK = null;
     var r = S.ptRun; if (!r) return;
     var x = myVows().filter(function (v) { return v.id === r.id; })[0];
     if (!x) { S.ptRun = null; save(); return; }
@@ -1103,16 +1104,22 @@
     if (!el) { el = document.createElement('div'); el.id = 'pt'; document.body.appendChild(el); }
     document.body.style.overflow = 'hidden';
     var R = 92, C = 2 * Math.PI * R;
-    el.innerHTML = '<div class="pt-in"><div class="pt-top">' + vowName(x.vow) + ' · ' + vowInfo(x).day + '일째</div>' +
+    el.innerHTML = '<div class="pt-in"><button class="pt-down" data-ptdown aria-label="기도 화면 내려놓기">⌄ 내려놓기</button><div class="pt-top">' + vowName(x.vow) + ' · ' + vowInfo(x).day + '일째</div>' +
       '<p class="pt-text">' + esc(x.text) + '</p>' +
       '<div class="pt-ring"><svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="' + R + '" class="bg"/><circle cx="100" cy="100" r="' + R + '" class="fg" stroke-dasharray="' + C + '" stroke-dashoffset="' + C + '" id="ptArc"/></svg>' +
         '<div class="pt-time"><b id="ptTime">' + (r.goal ? mmss(r.goal * 60) : '0:00') + '</b><span id="ptSub">' + (r.goal ? '남은 시간' : '기도한 시간') + '</span></div></div>' +
       '<div class="pt-meta">' + (r.goal ? '목표 ' + vowTime(r.goal) + ' · ' : '') + new Date(r.start).toTimeString().slice(0, 5) + '에 시작</div>' +
       // 배경 음악은 뺌 (나연 2026-11-25: 성도님께 연주 녹음을 부탁할 예정, 녹음이 오면 다시 넣기)
       '<button class="btn pt-end" data-ptend>■ 기도 끝</button></div>';
+    el.querySelector('[data-ptdown]').onclick = function () { ptHide(); };   // 기도는 계속, 화면만 아래 작은 띠로
     el.querySelector('[data-ptend]').onclick = function () {
-      var left = r.goal ? r.goal * 60 - (Date.now() - r.start) / 1000 : 0;
-      if (r.goal && left > 30 && !confirm('아직 ' + mmss(left) + ' 남았어요. 지금 기도를 마칠까요?\n오늘 기도한 시간은 그대로 기록돼요.')) return;
+      // 확인 창(confirm)은 일부 브라우저에서 막혀 반응이 없었음 → 시간이 남았으면 한 번 더 누르게 (2026-11-25)
+      var btn = this, left = r.goal ? r.goal * 60 - (Date.now() - r.start) / 1000 : 0;
+      if (r.goal && left > 30 && !btn.dataset.armed) {
+        btn.dataset.armed = '1'; btn.textContent = '아직 ' + mmss(left) + ' 남았어요 · 한 번 더 누르면 마쳐요'; btn.classList.add('armed');
+        setTimeout(function () { if (btn.isConnected) { delete btn.dataset.armed; btn.textContent = '■ 기도 끝'; btn.classList.remove('armed'); } }, 4000);
+        return;
+      }
       ptFinish(true);
     };
     function tick() {
@@ -1130,7 +1137,26 @@
     }
     clearInterval(PT_TICK); PT_TICK = setInterval(tick, 1000); tick();
   }
-  window.addEventListener('hashchange', function () { if (!S.ptRun && document.getElementById('pt')) ptClose(); });   // 다 끝난 기도 화면은 다른 곳으로 가면 닫힘
+  window.addEventListener('hashchange', function () {
+    if (!S.ptRun && document.getElementById('pt')) ptClose();   // 다 끝난 기도 화면은 다른 곳으로 가면 닫힘
+    else if (S.ptRun && document.getElementById('pt')) ptHide();   // 기도 중에 다른 곳으로 가면 작은 띠로
+    setTimeout(ptPill, 0);
+  });
+  // 기도 중인데 큰 화면을 내려놓았을 때: 아래에 「🙏 기도 중 12:30 · 돌아가기」 띠 (2026-11-25: 목장방이 기도 화면에 가려지던 문제)
+  function ptHide() { clearInterval(PT_TICK); PT_TICK = null; var el = document.getElementById('pt'); if (el) el.remove(); document.body.style.overflow = ''; ptPill(); }
+  var PILL_TICK = null;
+  function ptPill() {
+    var old = document.getElementById('ptPill');
+    if (!S.ptRun || document.getElementById('pt')) { if (old) old.remove(); clearInterval(PILL_TICK); PILL_TICK = null; return; }
+    if (!old) { old = document.createElement('button'); old.id = 'ptPill'; old.onclick = function () { old.remove(); clearInterval(PILL_TICK); PILL_TICK = null; ptOpen(); }; document.body.appendChild(old); }
+    var draw = function () {
+      var r = S.ptRun; if (!r) { old.remove(); clearInterval(PILL_TICK); PILL_TICK = null; return; }
+      var gone = (Date.now() - r.start) / 1000, left = r.goal ? r.goal * 60 - gone : 0;
+      if (r.goal && left <= 0) { old.remove(); clearInterval(PILL_TICK); PILL_TICK = null; ptOpen(); return; }   // 시간이 다 되면 큰 화면으로 (종소리)
+      old.textContent = '🙏 기도 중 ' + (r.goal ? mmss(left) + ' 남음' : mmss(gone)) + ' · 돌아가기 ›';
+    };
+    draw(); clearInterval(PILL_TICK); PILL_TICK = setInterval(draw, 1000);
+  }
   document.addEventListener('visibilitychange', function () { if (!document.hidden && S.ptRun && document.getElementById('pt')) { /* 화면이 다시 켜지면 바로 시간 맞춤 */ ptOpen(); } });
   // 감사 도장: 감사 기도를 쓴 날 (예전 감사일기 S.diary도 이어서 셈)
   function thanksDays() {
@@ -1355,7 +1381,7 @@
         ptOpen();
       };
     });
-    if (S.ptRun && !document.getElementById('pt')) { S.ptRun.playing = false; ptOpen(); }   // 기도 중에 새로고침해도 이어서
+    if (S.ptRun && !document.getElementById('pt')) { if (/^#\/talk\/prayer/.test(location.hash) && !document.getElementById('ptPill')) ptOpen(); else ptPill(); }   // 기도 중: 기도 공간에서만 큰 화면, 다른 곳은 작은 띠
     document.querySelectorAll('[data-vowck]').forEach(function (b) {
       b.onclick = function () {
         var id = b.dataset.vowck, k = dayKey(new Date());
