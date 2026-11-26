@@ -74,7 +74,7 @@
     try {
       if (!CLOUD) return localStorage.setItem(KEY, JSON.stringify(S));
       // 서버 모드: 이 기기에는 개인 것만 저장 (공유 데이터는 서버가 매번 다시 채움)
-      var keep = {}; ['firstRun', 'big', 'alerts', 'diary', 'readDone', 'gvSeen', 'notifRead', 'vowDone', 'thanksDays', 'routine', 'sermonDone', 'vowMin', 'customRoutines', 'customDone', 'notes', 'mPray'].forEach(function (k) { keep[k] = S[k]; });
+      var keep = {}; ['firstRun', 'big', 'alerts', 'diary', 'readDone', 'gvSeen', 'notifRead', 'vowDone', 'thanksDays', 'routine', 'sermonDone', 'vowMin', 'customRoutines', 'customDone', 'notes', 'mPray', 'readMode', 'satNudge'].forEach(function (k) { keep[k] = S[k]; });
       localStorage.setItem(KEY + '-cloud', JSON.stringify(keep));
     } catch (e) {}
   }
@@ -310,7 +310,7 @@
   var ROUTINES = [['read', '📖 성경읽기'], ['pray', '🙏 오늘의 기도'], ['sermon', '▶️ 이번 주 말씀'], ['grace', '💬 은혜 나누기'], ['thanks', '🌾 감사 한 가지'], ['pil', '✍️ 필사']];
   function routineOf(id) {
     var today = dayKey(new Date()), s = (MEDIA.sunday || [])[0];
-    if (id === 'read') { var r = !!(S.readDone && S.readDone[today]); return { on: r, label: '📖 성경읽기', sub: r ? '읽었어요' : '오늘 말씀', url: '#/talk/bible?s=read' }; }
+    if (id === 'read') { var r = !!(S.readDone && S.readDone[today]), mn = missedDays().length; return { on: r, label: '📖 성경읽기', sub: r ? (mn ? '읽었어요 · 밀린 ' + mn + '일' : '읽었어요') : (mn ? '밀린 ' + mn + '일' : '오늘 말씀'), url: '#/talk/bible?s=read' }; }
     if (id === 'pil') { var q = !!qtDays()[today]; return { on: q, label: '✍️ 필사', sub: q ? '올렸어요' : '큐티인', url: '#/talk/bible?s=pil' }; }
     if (id === 'pray') {
       var vows = myVows().filter(function (x) { return !x.done && vowInfo(x).active; }), vowOn = vows.filter(function (x) { return vowInfo(x).todayOn; }).length;
@@ -384,11 +384,53 @@
     var n = BOOKS.map(function (b) { return b[2]; }).indexOf(code) + 1;
     return 'http://www.holybible.or.kr/mobile/B_GAE/cgi/bibleftxt.php?VR=GAE&VL=' + n + '&CN=' + chap + '&CV=99';
   }
+  // 성경읽기 진도표들 (주보). 시안에서 최근 주보가 오래됐으면 지난주·이번 주 예시 진도를 만들어 보여 줌
+  function readPlans() {
+    var L = BULLETINS.filter(function (b) { return b.reading && b.reading.length; });
+    if (CLOUD) return L;
+    var sun = new Date(dayKey(new Date()) + 'T00:00:00'); sun.setDate(sun.getDate() - sun.getDay());
+    if (L.some(function (b) { return (sun - new Date(b.date + 'T00:00:00')) / 864e5 < 7; })) return L;
+    var prev = new Date(sun); prev.setDate(prev.getDate() - 7);
+    return [{ date: dayKey(sun), reading: ['요12-13', '요14-15', '요16-17', '요18-19', '요20-21', '행1-2', '행3-4'], demo: true },
+      { date: dayKey(prev), reading: ['눅13-14', '눅15-16', '눅17-18', '눅19-20', '눅21-22', '눅23-24', '요1-3'], demo: true }].concat(L);
+  }
+  // 최근 2주 안에서 아직 안 읽은 지난 날 (오늘 제외), 오래된 날부터
+  function missedDays() {
+    var t = dayKey(new Date()), f0 = new Date(); f0.setDate(f0.getDate() - 13);
+    var f = dayKey(f0), R = S.readDone || {}, seen = {}, out = [];
+    // 처음 읽기를 체크한 날부터만 셈: 새로 가입한 분에게 「밀린 13일」이 뜨지 않게
+    var first = Object.keys(R).filter(function (k) { return R[k]; }).sort()[0]; if (!first) return []; if (first > f) f = first;
+    readPlans().forEach(function (b) {
+      var st = new Date(b.date + 'T00:00:00');
+      b.reading.slice(0, 7).forEach(function (tx, i) {
+        var d = new Date(st); d.setDate(d.getDate() + i); var k = dayKey(d);
+        if (tx && k < t && k >= f && !R[k] && !seen[k]) { seen[k] = 1; out.push({ key: k, d: d, text: tx, p: parseRange(tx) }); }
+      });
+    });
+    return out.sort(function (a, b) { return a.key < b.key ? -1 : 1; });
+  }
+  // 토요일 오후 5시 뒤 앱을 열면, 이번 주(주일부터) 밀린 말씀이 있을 때 하루 한 번 안내 (닫힌 앱 알림은 서버 작업 뒤)
+  function satNudge() {
+    var now = new Date(), today = dayKey(now);
+    if (!(S.me && S.me.approved) || now.getDay() !== 6 || now.getHours() < 17 || (S.satNudge || '') === today) return;
+    var sun = new Date(now); sun.setDate(sun.getDate() - 6);
+    var n = missedDays().filter(function (x) { return x.key >= dayKey(sun); }).length;
+    if (!n) return;
+    S.satNudge = today; save();
+    var ov = document.createElement('div'); ov.className = 'sat-nudge';
+    ov.innerHTML = '<b>📖 이번 주 밀린 말씀 ' + n + '일</b><span>주일 전에 채워 볼까요? 몰아 읽어도 괜찮아요.</span><div class="row"><a class="btn small" href="#/talk/bible?s=read">읽으러 가기</a><button class="btn small ghost" type="button">다음에</button></div>';
+    ov.querySelector('button').onclick = function () { ov.remove(); };
+    ov.querySelector('a').onclick = function () { ov.remove(); };
+    document.body.appendChild(ov);
+  }
+  function dayName(d) { return d.getDay() ? WEEK[d.getDay()] + '요일' : '주일'; }
+  function rangeLabel(p, text) { return p ? esc(p.name) + ' ' + p.from + (p.to > p.from ? '-' + p.to : '') + '장' : esc(text); }
   // 오늘 읽을 곳: 주보 진도(주일부터 7일) → 없으면 오늘 올라온 성경통독 영상
   function todayReading() {
     var now = new Date(), today = dayKey(now);
-    for (var i = 0; i < BULLETINS.length; i++) {
-      var b = BULLETINS[i], start = new Date(b.date + 'T00:00:00');
+    var PL = readPlans();
+    for (var i = 0; i < PL.length; i++) {
+      var b = PL[i], start = new Date(b.date + 'T00:00:00');
       var idx = Math.floor((new Date(today + 'T00:00:00') - start) / 864e5);
       if (b.reading && idx >= 0 && idx < 7 && b.reading[idx]) return { text: b.reading[idx], from: '주보 성경읽기 진도' };
     }
@@ -483,6 +525,7 @@
         '<div>' + (F.phone ? '☎ <a href="tel:' + esc(F.phone) + '">' + esc(F.phone) + '</a>' : '') + (F.web ? ' · <a href="https://' + esc(String(F.web).replace(/^https?:\/\//, '')) + '" target="_blank" rel="noopener">' + esc(F.web) + '</a>' : '') + '</div></div>' : '') +      (b.images && b.images.length ? '<details class="card jubo-img"><summary>🖼 주보 원본 사진 보기</summary><div class="jubo">' + b.images.map(function (src, i) { return '<a href="' + esc(DATA_ROOT + src) + '" target="_blank" rel="noopener"><img src="' + esc(DATA_ROOT + src) + '" alt="주보 ' + (i + 1) + '면" loading="lazy"></a>'; }).join('') + '</div></details>' : '');
   }  function home() {
     setTimeout(gpRemind, 0);   // 목자: 주일 지나 기도제목 안 올렸으면 알림
+    setTimeout(satNudge, 900);   // 토요일 저녁: 이번 주 밀린 말씀이 있으면 한 번 안내
     renderTop({ brand: true, bell: true });
     var s = (MEDIA.sunday || [])[0];
     var evs = upcoming(), byDay = [];   // 같은 날 일정은 한 줄로 묶음
@@ -1633,7 +1676,7 @@
   function wscopeOf(k) { return WSCOPES.filter(function (s) { return s[0] === k; })[0] || WSCOPES[0]; }
   function readWeek() {   // 이번 주 진도표: 이번 주 주보 → 없으면 가장 최근 주보
     var today = new Date(dayKey(new Date()) + 'T00:00:00'), cur = null, last = null;
-    BULLETINS.forEach(function (b) {
+    readPlans().forEach(function (b) {
       if (!b.reading || !b.reading.length) return;
       var idx = Math.floor((today - new Date(b.date + 'T00:00:00')) / 864e5);
       if (idx >= 0 && idx < 7) cur = b;
@@ -1793,18 +1836,37 @@
   function readRoom() {
     wordSeed();
     var now = new Date(), today = dayKey(now), R = S.readDone || {};
+    // 시안: 예시 진도로 「밀린 곳 3일」 상황을 보여 주기 (지난주 하루 + 이번 주 어제·그제)
+    if (!CLOUD && !S.readSeed) {
+      S.readSeed = 1; S.readDone = S.readDone || {};
+      var ms = []; readPlans().forEach(function (b) { var st = new Date(b.date + 'T00:00:00'); b.reading.slice(0, 7).forEach(function (tx, i) { var d = new Date(st); d.setDate(d.getDate() + i); var k = dayKey(d), f0 = new Date(); f0.setDate(f0.getDate() - 13); if (tx && k < today && k >= dayKey(f0)) ms.push({ key: k }); }); }); ms.sort(function (a, b) { return a.key < b.key ? -1 : 1; });
+      ms.forEach(function (x, i) { if (ms.length - i > 2 && i !== Math.floor((ms.length - 2) / 2)) S.readDone[x.key] = 1; });
+      save(); R = S.readDone;
+    }
     var r = todayReading(), p = r && parseRange(r.text), done = !!R[today];
-    // 이번 주 진도가 없으면: 지난 주보 진도에서 아직 안 읽은 첫 날을 「이어서 읽을 곳」으로 (나연 2026-11-26)
-    var catchUp = false;
+    // 놓친 날 (나연 2026-11-26): 맨 위는 늘 오늘 진도. 밀린 곳은 아래 한 줄 + 두 가지 길
+    //   「오늘 진도부터 함께」(readMode 'today') · 「밀린 곳부터 차례로」('catch')
+    var missed = missedDays(), mode = S.readMode || '', catchUp = false, todayR = r;
+    if (r && mode === 'catch' && missed.length) { r = { text: missed[0].text, from: md(dayKey(missed[0].d)) + ' ' + dayName(missed[0].d) + ' 몫 · 밀린 곳 차례로 읽기' }; p = missed[0].p; catchUp = missed[0].key; }
     if (!r) { var w0 = readWeek(), nx = w0 && w0.days.filter(function (x) { return !R[x.key] && x.key <= today; })[0];
-      if (nx) { r = { text: nx.text, from: md(w0.date) + ' 주보 진도 · ' + (nx.d.getDay() ? WEEK[nx.d.getDay()] + '요일' : '주일') + ' 몫 (밀린 곳 이어 읽기)' }; p = nx.p; catchUp = nx.key; } }
+      if (nx) { r = { text: nx.text, from: md(w0.date) + ' 주보 진도 · ' + dayName(nx.d) + ' 몫 (밀린 곳 이어 읽기)' }; p = nx.p; catchUp = nx.key; } }
+    var strip = '';
+    if (todayR && missed.length) {
+      var mlist = '<details class="miss-list"><summary>밀린 곳 보기</summary>' + missed.map(function (x) {
+        return '<div class="ml-row"><span>' + (x.d.getMonth() + 1) + '/' + x.d.getDate() + ' ' + dayName(x.d) + '</span>' + (x.p ? '<a href="' + bibleUrl(x.p.code, x.p.from) + '" target="_blank" rel="noopener">' + rangeLabel(x.p, x.text) + '</a>' : '<b>' + esc(x.text) + '</b>') +
+          '<button class="rd-ck" data-readday="' + x.key + '" aria-label="읽었어요"></button></div>'; }).join('') + '</details>';
+      strip = '<div class="miss-strip"><div class="ms-h">📌 밀린 곳 <b>' + missed.length + '일</b>' + (catchUp ? ' · 오늘 진도는 ' + rangeLabel(parseRange(todayR.text), todayR.text) : '') + '</div>' +
+        (mode ? '<p class="sub">' + (catchUp ? '밀린 곳부터 차례로 읽고 있어요.' : '오늘 진도부터 함께 읽어요. 밀린 곳은 주말에 몰아 읽어도 괜찮아요.') + '</p>' : '<p class="sub">괜찮아요! 어떻게 읽을지 골라 보세요.</p>') +
+        '<div class="row">' + (mode !== 'today' ? '<button class="btn small' + (mode ? ' ghost' : '') + '" data-rmode="today">오늘 진도부터 함께</button>' : '') +
+        (mode !== 'catch' ? '<button class="btn small ghost" data-rmode="catch">밀린 곳부터 차례로</button>' : '') + '</div>' + mlist + '</div>';
+    }
     // 1) 오늘
     var chips = '';
     if (p) for (var c = p.from; c <= p.to && c - p.from < 10; c++) chips += '<a class="chip" href="' + bibleUrl(p.code, c) + '" target="_blank" rel="noopener">' + c + '장</a>';
     var video = r && (r.video || ((MEDIA.reading || []).filter(function (x) { return x.date === today; })[0] || {}).videoId);
     var top = '<div class="card"><div class="sec-title" style="margin:0 0 6px"><b>' + (catchUp ? '📖 이어서 읽을 말씀' : '📖 오늘 읽을 말씀') + '</b><span class="sub">' + (now.getMonth() + 1) + '월 ' + now.getDate() + '일 ' + WEEK[now.getDay()] + '</span></div>' +
       (r ? '<div class="h1" style="font-size:1.35rem;color:var(--green-d)">' + (p ? esc(p.name) + ' ' + p.from + (p.to > p.from ? '-' + p.to : '') + '장' : esc(r.text)) + '</div><div class="sub" style="margin-bottom:10px">' + r.from + '</div>' +
-        (chips ? '<div class="chips" style="margin-bottom:10px">' + chips + '</div>' : '')
+        (chips ? '<div class="chips" style="margin-bottom:10px">' + chips + '</div>' : '') + strip
         : '<p class="sub" style="margin:2px 0 10px">이번 주 읽기 진도가 아직 없고, 최근 진도도 다 읽으셨어요 👏 오늘 스스로 읽은 말씀이 있다면 아래 버튼으로 기록해 두세요.</p>') +
       '<div class="row">' + (video ? '<a class="btn small ghost" href="#/sermons?kind=reading&v=' + video + '">▶ 통독 영상</a>' : '') +
         (catchUp ? '<button class="btn small" data-readday="' + catchUp + '">이 부분 읽었어요</button>' : '<button class="btn small' + (done ? '' : ' ghost') + '" data-readday="' + today + '">' + (done ? '오늘 읽었어요 ✓' : '오늘 읽었어요') + '</button>') + '</div>' +
@@ -1817,9 +1879,10 @@
       var k = dayKey(new Date(y, m, dd)), on = !!R[k]; if (on) monthN++;
       cells += '<span class="rd-c' + (on ? ' on' : '') + (k === today ? ' today' : '') + (k > today ? ' fut' : '') + '">' + (on ? '✓' : dd) + '</span>';
     }
-    var st = readStreak();
+    // 「일 연속」 대신 「이번 주 ○/7일」: 하루 놓쳐도 0이 되지 않게 (나연 2026-11-26)
+    var wk1 = readWeek(), wkN = wk1 ? wk1.days.filter(function (x) { return R[x.key]; }).length : 0;
     var mine = '<div class="card"><div class="sec-title" style="margin:0 0 8px"><b>🌱 나의 읽기 기록</b><span class="sub">' + (m + 1) + '월</span></div>' +
-      '<div class="rd-stats"><div><b>' + st + '</b><span>일 연속</span></div><div><b>' + monthN + '</b><span>이번 달 읽은 날</span></div></div>' +
+      '<div class="rd-stats"><div><b>' + wkN + '<small>/' + (wk1 ? wk1.days.length : 7) + '</small></b><span>' + (wk1 && !wk1.current ? '최근 진도' : '이번 주') + ' 읽은 날</span></div><div><b>' + monthN + '</b><span>이번 달 읽은 날</span></div></div>' +
       '<div class="rd-month">' + ['일', '월', '화', '수', '목', '금', '토'].map(function (w) { return '<i>' + w + '</i>'; }).join('') + cells + '</div>' +
       '<p class="sub" style="margin-top:8px;font-size:.76rem">읽은 날에 ✓ 도장이 찍혀요. 기록은 나만 볼 수 있어요.</p></div>';
     // 3) 이번 주 진도표
@@ -2001,6 +2064,8 @@
     if (zm) { e.preventDefault(); var ov = document.createElement('div'); ov.className = 'zoom-ov'; ov.innerHTML = '<img src="' + esc(zm.dataset.zoom) + '" alt=""><button type="button" aria-label="닫기">✕</button>'; ov.onclick = function () { ov.remove(); }; document.body.appendChild(ov); return; }
     var jp = e.target.closest('[data-jump]');   // 주보 바로가기 칩
     if (jp) { e.preventDefault(); var el = document.getElementById(jp.dataset.jump); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    var rm = e.target.closest('[data-rmode]');   // 성경읽기: 오늘 진도부터 / 밀린 곳부터
+    if (rm) { S.readMode = rm.dataset.rmode; save(); route(); toast(S.readMode === 'catch' ? '밀린 곳부터 차례로 읽어요 📖' : '오늘 진도부터 함께 읽어요 📖'); return; }
     var mp = e.target.closest('[data-mpray]');   // 선교지 🙏 기도할게요 (그날 하루 표시)
     if (mp) {
       var k = dayKey(new Date()) + '|' + mp.dataset.mpray; S.mPray = S.mPray || {};

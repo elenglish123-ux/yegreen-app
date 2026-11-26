@@ -608,3 +608,18 @@ button.rx { cursor: pointer; font-family: inherit; }
 .rb span { font-size: .72rem; color: #888; }
 .rb.today i { background: var(--green); }
 .rb.today em, .rb.today span { color: var(--green-d); font-weight: 800; }
+/* 성경읽기: 밀린 곳 */
+.miss-strip { margin: 4px 0 12px; padding: 12px 14px; border-radius: 12px; background: #fbf3e2; border: 1px solid #f0dfb8; }
+.miss-strip .ms-h { font-size: .92rem; color: #6b4e12; }
+.miss-strip .ms-h b { color: #b5651d; }
+.miss-strip .sub { margin: 4px 0 8px; font-size: .8rem; }
+.miss-strip .row { gap: 6px; flex-wrap: wrap; }
+.miss-list { margin-top: 8px; }
+.miss-list summary { font-size: .8rem; font-weight: 700; color: #8a6a2e; cursor: pointer; }
+.ml-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px dashed #ead7ab; font-size: .86rem; }
+.ml-row > span { width: 78px; flex: none; color: #8a7a68; font-size: .78rem; }
+.ml-row > a, .ml-row > b { flex: 1; color: var(--green-d); font-weight: 700; text-decoration: none; }
+.rd-stats b small { font-size: .55em; color: #8a9a90; font-weight: 700; }
+.sat-nudge { position: fixed; left: 12px; right: 12px; bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 60; background: #fff; border-radius: 16px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0,0,0,.18); display: flex; flex-direction: column; gap: 4px; max-width: 460px; margin: 0 auto; border: 1px solid #f0dfb8; }
+.sat-nudge span { font-size: .85rem; color: #6b5b42; }
+.sat-nudge .row { margin-top: 6px; gap: 6px; }
