@@ -401,7 +401,7 @@
         '<button class="btn small' + (done ? '' : ' ghost') + '" data-readdone>' + (done ? '다 읽었어요 ✓' : '다 읽었어요') + '</button>' +
         '<a class="btn small ghost" href="#/talk/bible?s=read">읽기표·묵상 ›</a></div>' +
       '<div class="together"><b>' + readCount(done) + '명</b><span>오늘 함께 읽었어요<small>이름 없이 숫자만 보여요' + (CLOUD ? '' : ' · 시안 숫자') + '</small></span></div>' +
-      (p ? '<p class="sub" style="margin-top:8px;font-size:.78rem">장을 누르면 대한성서공회 개역개정 성경이 열려요.</p>' : '') + '</div>';
+      (p ? '<p class="sub" style="margin-top:8px;font-size:.78rem">장을 누르면 개역개정 성경이 열려요.</p>' : '') + '</div>';
   }
   function bindHome() {
     var re = $('[data-redit]'); if (re) re.onclick = function () { S.routineEdit = !S.routineEdit; save(); route(); };
@@ -773,12 +773,12 @@
     if (sub === 'prayer') return segs(sub) + prayerRoom(q);
     if (sub === 'bible') return segs(sub) + bibleRoom(q);
     if (sub === 'group') { setTimeout(gpRemind, 0); return segs(sub) + groupRoom(q); }
-    var f = q.cat || 'all';
+    var f = q.cat === 'pray' ? 'all' : q.cat || 'all';   // 기도제목 칩은 뺌: 기도는 기도 공간에서 (전체 목록에는 계속 나옴, 나연 2026-11-26)
     var list = S.posts.filter(function (p) { return p.scope !== 'group' && p.scope !== 'qt' && canSee(p) && (f === 'all' || p.cat === f || p.notice); });
     list.sort(function (a, b) { return (b.notice ? 1 : 0) - (a.notice ? 1 : 0); });
     var ser = (MEDIA.sunday || [])[0];
-    var graceTop = ser && (f === 'all' || f === 'grace') ? '<a class="card grace" href="#/write?to=all&cat=grace"><div class="label" style="color:#cfe3d6">이번 주 설교 · ' + md(ser.date) + '</div><b>' + esc(ser.title) + '</b><div style="font-size:.88rem;opacity:.85;margin-top:4px">이 말씀으로 받은 은혜와 이번 주 적용을 나눠 주세요 ✎</div></a>' : '';
-    return segs(sub) + '<div class="chips">' + [['all', '전체'], ['grace', '말씀 은혜'], ['word', '말씀 묵상'], ['pray', '기도제목']].map(function (c) { return '<a class="chip' + (c[0] === f ? ' on' : '') + '" href="#/talk/church?cat=' + c[0] + '">' + c[1] + '</a>'; }).join('') + '</div>' +
+    var graceTop = ser && (f === 'all' || f === 'grace') ? '<a class="card grace" href="#/sermons?v=' + ser.videoId + '&g=1"><div class="label" style="color:#cfe3d6">이번 주 설교 · ' + md(ser.date) + '</div><b>' + esc(ser.title) + '</b><div style="font-size:.88rem;opacity:.85;margin-top:4px">이 말씀으로 받은 은혜와 이번 주 적용을 나눠 주세요 ✎</div></a>' : '';
+    return segs(sub) + '<div class="chips">' + [['all', '전체'], ['grace', '말씀 은혜'], ['word', '말씀 묵상']].map(function (c) { return '<a class="chip' + (c[0] === f ? ' on' : '') + '" href="#/talk/church?cat=' + c[0] + '">' + c[1] + '</a>'; }).join('') + '</div>' +
       graceTop + (list.map(function (p) { return postCard(p, true); }).join('') || '<p class="empty">아직 글이 없어요.</p>');
   }
   function gvCurrent() {
@@ -1029,16 +1029,17 @@
     t.oninput = function () { $('#wCount').textContent = t.value.length; $('#postBtn').disabled = !t.value.trim(); };
     $('#postBtn').onclick = function () {
       var scope = $('#scopePick .on').dataset.v, cat = $('#catPick .on').dataset.v;
+      var vid = cat === 'grace' && (MEDIA.sunday || [])[0] ? MEDIA.sunday[0].videoId : undefined;   // 은혜 글은 이번 주 설교에 묶어 말씀 탭 은혜 칸에도 모이게
       if (scope === 'group' && !S.me.group) { toast(CLOUD ? '아직 목장이 정해지지 않았어요.' : '목장방에서 목장을 먼저 정해 주세요.'); return; }
       if (CLOUD) {
         $('#postBtn').disabled = true;
-        YG.addPost({ cat: cat, scope: scope, text: t.value.trim() }).then(function () {
+        YG.addPost({ cat: cat, scope: scope, text: t.value.trim(), vid: vid }).then(function () {
           toast(scope === 'pastor' ? '목사님께만 보냈어요.' : SCOPES[scope] + '에 올렸어요.');
           location.replace(scope === 'group' ? '#/talk/group' : '#/talk/church');
         }, function (e) { console.warn(e); $('#postBtn').disabled = false; toast('올리지 못했어요. 인터넷 연결을 확인해 주세요.'); });
         return;
       }
-      S.posts.unshift({ id: 'p' + Date.now(), cat: cat, scope: scope, group: scope === 'group' ? S.me.group : undefined, author: S.me.name, text: t.value.trim(), at: '방금', mine: true, count: 0, reacted: false, comments: [] });
+      S.posts.unshift({ id: 'p' + Date.now(), cat: cat, vid: vid, scope: scope, group: scope === 'group' ? S.me.group : undefined, author: S.me.name, text: t.value.trim(), at: '방금', mine: true, count: 0, reacted: false, comments: [] });
       save();
       toast(scope === 'pastor' ? '목사님께만 보냈어요.' : SCOPES[scope] + '에 올렸어요.');
       location.replace(scope === 'group' ? '#/talk/group' : '#/talk/church');
@@ -1783,18 +1784,22 @@
     wordSeed();
     var now = new Date(), today = dayKey(now), R = S.readDone || {};
     var r = todayReading(), p = r && parseRange(r.text), done = !!R[today];
+    // 이번 주 진도가 없으면: 지난 주보 진도에서 아직 안 읽은 첫 날을 「이어서 읽을 곳」으로 (나연 2026-11-26)
+    var catchUp = false;
+    if (!r) { var w0 = readWeek(), nx = w0 && w0.days.filter(function (x) { return !R[x.key] && x.key <= today; })[0];
+      if (nx) { r = { text: nx.text, from: md(w0.date) + ' 주보 진도 · ' + (nx.d.getDay() ? WEEK[nx.d.getDay()] + '요일' : '주일') + ' 몫 (밀린 곳 이어 읽기)' }; p = nx.p; catchUp = nx.key; } }
     // 1) 오늘
     var chips = '';
     if (p) for (var c = p.from; c <= p.to && c - p.from < 10; c++) chips += '<a class="chip" href="' + bibleUrl(p.code, c) + '" target="_blank" rel="noopener">' + c + '장</a>';
     var video = r && (r.video || ((MEDIA.reading || []).filter(function (x) { return x.date === today; })[0] || {}).videoId);
-    var top = '<div class="card"><div class="sec-title" style="margin:0 0 6px"><b>📖 오늘 읽을 말씀</b><span class="sub">' + (now.getMonth() + 1) + '월 ' + now.getDate() + '일 ' + WEEK[now.getDay()] + '</span></div>' +
+    var top = '<div class="card"><div class="sec-title" style="margin:0 0 6px"><b>' + (catchUp ? '📖 이어서 읽을 말씀' : '📖 오늘 읽을 말씀') + '</b><span class="sub">' + (now.getMonth() + 1) + '월 ' + now.getDate() + '일 ' + WEEK[now.getDay()] + '</span></div>' +
       (r ? '<div class="h1" style="font-size:1.35rem;color:var(--green-d)">' + (p ? esc(p.name) + ' ' + p.from + (p.to > p.from ? '-' + p.to : '') + '장' : esc(r.text)) + '</div><div class="sub" style="margin-bottom:10px">' + r.from + '</div>' +
         (chips ? '<div class="chips" style="margin-bottom:10px">' + chips + '</div>' : '')
-        : '<p class="sub" style="margin:2px 0 10px">이번 주 읽기 진도가 아직 올라오지 않았어요. 주보에 진도가 실리면 여기에 바로 보여요. 오늘 스스로 읽은 말씀이 있다면 아래 버튼으로 기록해 두세요.</p>') +
+        : '<p class="sub" style="margin:2px 0 10px">이번 주 읽기 진도가 아직 없고, 최근 진도도 다 읽으셨어요 👏 오늘 스스로 읽은 말씀이 있다면 아래 버튼으로 기록해 두세요.</p>') +
       '<div class="row">' + (video ? '<a class="btn small ghost" href="#/sermons?kind=reading&v=' + video + '">▶ 통독 영상</a>' : '') +
-        '<button class="btn small' + (done ? '' : ' ghost') + '" data-readday="' + today + '">' + (done ? '오늘 읽었어요 ✓' : '오늘 읽었어요') + '</button></div>' +
+        (catchUp ? '<button class="btn small" data-readday="' + catchUp + '">이 부분 읽었어요</button>' : '<button class="btn small' + (done ? '' : ' ghost') + '" data-readday="' + today + '">' + (done ? '오늘 읽었어요 ✓' : '오늘 읽었어요') + '</button>') + '</div>' +
       '<div class="together"><b>' + readCount(done) + '명</b><span>오늘 함께 읽었어요<small>이름 없이 숫자만 보여요' + (CLOUD ? '' : ' · 시안 숫자') + '</small></span></div>' +
-      (p ? '<p class="sub" style="margin-top:8px;font-size:.78rem">장을 누르면 대한성서공회 개역개정 성경이 열려요.</p>' : '') + '</div>';
+      (p ? '<p class="sub" style="margin-top:8px;font-size:.78rem">장을 누르면 개역개정 성경이 열려요.</p>' : '') + '</div>';
     // 2) 나의 읽기 기록: 연속 · 이번 달 도장
     var y = now.getFullYear(), m = now.getMonth(), last = new Date(y, m + 1, 0).getDate(), first = new Date(y, m, 1).getDay(), monthN = 0, cells = '';
     for (var i = 0; i < first; i++) cells += '<span></span>';
