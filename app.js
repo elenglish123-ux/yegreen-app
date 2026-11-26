@@ -38,10 +38,10 @@
       ],
       posts: [
         { id: 'p0', notice: true, cat: 'thanks', scope: 'all', author: '교회 공지', text: '11월 9일부터 21일까지 감사주간이에요. 감사일기에 오늘의 감사를 적고 나눠 주세요.', at: '공지', count: 0, reacted: false, comments: [] },
-        { id: 'p1', cat: 'pray', scope: 'all', author: '김바울', text: '이번 주 수술을 앞둔 어머니를 위해 함께 기도해 주세요.', at: '어제', count: 12, reacted: false, comments: [{ author: '전나연', text: '어머님 위해 기도할게요 🙏' }] },
-        { id: 'p2', cat: 'thanks', scope: 'all', author: '김바울', text: '오랜만에 온 가족이 함께 예배드릴 수 있어서 감사했어요.', at: '2일 전', count: 9, reacted: false, comments: [] },
-        { id: 'g1', cat: 'pray', scope: 'group', group: null, author: '전나연', text: '다음 주 면접이 있어요. 준비한 만큼 잘 말할 수 있도록 기도 부탁드려요.', at: '어제', count: 6, reacted: false, comments: [] },
-        { id: 'g2', cat: 'group', scope: 'group', group: null, author: '김바울', text: '지난 모임 때 나눈 말씀이 한 주 내내 힘이 됐어요.', at: '3일 전', count: 5, reacted: false, comments: [] },
+        { id: 'p1', cat: 'pray', scope: 'all', author: '이소망', text: '이번 주 수술을 앞둔 어머니를 위해 함께 기도해 주세요.', at: '어제', count: 12, reacted: false, comments: [{ author: '박은혜', text: '어머님 위해 기도할게요 🙏' }] },
+        { id: 'p2', cat: 'thanks', scope: 'all', author: '최믿음', text: '오랜만에 온 가족이 함께 예배드릴 수 있어서 감사했어요.', at: '2일 전', count: 9, reacted: false, comments: [] },
+        { id: 'g1', cat: 'pray', scope: 'group', group: null, author: '정하늘', text: '다음 주 면접이 있어요. 준비한 만큼 잘 말할 수 있도록 기도 부탁드려요.', at: '어제', count: 6, reacted: false, comments: [] },
+        { id: 'g2', cat: 'group', scope: 'group', group: null, author: '강온유', text: '지난 모임 때 나눈 말씀이 한 주 내내 힘이 됐어요.', at: '3일 전', count: 5, reacted: false, comments: [] },
       ],
       meeting: { text: '이번 주 금요일 저녁 7:30 · 목장 모임', going: null },
       diary: {},
@@ -484,8 +484,8 @@
     if (CLOUD || S.graceSeed || !s) return;
     S.graceSeed = 1;
     S.posts.push(
-      { id: 'gs1', cat: 'grace', vid: s.videoId, scope: 'all', author: '전나연', text: '「범사에 감사하라」는 말씀이 이번 주 내내 마음에 남았어요. 불평이 나올 때마다 감사 한 가지를 먼저 찾아보기로 했어요.', at: '어제', count: 8, reacted: false, comments: [] },
-      { id: 'gs2', cat: 'grace', vid: s.videoId, scope: 'all', author: '김바울', text: '감사가 환경이 아니라 하나님을 바라보는 데서 나온다는 말씀이 좋았어요. 적용: 매일 밤 감사 세 줄 쓰기!', at: '2일 전', count: 5, reacted: false, comments: [] });
+      { id: 'gs1', cat: 'grace', vid: s.videoId, scope: 'all', author: '윤기쁨', text: '「범사에 감사하라」는 말씀이 이번 주 내내 마음에 남았어요. 불평이 나올 때마다 감사 한 가지를 먼저 찾아보기로 했어요.', at: '어제', count: 8, reacted: false, comments: [] },
+      { id: 'gs2', cat: 'grace', vid: s.videoId, scope: 'all', author: '한사랑', text: '감사가 환경이 아니라 하나님을 바라보는 데서 나온다는 말씀이 좋았어요. 적용: 매일 밤 감사 세 줄 쓰기!', at: '2일 전', count: 5, reacted: false, comments: [] });
     save();
   }
   function graceBox(cur) {
@@ -1045,9 +1045,9 @@
     if (CLOUD || S.prayerSeed) return;
     S.prayerSeed = 1;
     S.posts.push(
-      { id: 'h1', cat: 'pray', head: 'help', scope: 'group', group: null, author: '전나연', text: '다음 주 이사를 해요. 좋은 이웃을 만나고 아이들이 새 학교에 잘 적응하도록 도와주세요.', at: '오늘', count: 4, reacted: false, comments: [] },
-      { id: 'h2', cat: 'pray', head: 'inter', scope: 'all', author: '김바울', text: '투병 중인 친구 ○○를 위해 기도해요. 치료가 잘 되고 마음에 평안이 있기를.', at: '어제', count: 11, reacted: false, comments: [] },
-      { id: 'h3', cat: 'pray', head: 'thanks', scope: 'all', author: '전나연', text: '취업 소식 기다리던 것, 오늘 합격했어요! 함께 기도해 주신 분들 감사해요.', at: '2일 전', count: 15, reacted: false, comments: [], answered: 1 });
+      { id: 'h1', cat: 'pray', head: 'help', scope: 'group', group: null, author: '오평화', text: '다음 주 이사를 해요. 좋은 이웃을 만나고 아이들이 새 학교에 잘 적응하도록 도와주세요.', at: '오늘', count: 4, reacted: false, comments: [] },
+      { id: 'h2', cat: 'pray', head: 'inter', scope: 'all', author: '서빛나', text: '투병 중인 친구 ○○를 위해 기도해요. 치료가 잘 되고 마음에 평안이 있기를.', at: '어제', count: 11, reacted: false, comments: [] },
+      { id: 'h3', cat: 'pray', head: 'thanks', scope: 'all', author: '임찬양', text: '취업 소식 기다리던 것, 오늘 합격했어요! 함께 기도해 주신 분들 감사해요.', at: '2일 전', count: 15, reacted: false, comments: [], answered: 1 });
     save();
   }
   function prayerSeed2() {   // 시안: 열람 범위마다 예시 하나씩 (나연 요청 2026-11-25)
@@ -1055,8 +1055,8 @@
     S.prayerSeed2 = 1;
     S.posts.push(
       { id: 'h4', cat: 'pray', head: 'hard', scope: 'pastor', author: S.me.name, mine: true, text: '목사님, 요즘 회사 일로 마음이 많이 지쳐 있어요. 주일에 잠깐 이야기 나눌 수 있을까요?', at: '오늘', count: 0, reacted: false, comments: [] },
-      { id: 'h5', cat: 'pray', head: 'inter', scope: 'group', group: null, author: '김바울', text: '이번 주 목장 모임에 처음 오시는 새가족이 편안하게 마음 열 수 있도록 함께 기도해 주세요.', at: '오늘', count: 2, reacted: false, comments: [] },
-      { id: 'h6', cat: 'pray', head: 'joy', scope: 'all', author: '전나연', text: '성탄절 새생명축제에 초대할 이웃 한 사람을 주님께서 보여 주세요. 주님 기뻐하실 선물을 드리고 싶어요.', at: '오늘', count: 7, reacted: false, comments: [] });
+      { id: 'h5', cat: 'pray', head: 'inter', scope: 'group', group: null, author: '조은별', text: '이번 주 목장 모임에 처음 오시는 새가족이 편안하게 마음 열 수 있도록 함께 기도해 주세요.', at: '오늘', count: 2, reacted: false, comments: [] },
+      { id: 'h6', cat: 'pray', head: 'joy', scope: 'all', author: '배새힘', text: '성탄절 새생명축제에 초대할 이웃 한 사람을 주님께서 보여 주세요. 주님 기뻐하실 선물을 드리고 싶어요.', at: '오늘', count: 7, reacted: false, comments: [] });
     var l = prayers();
     if (!l.some(function (x) { return x.id === 'qex'; })) { l.push({ id: 'qex', head: 'review', text: '하나님, 오늘 아이에게 짜증을 많이 냈어요. 내일은 한 번 더 참고 안아 주는 부모가 되게 해 주세요.', at: md(dayKey(new Date())), day: '' }); savePrayers(l); }
     save();
@@ -1562,8 +1562,8 @@
     if (CLOUD || S.wordSeed) return;
     S.wordSeed = 1;
     S.posts.push(
-      { id: 'w1', cat: 'word', verse: '요한복음 8:32', scope: 'all', author: '김바울', text: '진리를 알지니 진리가 너희를 자유롭게 하리라. 오늘은 미루던 사과를 먼저 하기로 했어요.', at: '오늘', count: 6, reacted: false, comments: [] },
-      { id: 'w2', cat: 'word', verse: '요한복음 6장', scope: 'group', group: null, author: '전나연', text: '오병이어. 작은 것이라도 주님 손에 드리면 넉넉해진다는 걸 다시 배웠어요.', at: '어제', count: 3, reacted: false, comments: [] });
+      { id: 'w1', cat: 'word', verse: '요한복음 8:32', scope: 'all', author: '신다온', text: '진리를 알지니 진리가 너희를 자유롭게 하리라. 오늘은 미루던 사과를 먼저 하기로 했어요.', at: '오늘', count: 6, reacted: false, comments: [] },
+      { id: 'w2', cat: 'word', verse: '요한복음 6장', scope: 'group', group: null, author: '문예찬', text: '오병이어. 작은 것이라도 주님 손에 드리면 넉넉해진다는 걸 다시 배웠어요.', at: '어제', count: 3, reacted: false, comments: [] });
     save();
   }
   // ---------- 큐티 (나연 2026-11-25): 큐티인 책에 쓰고 사진 찍어 올리는 방식 ----------
@@ -1609,8 +1609,8 @@
       return c.toDataURL('image/jpeg', 0.6);
     }
     S.posts.push(
-      { id: 'qt1', cat: 'qt', scope: 'qt', author: '김바울', text: '오늘 말씀 앞에서 내 고집을 내려놓아요.', img: fake(['본문 요약 …', '마음에 남은 말씀 …', '오늘 적용: 먼저 사과하기', '기도: 주님 겸손하게 해 주세요'], '#2f6b4f'), at: '오늘', count: 5, reacted: false, comments: [] },
-      { id: 'qt2', cat: 'qt', scope: 'all', author: '전나연', text: '', img: fake(['오늘 본문을 읽고 …', '나에게 하시는 말씀 …', '적용: 출근길에 감사 3가지'], '#b5542a'), at: '오늘', count: 3, reacted: false, comments: [] });
+      { id: 'qt1', cat: 'qt', scope: 'qt', author: '홍지혜', text: '오늘 말씀 앞에서 내 고집을 내려놓아요.', img: fake(['본문 요약 …', '마음에 남은 말씀 …', '오늘 적용: 먼저 사과하기', '기도: 주님 겸손하게 해 주세요'], '#2f6b4f'), at: '오늘', count: 5, reacted: false, comments: [] },
+      { id: 'qt2', cat: 'qt', scope: 'all', author: '안해솔', text: '', img: fake(['오늘 본문을 읽고 …', '나에게 하시는 말씀 …', '적용: 출근길에 감사 3가지'], '#b5542a'), at: '오늘', count: 3, reacted: false, comments: [] });
     save();
   }
   function qtRoom() {
@@ -2111,10 +2111,10 @@
     S.familySeed = 1;
     function d(n) { var x = new Date(); x.setDate(x.getDate() + n); return dayKey(x); }
     S.family = [
-      { id: 'f1', kind: 'wed', text: '김바울 형제 · 전나연 자매 결혼', date: d(9), place: '오후 1시 · 예그린교회 본당', ts: Date.now() - 1 },
-      { id: 'f2', kind: 'rip', text: '전나연 성도 조모님 소천', date: d(-1), place: '발인 ' + md(d(1)) + ' · 인천 서구 장례식장', pray: true, ts: Date.now() - 2 },
-      { id: 'f3', kind: 'baby', text: '김바울 · 전나연 가정 둘째 출산 (아들)', date: d(-3), place: '산모와 아기 모두 건강해요', ts: Date.now() - 3 },
-      { id: 'f4', kind: 'sick', text: '김바울 성도 무릎 수술', date: d(2), place: '빠른 회복을 위해 기도해 주세요', pray: true, ts: Date.now() - 4 },
+      { id: 'f1', kind: 'wed', text: '이준호 형제 · 박은혜 자매 결혼', date: d(9), place: '오후 1시 · 예그린교회 본당', ts: Date.now() - 1 },
+      { id: 'f2', kind: 'rip', text: '최믿음 성도 조모님 소천', date: d(-1), place: '발인 ' + md(d(1)) + ' · 인천 서구 장례식장', pray: true, ts: Date.now() - 2 },
+      { id: 'f3', kind: 'baby', text: '정하늘 · 한소망 가정 둘째 출산 (아들)', date: d(-3), place: '산모와 아기 모두 건강해요', ts: Date.now() - 3 },
+      { id: 'f4', kind: 'sick', text: '윤기쁨 성도 무릎 수술', date: d(2), place: '빠른 회복을 위해 기도해 주세요', pray: true, ts: Date.now() - 4 },
     ];
     save();
   }
@@ -2141,7 +2141,7 @@
     var list = familyList();
     return '<form class="card" id="famForm" style="display:flex;flex-direction:column;gap:10px"><b>교우 동정 올리기</b>' +
         '<div class="chips" id="famKind" style="margin:0;flex-wrap:wrap;overflow:visible">' + FKINDS.map(function (k, i) { return '<button type="button" class="chip' + (i === 0 ? ' on' : '') + '" data-v="' + k[0] + '">' + k[1] + ' ' + k[2] + '</button>'; }).join('') + '</div>' +
-        '<label class="field"><span>내용</span><input name="text" maxlength="60" required placeholder="예: 김바울 형제 · 전나연 자매 결혼"></label>' +
+        '<label class="field"><span>내용</span><input name="text" maxlength="60" required placeholder="예: 이준호 형제 · 박은혜 자매 결혼"></label>' +
         '<label class="field"><span>날짜</span><input name="date" type="date"></label>' +
         '<label class="field"><span>장소·안내 (선택)</span><input name="place" maxlength="60" placeholder="예: 오후 1시 · 예그린교회 본당 / 발인 12월 1일"></label>' +
         '<label class="check"><input type="checkbox" name="pray">🙏 「함께 기도해 주세요」 붙이기</label>' +
