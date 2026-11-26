@@ -505,3 +505,11 @@ img.flag { width: 22px; height: 15px; object-fit: cover; border-radius: 3px; ver
 .card.hero .home-grace .hj-ic { font-size: 1.05rem; }
 .card.hero .home-grace .hj-tx b { font-size: .9rem; color: var(--green-d); }
 .card.hero .home-grace .hj-go { background: var(--green); color: #fff; border-radius: 999px; padding: 5px 12px; font-size: .8rem; }
+/* 말씀 제목 옆 은혜 나누기 버튼 (2026-11-26) */
+.hero-row { display: flex; align-items: center; gap: 8px; padding-right: 14px; }
+.hero-row .txt { flex: 1; min-width: 0; display: block; color: inherit; }
+.card.hero .hero-row .txt { padding-bottom: 14px; }
+.hero-grace { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 64px; background: #eef5f0; border: 1px solid #d6e6dc; border-radius: 16px; padding: 8px 10px; color: var(--green-d); }
+.hero-grace .hg-ico { font-size: 1.15rem; line-height: 1; }
+.hero-grace b { font-size: .82rem; }
+.hero-grace small { font-size: .7rem; font-weight: 700; color: #fff; background: var(--green); border-radius: 999px; padding: 1px 8px; margin-top: 2px; }
