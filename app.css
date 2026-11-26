@@ -552,3 +552,4 @@ img.flag { display: inline-block; margin-right: 4px; } .sec-title b:has(img.flag
 .ev-card .ev-list { padding-top: 2px; gap: 2px; }
 .ev-card .ev-list .t { font-size: .95rem; }
 .ev-card .ev-list .sub { font-size: .78rem; }
+.hr-del { font: inherit; font-size: .74rem; background: #fff; border: 1px solid #e3e0d8; border-radius: 999px; padding: 2px 8px; cursor: pointer; color: #6f6a60; margin: 2px; }

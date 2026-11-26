@@ -74,7 +74,7 @@
     try {
       if (!CLOUD) return localStorage.setItem(KEY, JSON.stringify(S));
       // 서버 모드: 이 기기에는 개인 것만 저장 (공유 데이터는 서버가 매번 다시 채움)
-      var keep = {}; ['firstRun', 'big', 'alerts', 'diary', 'readDone', 'gvSeen', 'notifRead', 'vowDone', 'thanksDays', 'routine', 'sermonDone', 'vowMin'].forEach(function (k) { keep[k] = S[k]; });
+      var keep = {}; ['firstRun', 'big', 'alerts', 'diary', 'readDone', 'gvSeen', 'notifRead', 'vowDone', 'thanksDays', 'routine', 'sermonDone', 'vowMin', 'customRoutines', 'customDone'].forEach(function (k) { keep[k] = S[k]; });
       localStorage.setItem(KEY + '-cloud', JSON.stringify(keep));
     } catch (e) {}
   }
@@ -309,18 +309,26 @@
     }
     if (id === 'sermon') { var h = !!(s && S.sermonDone && S.sermonDone[s.videoId]); return { on: h, label: '▶️ 이번 주 말씀', sub: h ? '들었어요' : '설교 듣기', url: s ? '#/sermons?v=' + s.videoId : '#/sermons' }; }
     if (id === 'grace') { var g = !!s && (graces().some(function (x) { return x.vid === s.videoId; }) || S.posts.some(function (p) { return p.mine && p.cat === 'grace' && p.vid === s.videoId; })); return { on: g, label: '💬 은혜 나누기', sub: g ? '나눴어요' : '이번 주', url: s ? '#/sermons?v=' + s.videoId + '&g=1' : '#/sermons' }; }
+    if (/^c\d+$/.test(id)) {   // 직접 만든 칸: 누르면 오늘 체크 (나연 2026-11-26)
+      var cu = (S.customRoutines || []).filter(function (x) { return x.id === id; })[0]; if (!cu) return null;
+      var cd = !!((S.customDone || {})[id] || {})[today];
+      return { on: cd, label: '✏️ ' + cu.name, sub: cd ? '했어요' : '눌러서 체크', url: '#/', toggle: id };
+    }
     if (id === 'thanks') { var th = !!(S.thanksDays && S.thanksDays[today]); return { on: th, label: '🌾 감사 한 가지', sub: th ? '드렸어요' : '감사 기도', url: '#/talk/prayer?p=thanks' }; }
     return null;
   }
-  function myRoutine() { var r = (S.routine || []).filter(function (id) { return ROUTINES.some(function (x) { return x[0] === id; }); }); return r.length ? r : ['read', 'pray', 'sermon']; }
+  function myRoutine() { var r = (S.routine || []).filter(function (id) { return ROUTINES.some(function (x) { return x[0] === id; }) || (S.customRoutines || []).some(function (x) { return x.id === id; }); }); return r.length ? r : ['read', 'pray', 'sermon']; }
   function homeRoutine() {
     if (!S.me || !S.me.approved) return '';
     var ids = myRoutine(), list = ids.map(routineOf).filter(Boolean), n = list.filter(function (x) { return x.on; }).length;
     var edit = S.routineEdit ? '<div class="hr-edit"><div class="sub" style="font-size:.8rem;margin-bottom:6px">나에게 맞는 칸을 2~4개 골라 주세요</div><div class="chips" style="margin:0;flex-wrap:wrap;overflow:visible">' +
-      ROUTINES.map(function (x) { return '<button type="button" class="chip' + (ids.indexOf(x[0]) >= 0 ? ' on' : '') + '" data-rtog="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div><button class="btn small" data-rdone style="margin-top:8px">완료</button></div>' : '';
+      ROUTINES.concat((S.customRoutines || []).map(function (c) { return [c.id, '✏️ ' + c.name]; })).map(function (x) { return '<button type="button" class="chip' + (ids.indexOf(x[0]) >= 0 ? ' on' : '') + '" data-rtog="' + x[0] + '">' + esc(x[1]) + '</button>'; }).join('') + '</div>' +
+      '<form class="row" id="rcForm" style="margin-top:8px;align-items:center"><input name="n" maxlength="10" placeholder="✏️ 직접 만들기 (예: 찬양 한 곡 듣기)" style="flex:1;min-width:0;font:inherit;font-size:.86rem;padding:8px 10px;border:1px solid #e3e0d8;border-radius:10px"><button class="btn small ghost" style="flex:0 0 auto">더하기</button></form>' +
+      ((S.customRoutines || []).length ? '<div class="sub" style="font-size:.74rem;margin-top:6px">직접 만든 칸 지우기: ' + S.customRoutines.map(function (c) { return '<button type="button" class="hr-del" data-rcdel="' + c.id + '">' + esc(c.name) + ' ×</button>'; }).join(' ') + '</div>' : '') +
+      '<button class="btn small" data-rdone style="margin-top:8px">완료</button></div>' : '';
     return '<div class="card home-routine"><div class="sec-title" style="margin:0 0 8px"><b>⭐ 오늘의 신앙 루틴</b><span class="sub">' + (n === list.length ? '다 했어요 🙌' : n + '/' + list.length) + ' · <button class="hr-set" data-redit>⚙ 바꾸기</button></span></div>' +
       edit + '<div class="hr-row" style="grid-template-columns:repeat(' + list.length + ',1fr)">' +
-      list.map(function (x) { return '<a class="hr-it' + (x.on ? ' on' : '') + '" href="' + x.url + '"><i>' + (x.on ? '✓' : '') + '</i><b>' + x.label + '</b><small>' + esc(x.sub) + '</small></a>'; }).join('') + '</div></div>';
+      list.map(function (x) { return '<a class="hr-it' + (x.on ? ' on' : '') + '" href="' + x.url + '"' + (x.toggle ? ' data-rcheck="' + x.toggle + '"' : '') + '><i>' + (x.on ? '✓' : '') + '</i><b>' + esc(x.label) + '</b><small>' + esc(x.sub) + '</small></a>'; }).join('') + '</div></div>';
   }  function homeGroup() {   // 우리 목장 한 줄 (+ 목자님: 기도제목 안 올렸으면 알림)
     if (!S.me || !S.me.approved || !S.me.group) return '';
     var dg = !CLOUD && demoGroup(S.me.group);
@@ -389,7 +397,10 @@
   }
   function bindHome() {
     var re = $('[data-redit]'); if (re) re.onclick = function () { S.routineEdit = !S.routineEdit; save(); route(); };
-    document.querySelectorAll('[data-rtog]').forEach(function (b) { b.onclick = function () { var r = myRoutine().slice(), id = b.dataset.rtog, i = r.indexOf(id); if (i >= 0) { if (r.length <= 2) { toast('2개 이상 골라 주세요'); return; } r.splice(i, 1); } else { if (r.length >= 4) { toast('4개까지 고를 수 있어요'); return; } r.push(id); } S.routine = ROUTINES.map(function (x) { return x[0]; }).filter(function (k) { return r.indexOf(k) >= 0; }); save(); route(); }; });
+    document.querySelectorAll('[data-rtog]').forEach(function (b) { b.onclick = function () { var r = myRoutine().slice(), id = b.dataset.rtog, i = r.indexOf(id); if (i >= 0) { if (r.length <= 2) { toast('2개 이상 골라 주세요'); return; } r.splice(i, 1); } else { if (r.length >= 4) { toast('4개까지 고를 수 있어요'); return; } r.push(id); } S.routine = ROUTINES.map(function (x) { return x[0]; }).concat((S.customRoutines || []).map(function (c) { return c.id; })).filter(function (k) { return r.indexOf(k) >= 0; }); save(); route(); }; });
+    var rcf = $('#rcForm'); if (rcf) rcf.onsubmit = function (e) { e.preventDefault(); var n = rcf.n.value.trim(); if (!n) return; var r = myRoutine().slice(); if (r.length >= 4) { toast('4개까지 고를 수 있어요. 먼저 하나를 빼 주세요'); return; } S.customRoutines = S.customRoutines || []; var id = 'c' + Date.now(); S.customRoutines.push({ id: id, name: n }); r.push(id); S.routine = r; save(); route(); toast('「' + n + '」 칸을 만들었어요 ✏️'); };
+    document.querySelectorAll('[data-rcdel]').forEach(function (b) { b.onclick = function () { var id = b.dataset.rcdel; S.customRoutines = (S.customRoutines || []).filter(function (c) { return c.id !== id; }); S.routine = myRoutine().filter(function (k) { return k !== id; }); if (S.routine.length < 2) S.routine = null; save(); route(); }; });
+    document.querySelectorAll('[data-rcheck]').forEach(function (a) { a.onclick = function (e) { e.preventDefault(); var id = a.dataset.rcheck, k = dayKey(new Date()); S.customDone = S.customDone || {}; var D = S.customDone[id] = S.customDone[id] || {}; if (D[k]) delete D[k]; else D[k] = 1; save(); route(); if (D[k]) toast('오늘 체크했어요 ✓'); }; });
     var rd = $('[data-rdone]'); if (rd) rd.onclick = function () { S.routineEdit = false; save(); route(); };
     document.querySelectorAll('[data-nhide]').forEach(function (x) { x.onclick = function () { S.noticeHidden = S.noticeHidden || {}; S.noticeHidden[x.dataset.nhide] = 1; save(); route(); }; });
     var b = $('[data-readdone]');
