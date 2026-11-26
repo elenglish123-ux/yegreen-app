@@ -159,6 +159,16 @@
     if (CLOUD) return (S.reads && S.reads[dayKey(new Date())]) || 0;
     return seedCount(dayKey(new Date())) + (done ? 1 : 0);
   }
+  // 최근 7일 함께 읽은 사람 수 막대그래프 (이름 없이 숫자만, 나연 2026-11-26)
+  function dayReaders(k) { return CLOUD ? ((S.reads && S.reads[k]) || 0) : seedCount(k) + (S.readDone && S.readDone[k] ? 1 : 0); }
+  function readBars() {
+    var now = new Date(), days = [];
+    for (var i = 6; i >= 0; i--) { var d = new Date(now); d.setDate(d.getDate() - i); days.push({ d: d, k: dayKey(d), n: dayReaders(dayKey(d)) }); }
+    var max = Math.max.apply(null, days.map(function (x) { return x.n; }).concat([1])), sum = days.reduce(function (a, x) { return a + x.n; }, 0);
+    return '<div class="rbars"><div class="rb-h"><b>최근 7일</b><span>하루 평균 ' + Math.round(sum / 7) + '명</span></div><div class="rb-row">' + days.map(function (x, i) {
+      return '<div class="rb' + (i === 6 ? ' today' : '') + '"><em>' + x.n + '</em><i style="height:' + Math.max(4, Math.round(x.n / max * 64)) + 'px"></i><span>' + (i === 6 ? '오늘' : WEEK[x.d.getDay()]) + '</span></div>';
+    }).join('') + '</div></div>';
+  }
   function seedCount(k) {
     if (CLOUD) return (S.reads && S.reads[k]) || 0;
     var n = Math.floor(new Date(k + 'T00:00:00') / 864e5);
@@ -400,7 +410,7 @@
       '<div class="row">' + (video ? '<a class="btn small ghost" href="#/sermons?kind=reading&v=' + video + '">▶ 통독 영상</a>' : '') +
         '<button class="btn small' + (done ? '' : ' ghost') + '" data-readdone>' + (done ? '다 읽었어요 ✓' : '다 읽었어요') + '</button>' +
         '<a class="btn small ghost" href="#/talk/bible?s=read">읽기표·묵상 ›</a></div>' +
-      '<div class="together"><b>' + readCount(done) + '명</b><span>오늘 함께 읽었어요<small>이름 없이 숫자만 보여요' + (CLOUD ? '' : ' · 시안 숫자') + '</small></span></div>' +
+      '<div class="together"><b>' + readCount(done) + '명</b><span>오늘 함께 읽었어요<small>이름 없이 숫자만 보여요' + (CLOUD ? '' : ' · 시안 숫자') + '</small></span></div>' + readBars() +
       (p ? '<p class="sub" style="margin-top:8px;font-size:.78rem">장을 누르면 개역개정 성경이 열려요.</p>' : '') + '</div>';
   }
   function bindHome() {
@@ -1798,7 +1808,7 @@
         : '<p class="sub" style="margin:2px 0 10px">이번 주 읽기 진도가 아직 없고, 최근 진도도 다 읽으셨어요 👏 오늘 스스로 읽은 말씀이 있다면 아래 버튼으로 기록해 두세요.</p>') +
       '<div class="row">' + (video ? '<a class="btn small ghost" href="#/sermons?kind=reading&v=' + video + '">▶ 통독 영상</a>' : '') +
         (catchUp ? '<button class="btn small" data-readday="' + catchUp + '">이 부분 읽었어요</button>' : '<button class="btn small' + (done ? '' : ' ghost') + '" data-readday="' + today + '">' + (done ? '오늘 읽었어요 ✓' : '오늘 읽었어요') + '</button>') + '</div>' +
-      '<div class="together"><b>' + readCount(done) + '명</b><span>오늘 함께 읽었어요<small>이름 없이 숫자만 보여요' + (CLOUD ? '' : ' · 시안 숫자') + '</small></span></div>' +
+      '<div class="together"><b>' + readCount(done) + '명</b><span>오늘 함께 읽었어요<small>이름 없이 숫자만 보여요' + (CLOUD ? '' : ' · 시안 숫자') + '</small></span></div>' + readBars() +
       (p ? '<p class="sub" style="margin-top:8px;font-size:.78rem">장을 누르면 개역개정 성경이 열려요.</p>' : '') + '</div>';
     // 2) 나의 읽기 기록: 연속 · 이번 달 도장
     var y = now.getFullYear(), m = now.getMonth(), last = new Date(y, m + 1, 0).getDate(), first = new Date(y, m, 1).getDay(), monthN = 0, cells = '';
