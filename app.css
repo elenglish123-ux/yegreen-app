@@ -538,3 +538,4 @@ img.flag { display: inline-block; margin-right: 4px; } .sec-title b:has(img.flag
 .ev-card.ev-colors .ev-t-mission .day { background: #eaf2fb; } .ev-card.ev-colors .ev-t-mission .day b { color: #2b6a9e; }
 .ev-card.ev-colors .ev-t-special .day { background: #fff1e6; } .ev-card.ev-colors .ev-t-special .day b { color: #c9502a; }
 .ev-card.ev-colors .ev-t-meet .day { background: #f4f1ea; }
+.card.home-notice { display: flex; align-items: flex-start; gap: 6px; background: #1f4a37; color: #fff; padding: 12px 10px 12px 14px; } .home-notice a { flex: 1; display: flex; gap: 10px; align-items: flex-start; color: #fff; min-width: 0; } .hn-ic { font-size: 1.25rem; } .hn-tx { display: flex; flex-direction: column; gap: 2px; min-width: 0; } .hn-tx b { font-size: .98rem; } .hn-tx small { font-size: .8rem; opacity: .85; } .hn-x { background: none; border: 0; color: #cfe3d6; font-size: 1.3rem; line-height: 1; cursor: pointer; padding: 0 4px; }

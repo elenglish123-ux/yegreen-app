@@ -256,8 +256,15 @@
   }
   // ---------- 홈 카드들 (2026-11-26) ----------
   function isStaffMe() { return CLOUD ? !!S.me && (S.me.role === 'pastor' || S.me.role === 'admin') : !!S.admin && (S.adminRole === 'pastor' || S.adminRole === 'admin'); }
-  function homeStaff() {   // 목사님·관리자 전용 한 줄
+  function homeNotice() {   // 홈 맨 위: 가장 최근 전체 공지 (나연 2026-11-26), × 로 닫으면 그 공지는 다시 안 뜸
+    if (!S.me || !S.me.approved) return '';
+    if (!CLOUD && !S.noticeSeed) { S.noticeSeed = 1; S.notifs.unshift({ id: 'n0', kind: 'notice', title: '예그린 앱이 출시되었습니다 🎉', body: '많은 사용 부탁드립니다. 쓰다가 궁금한 점은 정하람 간사님께 물어 주세요.', url: '#/', at: '오늘', read: false }); save(); }
+    var n = (S.notifs || []).filter(function (x) { return x.kind === 'notice'; })[0];
+    if (!n || (S.noticeHidden || {})[n.id]) return '';
+    return '<div class="card home-notice"><a href="' + esc(n.url || '#/news') + '"><span class="hn-ic">📣</span><span class="hn-tx"><b>' + esc(n.title) + '</b>' + (n.body ? '<small>' + esc(n.body) + '</small>' : '') + '</span></a><button class="hn-x" data-nhide="' + esc(n.id) + '" aria-label="공지 닫기">×</button></div>';
+  }  function homeStaff() {   // 목사님·관리자 전용 한 줄
     if (!S.me || !S.me.approved || !isStaffMe()) return '';
+    prayerSeed4(); gpSeed();
     var pastor = CLOUD ? S.me.role === 'pastor' : S.adminRole === 'pastor';
     var hard = S.posts.filter(function (p) { return p.cat === 'pray' && p.scope === 'pastor' && p.head === 'hard' && !p.answered && !p.mine && !p.hidden; }).length;
     var groups = CLOUD ? (S.groups || []).map(function (g) { return g.name; }) : DEMO_GROUPS.map(function (g) { return g.name; });
@@ -267,6 +274,7 @@
     if (pastor) items.push('<a href="#/talk/prayer?t=pastor"' + (hard ? ' class="alert"' : '') + '><b>' + (hard ? '❗ ' : '') + hard + '</b><span>힘든 기도</span></a>');
     if (groups.length) items.push('<a href="#/admin/gpray"><b>' + done + '/' + groups.length + '</b><span>목장 기도제목</span></a>');
     items.push('<a href="#/admin/members"' + (pend ? ' class="alert"' : '') + '><b>' + pend + '</b><span>가입 신청</span></a>');
+    items.push('<a href="#/admin/send"><b>📣</b><span>공지 보내기</span></a>');
     return '<div class="card home-staff"><div class="hs-t">' + (pastor ? '🙏 목사님께' : '🛠 관리자') + '</div><div class="hs-row">' + items.join('') + '</div></div>';
   }
   function graceOf(s) {   // 이 설교에 달린 은혜 글 + 나눈 사람 수
@@ -367,6 +375,7 @@
       (p ? '<p class="sub" style="margin-top:8px;font-size:.78rem">장을 누르면 대한성서공회 개역개정 성경이 열려요.</p>' : '') + '</div>';
   }
   function bindHome() {
+    document.querySelectorAll('[data-nhide]').forEach(function (x) { x.onclick = function () { S.noticeHidden = S.noticeHidden || {}; S.noticeHidden[x.dataset.nhide] = 1; save(); route(); }; });
     var b = $('[data-readdone]');
     if (b) b.onclick = function () { if (toggleRead(dayKey(new Date()))) toast('오늘 성경읽기를 마쳤어요 📖'); };
   }
@@ -452,7 +461,7 @@
     }).join('');
     // 홈 다시 짜기 (나연 2026-11-26): 목사님 한 줄 → 말씀(작게) → 오늘의 신앙 루틴 → 우리 목장 → 일정(2주) → 주보·소식
     var b = BULLETINS[0];
-    return homeStaff() +
+    return homeStaff() + homeNotice() +
       // 말씀과 받은 은혜를 한 카드로 (나연 2026-11-26)
       (s ? '<div class="card hero sm"><a class="hero-main" href="#/sermons?v=' + s.videoId + '"><div class="thumb" style="background-image:url(' + thumb(s.videoId) + ')"><span class="play"></span></div>' +
         '</a><div class="hero-row"><a class="txt" href="#/sermons?v=' + s.videoId + '"><div class="label">이번 주 말씀</div><div class="h1">' + esc(s.title) + '</div><div class="sub">' + [md(s.date), s.passage, s.preacher].filter(Boolean).map(esc).join(' · ') + '</div></a>' + homeGrace(s) + '</div>' + homeGracePeek(s) + '</div>' : '') +   // 제목 옆 빈 곳에 은혜 나누기 + 아래 미리보기 (나연 2026-11-26)
@@ -677,7 +686,7 @@
   function canSee(p) {
     if (p.scope === 'group' && p.group === null && !CLOUD) return true;   // 시안 예시 목장 글은 목장을 안 골라도 보이게
     if (p.scope === 'group') return !!S.me.group &&(p.group === null || p.group === S.me.group);
-    if (p.scope === 'pastor') return !!p.mine || (CLOUD && S.me.role === 'pastor');
+    if (p.scope === 'pastor') return !!p.mine || (CLOUD ? S.me.role === 'pastor' : !!S.admin && S.adminRole === 'pastor');   // 시안에서도 목사님 역할이면 보임
     if (p.scope === 'qt') return !CLOUD || !!S.me.qt || S.me.role === 'admin' || S.me.role === 'pastor';   // 큐티 모임 (목장과 따로)
     return true;
   }
@@ -1086,7 +1095,12 @@
     S.vowDone.qv1 = a; S.vowDone.qv2 = b;
     save();
   }
-  // 화면에 그릴 한 줄: 「나만」(이 휴대폰) 기도와 서버(나눔) 기도를 같은 모양으로
+  function prayerSeed4() {   // 시안: 다른 성도가 목사님께만 보낸 힘든 기도 (목사님 한 줄 ❗ 예시, 나연 2026-11-26)
+    if (CLOUD || S.prayerSeed4) return;
+    S.prayerSeed4 = 1;
+    S.posts.push({ id: 'h7', cat: 'pray', head: 'hard', scope: 'pastor', author: '강온유', mine: false, text: '목사님, 요즘 가정 일로 마음이 많이 무거워요. 주일에 잠깐 기도 받을 수 있을까요?', at: '오늘', count: 0, reacted: false, comments: [] });
+    save();
+  }  // 화면에 그릴 한 줄: 「나만」(이 휴대폰) 기도와 서버(나눔) 기도를 같은 모양으로
   function pFromLocal(x) { return { id: x.id, local: true, head: x.head || '', text: x.text, at: x.at, done: !!x.done, doneAt: x.done || '', scope: 'me', mine: true, count: 0, vow: x.vow || null, img: x.img || '' }; }
   function pFromPost(p) { return { id: p.id, post: p, head: p.head || '', text: p.text, at: p.at, done: !!p.answered, scope: p.scope, mine: !!p.mine, author: p.author, count: p.count || 0, reacted: !!p.reacted, vow: p.vow && p.vow.days ? p.vow : null, img: p.img || '' }; }
   // ---------- 작정 기도 (나연 요청 2026-11-25) ----------
@@ -1311,7 +1325,7 @@
   }
   function prayerRoom(q) {
     q = q || {};
-    prayerSeed(); prayerSeed2(); prayerSeed3();
+    prayerSeed(); prayerSeed2(); prayerSeed3(); prayerSeed4();
     var isPastor = CLOUD ? S.me.role === 'pastor' : S.adminRole === 'pastor' && S.admin;
     var server = S.posts.filter(function (p) { return p.cat === 'pray' && p.head && !p.hidden && canSee(p); });
     // 아래 목록은 열람 범위 탭으로 (나연 요청 2026-11-25): 나만 · 목사님께 · 우리 목장 · 교회 전체
