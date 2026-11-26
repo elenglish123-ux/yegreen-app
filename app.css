@@ -58,7 +58,6 @@ main { padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px;
 .h1 { font-size: 1.2rem; font-weight: 800; }
 .h2 { font-size: 1.05rem; font-weight: 800; }
 .sub { font-size: .85rem; color: var(--muted); }
-.muted { color: var(--muted); }
 .sec-title { display: flex; justify-content: space-between; align-items: baseline; margin: 4px 2px -2px; }
 .sec-title b { font-size: 1.1rem; }
 .sec-title a { font-size: .9rem; font-weight: 700; color: var(--green); }
@@ -106,10 +105,6 @@ textarea { resize: none; line-height: 1.55; }
 .vrow.on b { color: var(--green); }
 .vlist { display: flex; flex-direction: column; gap: 12px; }
 
-/* 홈 */
-.quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.quick a { background: #fff; border-radius: 16px; padding: 14px 4px 12px; text-align: center; font-weight: 700; font-size: .9rem; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
-.quick a i { display: block; font-style: normal; font-size: 1.6rem; margin-bottom: 2px; }
 .ev { display: flex; gap: 14px; align-items: center; padding: 8px 0; }
 .ev + .ev { border-top: 1px solid #f0ece4; }
 .day { width: 52px; flex: none; text-align: center; border-right: 1px solid #eee9e0; padding-right: 12px; }
@@ -214,8 +209,6 @@ textarea { resize: none; line-height: 1.55; }
 .card.grace b { font-size: 1.08rem; }
 .slogan { font-family: "Noto Serif KR", serif; font-weight: 700; font-size: 1.15rem; color: var(--green-d); margin: 4px 0 10px; }
 .seg a { white-space: nowrap; }
-.card.lockbox { background: #2f3b35; color: #fff; }
-.card.lockbox .sub { color: #cfd8d2; margin-top: 4px; }
 .pray-item.done { opacity: .75; background: #f6f7f5; }
 /* 기도 공간 개편 (2026-11-25): 말머리 · 열람 범위 */
 .ph-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
@@ -229,9 +222,6 @@ textarea { resize: none; line-height: 1.55; }
 .card.ph-alert { background: #fff4f4; color: #8a2d3b; border: 1px solid #f3c7cd; font-size: .9rem; }
 .seg { grid-template-columns: repeat(4, 1fr); }
 .seg a { flex: 1 1 0; min-width: 0; padding-left: 2px; padding-right: 2px; font-size: .84rem; }
-/* 나눔 탭 5칸 + 성경읽기 (2026-11-25) */
-.seg.seg5 { grid-template-columns: repeat(5, 1fr); }
-.seg.seg5 a { font-size: .76rem; letter-spacing: -.03em; }
 .rd-stats { display: flex; gap: 10px; margin-bottom: 10px; }
 .rd-stats div { flex: 1; background: var(--green-l); border-radius: 12px; padding: 10px 12px; display: flex; align-items: baseline; gap: 6px; }
 .rd-stats b { font-size: 1.6rem; color: var(--green); line-height: 1; }
@@ -269,22 +259,6 @@ textarea { resize: none; line-height: 1.55; }
 .bars i { width: 100%; background: #cfe3d6; border-radius: 5px 5px 0 0; min-height: 4px; }
 .bars i.t { background: var(--green); }
 .bars small { font-size: .72rem; color: var(--muted); }
-/* 목장 영상 (2026-11-18) */
-.card.gv { border: 1.5px solid #d7e6dc; }
-.gv-head { display: flex; justify-content: space-between; font-size: .8rem; font-weight: 800; color: var(--green); margin-bottom: 10px; }
-.gv-body { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
-.gv-thumb { width: 96px; aspect-ratio: 16/9; border-radius: 10px; background: linear-gradient(140deg, #1f4a37, #3d7a5c 60%, #c9a45c); color: #fff; display: flex; align-items: center; justify-content: center; position: relative; flex: none; }
-.gv-thumb small { position: absolute; right: 5px; bottom: 3px; font-size: .68rem; background: rgba(0,0,0,.5); border-radius: 4px; padding: 0 4px; }
-.gv-title { font-size: 1.02rem; display: block; line-height: 1.35; }
-.gv-tip { font-size: .8rem; color: var(--muted); margin: 8px 2px 0; }
-.gv-qs { background: var(--gold-l); border-radius: 12px; padding: 11px 14px; margin-top: 10px; }
-.gv-qs b { font-size: .85rem; color: #8a6a2a; }
-.gv-qs ol { margin: 4px 0 0 18px; font-size: .93rem; }
-.gv-qs li { margin: 3px 0; }
-.rn-steps { list-style: none; display: grid; gap: 10px; margin: 6px 0; }
-.rn-steps li { display: flex; gap: 12px; align-items: flex-start; }
-.rn-steps li > b { width: 28px; height: 28px; border-radius: 50%; background: var(--green); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
-.rn-steps span { display: block; font-size: .8rem; color: var(--muted); }
 
 .ph-pick .ph-b:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .seg.ph-tabs a { font-size: .8rem; } .seg.ph-tabs small { font-weight: 600; opacity: .7; }
@@ -322,7 +296,6 @@ textarea { resize: none; line-height: 1.55; }
 .vow-dots i.t { box-shadow: 0 0 0 2px #c9502a; }
 .vow-dots i.f { opacity: .45; }
 .vow .btn { align-self: flex-start; }
-.card.vow-card { border: 1px solid #f3dcc4; }
 .vow-item + .vow-item { border-top: 1px dashed #eadbc8; padding-top: 10px; margin-top: 4px; }
 .vow-item p { font-weight: 700; margin: 4px 0 6px; }
 .sec-title a.btn { color: #fff; font-size: .82rem; padding: 7px 12px; }
@@ -347,14 +320,6 @@ textarea { resize: none; line-height: 1.55; }
 .pt-time b { font-size: 3.2rem; font-weight: 800; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
 .pt-time span { font-size: .82rem; opacity: .7; }
 .pt-meta { font-size: .8rem; opacity: .7; }
-.pt-mus { width: 100%; background: rgba(255,255,255,.07); border-radius: 16px; padding: 12px; text-align: left; }
-.pt-ml { font-weight: 700; font-size: .9rem; margin-bottom: 8px; }
-.pt-ml small { display: block; font-weight: 400; font-size: .72rem; opacity: .65; margin-top: 2px; }
-.pt-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.pt-chips button { font: inherit; font-size: .8rem; color: #fff; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2); border-radius: 999px; padding: 6px 11px; cursor: pointer; }
-.pt-chips button.on { background: #f2a663; border-color: #f2a663; color: #3a1d08; font-weight: 700; }
-.pt-vol { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: .9rem; }
-.pt-vol input { flex: 1; accent-color: #f2a663; }
 .btn.pt-end { width: 100%; background: #fff; color: #173527; font-size: 1.05rem; padding: 14px; margin-top: 4px; }
 .pt-done { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 18vh; }
 .pt-done b { font-size: 1.35rem; }
@@ -372,8 +337,6 @@ textarea { resize: none; line-height: 1.55; }
 .qt-full { position: fixed; inset: 0; z-index: 210; background: rgba(0,0,0,.88); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 16px; }
 .qt-full img { max-width: 100%; max-height: 88vh; border-radius: 8px; }
 .qt-full span { color: #ddd; font-size: .85rem; }
-.pt-now { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; font-size: .84rem; color: #f6c99c; }
-.pt-now button { font: inherit; font-size: .78rem; color: #fff; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: 5px 10px; cursor: pointer; flex: 0 0 auto; }
 /* 기도 챌린지 한 줄 띠 (2026-11-25) */
 .card.vow-band { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #fff8f0; border: 1px solid #f3dcc4; color: inherit; position: relative; }
 .vb-ic { font-size: 1.3rem; }
@@ -448,7 +411,6 @@ textarea { resize: none; line-height: 1.55; }
 .jubo-mok ol li { font-size: 1rem; line-height: 1.7; margin-bottom: 6px; }
 .jubo-t { width: 100%; border-collapse: collapse; font-size: .92rem; }
 .jubo-t td { padding: 5px 6px 5px 0; border-bottom: 1px dashed #eee9e0; }
-.jubo-fixed summary { cursor: pointer; font-weight: 700; color: var(--green-d); }
 /* 주보 뒷면·섬김 표 (2026-11-25) */
 .jserve-wrap { overflow-x: auto; }
 .jserve-t { width: 100%; border-collapse: collapse; font-size: .86rem; text-align: center; }
@@ -496,15 +458,9 @@ textarea { resize: none; line-height: 1.55; }
 .hj-go { font-weight: 800; color: var(--green-d); white-space: nowrap; font-size: .88rem; }
 img.flag { width: 22px; height: 15px; object-fit: cover; border-radius: 3px; vertical-align: -2px; box-shadow: 0 0 0 1px rgba(0,0,0,.08); } .flag-ic { display: inline-block; width: 22px; text-align: center; }
 .ev-list { display: flex; flex-direction: column; gap: 4px; min-width: 0; } .ev-list > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; } .ev-list .t { font-size: .96rem; } .ev-list .sub { font-size: .8rem; } .ev.special .day b { color: #c9502a; }
-.card.home-grace { display: flex; align-items: center; gap: 12px; color: inherit; margin-top: -4px; background: #f6faf7; border: 1px solid #dfe9e2; padding: 11px 14px; }
 .ev-more summary { cursor: pointer; font-size: .86rem; font-weight: 700; color: var(--green-d); padding: 10px 0 4px; list-style: none; text-align: center; } .ev-more summary::-webkit-details-marker { display: none; } .ev-more[open] summary { color: #8a8478; }
-.card.hero .hero-main { display: block; color: inherit; } .home-grace { display: flex; align-items: center; gap: 10px; color: inherit; border-top: 1px solid #eee9e0; padding: 11px 16px; background: #f8fbf9; } .home-grace .hj-ic { font-size: 1.25rem; }
-/* 말씀 카드 안 은혜 줄을 카드와 한 몸으로 (2026-11-26) */
-.card.hero .home-grace { background: transparent; border-top: 0; margin: 0 16px; padding: 10px 0 14px; border-top: 1px dashed #e6e1d6; }
+.card.hero .hero-main { display: block; color: inherit; }
 .card.hero .txt { padding-bottom: 10px; }
-.card.hero .home-grace .hj-ic { font-size: 1.05rem; }
-.card.hero .home-grace .hj-tx b { font-size: .9rem; color: var(--green-d); }
-.card.hero .home-grace .hj-go { background: var(--green); color: #fff; border-radius: 999px; padding: 5px 12px; font-size: .8rem; }
 /* 말씀 제목 옆 은혜 나누기 버튼 (2026-11-26) */
 .hero-row { display: flex; align-items: center; gap: 8px; padding-right: 14px; }
 .hero-row .txt { flex: 1; min-width: 0; display: block; color: inherit; }
@@ -530,7 +486,6 @@ img.flag { display: inline-block; margin-right: 4px; } .sec-title b:has(img.flag
 .fam-tx em { font-style: normal; font-size: .76rem; font-weight: 700; color: var(--green-d); }
 /* 일정 종류: 작은 회색 아이콘(ev-icons) · 날짜 칸 색(ev-colors) (2026-11-26) */
 .ev-ico { display: none; width: 15px; height: 15px; color: #9a948a; vertical-align: -2px; margin-right: 5px; flex: 0 0 auto; }
-.ev-card.ev-icons .ev-ico { display: inline-block; }
 .ev-card.ev-colors .ev .day { border-radius: 12px; padding: 6px 4px; border-right: 0; }
 .ev-card.ev-colors .ev-t-pray .day { background: #f1ecf8; } .ev-card.ev-colors .ev-t-pray .day b { color: #5b4a8a; }
 .ev-card.ev-colors .ev-t-serve .day { background: #eaf5ee; } .ev-card.ev-colors .ev-t-serve .day b { color: #2f6b4f; }
@@ -554,7 +509,6 @@ img.flag { display: inline-block; margin-right: 4px; } .sec-title b:has(img.flag
 .ev-card .ev-list .sub { font-size: .78rem; }
 .hr-del { font: inherit; font-size: .74rem; background: #fff; border: 1px solid #e3e0d8; border-radius: 999px; padding: 2px 8px; cursor: pointer; color: #6f6a60; margin: 2px; }
 .hr-row { min-width: 0; } .hr-it { min-width: 0; } .hr-it b { white-space: normal; word-break: keep-all; line-height: 1.25; text-align: center; } .hr-row[style*="repeat(4"] .hr-it b { font-size: .76rem; } .hr-row[style*="repeat(4"] .hr-it { padding: 8px 2px; }
-.sec-ic-t { display: inline-flex; align-items: center; gap: 6px; } .sec-ic { width: 20px; height: 20px; color: var(--green-d); flex: 0 0 auto; }
 /* 말씀 탭 다듬기 (2026-11-26) */
 .stool-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .card.stool summary, .card.grace-box summary, .vmore summary { cursor: pointer; list-style: none; font-weight: 700; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -583,8 +537,6 @@ button.rx { cursor: pointer; font-family: inherit; }
 .jb-jump a { flex: 1 0 auto; text-align: center; padding: 6px 8px; border-radius: 16px; background: #fff; border: 1px solid #e2ddd3; font-size: .85rem; font-weight: 700; color: var(--green-d); text-decoration: none; }
 .jb-anchor { height: 0; scroll-margin-top: 120px; }
 
-/* 광고 포스터 */
-.pst-tag { display: inline-block; vertical-align: 2px; margin-left: 4px; padding: 1px 7px; border-radius: 10px; background: #fbf3e2; color: #9a6b12; font-size: .72rem; font-weight: 700; white-space: nowrap; }
 .news-poster { display: block; width: 46%; max-width: 190px; margin: 16px auto 0; text-align: center; text-decoration: none; }
 .news-poster img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #f3f0ea; box-shadow: 0 6px 16px rgba(0,0,0,.14); }
 .news-poster small { display: block; margin-top: 6px; color: var(--muted, #888); font-size: .78rem; }

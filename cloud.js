@@ -249,10 +249,8 @@
     if (isStaff()) sub('posts', 'posts', []);
     else { sub('postsAll', 'posts', [['scope', '==', 'all']]); if (g) sub('postsGroup', 'posts', [['scope', '==', 'group'], ['group', '==', g]]); }
     if (member.role === 'pastor') sub('notes', 'pastorNotes', []); else sub('notes', 'pastorNotes', [['uid', '==', uid]]);
-    sub('videos', 'groupVideos', []);
     sub('mission', 'missionNews', []);
     sub('family', 'family', []);   // 교우 동정 (2026-11-26)
-    sub('challenges', 'challenges', []);
     sub('groups', 'groups', []);
     sub('reads', 'reads', []);
     subDoc('settings', 'settings', 'app');
@@ -295,10 +293,8 @@
       .concat((cache.notes || []).map(function (d) { return mapPost(d, 'pastorNotes'); }));
     var seen = {};
     S.posts = posts.filter(function (p) { if (seen[p.id]) return false; seen[p.id] = 1; return true; }).sort(byTs);
-    S.groupVideos = (cache.videos || []).slice().sort(function (a, b) { return a.week < b.week ? 1 : a.week > b.week ? -1 : byTs(a, b); });
     S.family = (cache.family || []).slice();
     S.missionNews = (cache.mission || []).slice().sort(byTs).map(function (n) { n.at = n.at || rel(n.ts); return n; });
-    S.challenges = (cache.challenges || []).slice().sort(byTs);
     var ms = cache.members || cache.groupMembers || [];
     S.people = ms.filter(function (m) { return m.status === 'approved'; }).map(function (m) { return { id: m.id, name: m.name, role: m.role, group: m.group || '', qt: !!m.qt }; });
     S.pending = ms.filter(function (m) { return m.status === 'pending'; }).sort(byTs).map(function (m) { return { id: m.id, name: m.name, group: m.wantGroup || '', at: rel(m.ts), memo: m.memo || '' }; });
@@ -404,14 +400,10 @@
   YG.removeMember = function (id) { return A.update('members', id, { status: 'removed', group: '' }); };
   YG.addGroup = function (name) { return A.set('groups', name, { name: name, leader: '', meeting: '', rsvp: {} }); };
   YG.setLeader = function (name, leader) { return A.update('groups', name, { leader: leader }); };
-  YG.addVideo = function (v) { v = Object.assign({}, v); delete v.id; v.ts = now(); v.by = myName(); return A.add('groupVideos', v); };
-  YG.delVideo = function (v) { return A.del('groupVideos', v.id); };
   YG.addMission = function (n) { n = Object.assign({}, n); n.ts = now(); return A.add('missionNews', n); };
   YG.delMission = function (n) { return A.del('missionNews', n.id); };
   YG.addFamily = function (f) { f = Object.assign({}, f); f.ts = now(); return A.add('family', f); };   // 교우 동정
   YG.delFamily = function (f) { return A.del('family', f.id); };
-  YG.addChallenge = function (c) { c = Object.assign({}, c); c.ts = now(); return A.add('challenges', c); };
-  YG.closeChallenge = function (c) { return A.update('challenges', c.id, { closed: true }); };
   YG.notice = function (msg, to) { return A.add('notices', { kind: msg.kind || 'notice', title: msg.title, body: msg.body || '', url: msg.url || '#/', to: to || 'all', ts: now(), by: myName() }); };
   YG.setJubo = function (open) { return A.set('settings', 'app', { juboOpen: !!open }, true); };
   YG.today = function () { return dayKey(new Date()); };

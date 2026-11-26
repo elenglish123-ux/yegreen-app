@@ -21,9 +21,7 @@
     ['jubo', '📰', '주보 · 광고', ['pastor', 'admin'], '소식'],
     ['mission', '🌏', '선교 소식', ['pastor', 'admin'], '소식'],
     ['videomake', '🎞', '설교 영상 만들기', ['pastor', 'admin'], '소식'],
-    ['challenge', '🌾', '감사 챌린지', ['pastor', 'admin'], '나눔'],
     ['reports', '🚩', '나눔 관리', ['pastor', 'admin'], '나눔'],
-    ['gvideo', '🎬', '목장 영상', ['pastor', 'admin', 'leader'], '나눔'],
     ['reading', '📖', '성경읽기 현황', ['pastor', 'admin', 'leader'], '나눔'],
   ];
 
@@ -33,7 +31,7 @@
   // 담임목사·관리자·목자만 들어올 수 있고, 메뉴는 서버에 저장된 실제 역할을 따른다. 아니면 예전 시안(이 기기 저장)으로 돈다.
   var CLOUD = !!(window.YG && window.YG.on);
   function cloudInit() {
-    S = { posts: [], notifs: [], sent: [], pending: [], groups: [], people: [], challenges: [], missionNews: [], groupVideos: [], reads: {}, juboOpen: true, adminRole: 'member', cloudReady: false };
+    S = { posts: [], notifs: [], sent: [], pending: [], groups: [], people: [], missionNews: [], reads: {}, juboOpen: true, adminRole: 'member', cloudReady: false };
     YG.onError = function (where) { if (/members|notices|posts/.test(where)) toast('서버에서 자료를 받지 못했어요 (' + where + ')'); };
     YG.start(S, function () { route(); }, null);
   }
@@ -61,24 +59,13 @@
         .concat(DG.map(function (g) { return { name: g[3], role: 'member', group: g[0] }; }));
       S.groupSeedV = 2;
     }
-    if (!S.challenges) S.challenges = [{ title: '추수감사 감사 챌린지', from: '2026-11-09', to: '2026-11-22' }];
     if (!S.missionNews) S.missionNews = [];
     if (!S.adminRole) S.adminRole = 'admin';
     if (S.juboOpen == null) S.juboOpen = true;
-    gvSeed();
-  }
-  // 목장 영상 (교회가 고른 유튜브 링크) — 2026-11-18 시안, 라잇나우는 2차 미팅에서 뺌(11-22)
-  function gvSeed() {
-    if (S.groupVideos && S.groupVideos.some(function (v) { return /rightnowmedia/.test(v.url || ''); })) S.groupVideos = null;
-    if (!S.groupVideos) S.groupVideos = [{
-      id: 'v1', week: '2026-11-22', title: '감사하라, 찬송하라, 찬양하라', series: '주일설교 · 시편 150:1-6', speaker: '고용진 목사', mins: 35,
-      url: 'https://www.youtube.com/@yegrin', target: '전체 목장', sample: true,
-      qs: ['내가 교회에 오는 가장 큰 이유는 무엇인가요?', '영상에서 마음에 남은 한 문장은?', '이번 주 우리 목장이 서로를 위해 할 수 있는 일 한 가지'],
-    }];
   }
 
   function save() { if (CLOUD) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
-  if (CLOUD) S = { posts: [], notifs: [], sent: [], pending: [], groups: [], people: [], challenges: [], missionNews: [], groupVideos: [], reads: {}, juboOpen: true, adminRole: 'member' };
+  if (CLOUD) S = { posts: [], notifs: [], sent: [], pending: [], groups: [], people: [], missionNews: [], reads: {}, juboOpen: true, adminRole: 'member' };
   else load();
   // 앱을 다른 탭에서 쓰면 바로 다시 읽기 (시안 모드)
   window.addEventListener('storage', function (e) { if (!CLOUD && e.key === KEY) { load(); route(); } });
@@ -96,7 +83,6 @@
   function seedCount(k) { var n = Math.floor(new Date(k + 'T00:00:00') / 864e5); return 24 + (n * 7919) % 13 - (new Date(k + 'T00:00:00').getDay() === 0 ? 6 : 0); }
   function now() { var d = new Date(); return md(dayKey(d)) + ' ' + (d.getHours() < 12 ? '오전 ' : '오후 ') + ((d.getHours() + 11) % 12 + 1) + ':' + pad(d.getMinutes()); }
   function hidden() { return S.posts.filter(function (p) { return p.hidden; }); }
-  function challengeNow() { var t = dayKey(new Date()); return S.challenges.filter(function (c) { return t >= c.from && t <= c.to && !c.closed; })[0] || null; }
   function can(k) { var m = MENUS.filter(function (x) { return x[0] === k; })[0]; return m && m[3].indexOf(S.adminRole) >= 0; }
   // 같은 기기의 앱 알림함에 넣기 (실제로는 서버가 성도 휴대폰으로 보냄)
   function deliver(msg, to) {
@@ -106,7 +92,7 @@
 
   // ---------- 화면 ----------
   function dashboard() {
-    var ch = challengeNow(), b = BULLETINS[0], t = dayKey(new Date());
+    var b = BULLETINS[0], t = dayKey(new Date());
     var feed = [].concat(
       S.pending.map(function (a) { return ['👤', a.name + '님이 가입을 신청했어요', a.at]; }),
       hidden().map(function (p) { return ['🚩', '신고된 글: ' + p.text.slice(0, 26) + '…', p.at]; }),
@@ -122,7 +108,6 @@
       '<div class="grid g2" style="margin-top:16px">' +
         '<div class="card"><h2>📋 할 일 · 최근 활동</h2><div class="feed">' + (feed.map(function (f) { return '<div><span>' + f[0] + '</span><span>' + esc(f[1]) + '</span><small>' + esc(f[2]) + '</small></div>'; }).join('') || '<p class="empty">새 소식이 없어요.</p>') + '</div></div>' +
         '<div class="grid">' +
-          '<div class="card"><h2>🌾 감사 챌린지<a class="more" href="#/challenge">관리</a></h2>' + (ch ? '<b>' + esc(ch.title) + '</b><div style="color:var(--muted);font-size:14px">' + md(ch.from) + ' ~ ' + md(ch.to) + ' · 진행 중</div>' : '<p style="color:var(--muted)">지금 열린 챌린지가 없어요.</p>') + '</div>' +
           '<div class="card"><h2>📰 이번 주 주보<a class="more" href="#/jubo">관리</a></h2>' + (b ? '<b>' + md(b.date) + ' · ' + esc(b.title || '') + '</b><div style="color:var(--muted);font-size:14px">' + (S.juboOpen ? '앱에 공개 중' : '공개 안 함') + '</div>' : '<p style="color:var(--muted)">받은 주보가 없어요.</p>') + '</div>' +
           '<div class="card lock"><b>🔒 관리자도 볼 수 없는 것</b><p>「나만 보기」 기도와 감사 기도는 성도 휴대폰 안에만 있어요.</p></div>' +
         '</div>' +
@@ -172,7 +157,7 @@
           '<label class="f">제목 (30자)<input name="title" maxlength="30" required></label>' +
           '<label class="f">내용 (120자)<textarea name="body" rows="3" maxlength="120" required></textarea></label>' +
           '<div class="row"><label class="f">받는 사람<select name="to">' + (leader ? '<option>우리 목장</option>' : '<option>전체 교인</option>' + S.groups.map(function (g) { return '<option>' + esc(g.name) + '</option>'; }).join('')) + '</select></label>' +
-          '<label class="f">누르면 열 화면<select name="url"><option value="#/news">교회 소식</option><option value="#/sermons">말씀</option><option value="#/worship">예배 안내</option><option value="#/talk">나눔</option><option value="#/talk/prayer?p=vow&c=thanks">감사 기도 챌린지</option><option value="#/mission">선교 소식</option></select></label>' +
+          '<label class="f">누르면 열 화면<select name="url"><option value="#/news">교회 소식</option><option value="#/sermons">말씀</option><option value="#/worship">예배 안내</option><option value="#/talk">나눔</option><option value="#/talk/prayer?p=vow&c=thanks">감사 기도 챌린지</option><option value="#/news?tab=mission">선교 소식</option></select></label>' +
           '<label class="f">보낼 때<select name="when"><option value="now">지금 바로</option><option value="later">예약 (시안)</option></select></label></div>' +
           '<button class="btn" style="justify-self:start">보내기</button></form></div>' +
       '<div class="grid" style="align-content:start"><div class="card"><h2>휴대폰에 이렇게 보여요</h2><div class="phone"><div class="push"><img src="icon-192.png" alt=""><div><b id="pt">제목</b><p id="pb">내용</p></div></div></div></div>' +
@@ -197,18 +182,6 @@
       '<div class="card"><h2>올린 소식 ' + S.missionNews.length + '</h2>' + (S.missionNews.length ? '<table>' + S.missionNews.map(function (n, i) { return '<tr><td><span class="tag' + (n.kind === 'pray' ? ' gold' : '') + '">' + esc(n.country) + '</span><div style="margin-top:4px">' + esc(n.text) + '</div><div style="color:var(--muted);font-size:12.5px">' + esc(n.at) + '</div></td><td style="width:70px"><button class="btn ghost sm" data-mdel="' + i + '">지우기</button></td></tr>'; }).join('') + '</table>' : '<p class="empty">아직 올린 소식이 없어요.</p>') + '</div></div>';
   }
 
-  function challenge() {
-    var t = dayKey(new Date());
-    return '<div class="grid g2"><div class="card"><h2>챌린지 목록</h2><table><tr><th>이름</th><th>기간</th><th>상태</th><th></th></tr>' + S.challenges.map(function (c, i) {
-        var st = c.closed ? '닫음' : t < c.from ? '예정' : t > c.to ? '끝남' : '진행 중';
-        return '<tr><td><b>🌾 ' + esc(c.title) + '</b></td><td>' + md(c.from) + ' ~ ' + md(c.to) + '</td><td><span class="tag' + (st === '진행 중' ? '' : st === '예정' ? ' gold' : ' gray') + '">' + st + '</span></td><td>' + (st === '진행 중' ? '<button class="btn ghost sm" data-close-ch="' + i + '">지금 닫기</button>' : '') + '</td></tr>';
-      }).join('') + '</table></div>' +
-      '<div class="card"><h2>새 챌린지 열기</h2><form class="form" id="chForm"><label class="f">이름<input name="title" required maxlength="30" placeholder="예: 성탄 감사 챌린지"></label>' +
-        '<div class="row"><label class="f">시작<input name="from" type="date" required value="' + t + '"></label><label class="f">끝<input name="to" type="date" required></label></div>' +
-        '<label style="font-size:14px"><input type="checkbox" name="push" checked style="width:auto"> 열 때 성도에게 알림 보내기</label><button class="btn" style="justify-self:start">만들기</button></form>' +
-        '<p style="color:var(--muted);font-size:13.5px;margin-top:10px">챌린지 기간에만 앱의 나눔 › 감사 챌린지가 열려요(목사님 결정).</p></div></div>';
-  }
-
   function reports() {
     var hs = hidden();
     return '<div class="card"><h2>신고된 글 ' + hs.length + '</h2>' + (hs.length ? '<table><tr><th>쓴 사람</th><th>종류</th><th>내용</th><th></th></tr>' + hs.map(function (p) {
@@ -231,22 +204,6 @@
         '<p style="color:var(--muted);font-size:13px;margin-top:10px">' + (CLOUD ? '앱에서 「다 읽었어요」를 누른 사람 수예요.' : '시안 숫자예요. 서버를 연결하면 실제 수가 나와요.') + ' 관리자 화면에도 이름은 보이지 않고 숫자만 보여요.</p></div>';
   }
 
-  function nextSunday() { var d = new Date(); d.setDate(d.getDate() + ((7 - d.getDay()) % 7 || 7)); return dayKey(d); }
-  function gvideo() {
-    var leader = S.adminRole === 'leader';
-    var targets = leader ? [CLOUD ? (S.me.group || '우리 목장') : '기쁨목장'] : ['전체 목장'].concat(S.groups.map(function (g) { return g.name; }));
-    return '<div class="grid g2"><div class="card"><h2>이번 주 목장 영상 올리기</h2><form class="form" id="gvForm">' +
-        '<label class="f">영상 링크 (유튜브 「공유」 → 링크 복사 · 교회 영상은 「일부 공개」로 올려도 돼요)<input name="url" type="url" required placeholder="https://youtu.be/..."></label>' +
-        '<div class="row"><label class="f">제목<input name="title" required maxlength="40"></label><label class="f">시리즈 · 회차<input name="series" maxlength="40"></label></div>' +
-        '<div class="row"><label class="f">강사<input name="speaker" maxlength="30"></label><label class="f">길이(분)<input name="mins" type="number" min="1" max="120" value="12"></label></div>' +
-        '<label class="f">나눔 질문 1<input name="q1" required maxlength="80"></label><label class="f">나눔 질문 2<input name="q2" maxlength="80"></label><label class="f">나눔 질문 3<input name="q3" maxlength="80"></label>' +
-        '<div class="row"><label class="f">모임 날짜<input name="week" type="date" required value="' + nextSunday() + '"></label><label class="f">보여 줄 목장<select name="target">' + targets.map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('') + '</select></label></div>' +
-        '<label style="font-size:14px"><input type="checkbox" name="push" checked style="width:auto"> 목장 식구에게 알림 보내기</label><button class="btn" style="justify-self:start">올리기</button></form></div>' +
-      '<div class="grid" style="align-content:start"><div class="card"><h2>올린 영상</h2><table>' + S.groupVideos.map(function (v, i) {
-          return '<tr><td><b>' + esc(v.title) + '</b>' + (v.sample ? ' <span class="tag gold">예시</span>' : '') + '<div style="color:var(--muted);font-size:13px">' + md(v.week) + ' · ' + esc(v.target) + ' · ' + esc(v.series) + '</div></td><td style="width:70px"><button class="btn ghost sm" data-gvdel="' + i + '">지우기</button></td></tr>';
-        }).join('') + '</table></div>' +
-        '<div class="card"><h2>성도는 이렇게 봐요</h2><ol style="margin-left:18px;color:var(--muted);font-size:14px"><li>앱 › 나눔 › 목장방 맨 위에 「이번 주 목장 영상」 카드</li><li>누르면 유튜브에서 바로 열려요 (로그인 없음)</li></ol></div></div></div>';
-  }
 
   // ================= 설교 영상 만들기 (시안, 2026-11-18) =================
   // 실제로는 교회 PC 프로그램이 받아쓰기(설교 구간 찾기)·자르기·썸네일·유튜브 업로드를 하고, 이 화면은 확인·버튼 역할.
@@ -456,7 +413,7 @@
     });
   }
 
-  var VIEWS = { '': dashboard, members: members, people: people, groups: groups, send: send, jubo: jubo, mission: mission, challenge: challenge, reports: reports, reading: reading, gvideo: gvideo, videomake: videomake };
+  var VIEWS = { '': dashboard, members: members, people: people, groups: groups, send: send, jubo: jubo, mission: mission, reports: reports, reading: reading, videomake: videomake };
 
   // ---------- 화면 전환 ----------
   // 서버 모드에서 메뉴 없이 한 화면만 보여 줄 때 (불러오는 중 · 로그인 · 권한 없음)
@@ -552,25 +509,6 @@
     });
     var mf = $('#mnForm'); if (mf) mf.onsubmit = function (e) { e.preventDefault(); S.missionNews.unshift({ country: mf.country.value, kind: mf.kind.value, text: mf.text.value.trim(), at: md(dayKey(new Date())) }); save(); toast(mf.country.value + ' 소식을 올렸어요'); route(); };
     on('[data-mdel]', function (b) { if (!confirm('이 소식을 지울까요?')) return; S.missionNews.splice(Number(b.dataset.mdel), 1); save(); route(); });
-    on('[data-close-ch]', function (b) { S.challenges[b.dataset.closeCh].closed = true; save(); toast('챌린지를 닫았어요'); route(); });
-    var cf = $('#chForm');
-    if (cf) cf.onsubmit = function (e) {
-      e.preventDefault();
-      if (cf.to.value < cf.from.value) { toast('끝나는 날이 시작보다 빨라요'); return; }
-      S.challenges.unshift({ title: cf.title.value.trim(), from: cf.from.value, to: cf.to.value });
-      if (cf.push.checked && cf.from.value <= dayKey(new Date())) deliver({ kind: 'notice', title: cf.title.value.trim() + '가 시작됐어요', body: md(cf.from.value) + ' ~ ' + md(cf.to.value) + ' · 기도 공간에서 감사 기도 챌린지로 함께해요', url: '#/talk/prayer?p=vow&c=thanks' });
-      save(); toast('챌린지를 만들었어요'); route();
-    };
-    var gvf = $('#gvForm');
-    if (gvf) gvf.onsubmit = function (e) {
-      e.preventDefault();
-      var v = { id: 'v' + Date.now(), week: gvf.week.value, title: gvf.title.value.trim(), series: gvf.series.value.trim(), speaker: gvf.speaker.value.trim(), mins: Number(gvf.mins.value) || 0,
-        url: gvf.url.value.trim(), target: gvf.target.value, qs: [gvf.q1.value.trim(), gvf.q2.value.trim(), gvf.q3.value.trim()] };
-      S.groupVideos.unshift(v);
-      if (gvf.push.checked) deliver({ kind: 'group', title: '이번 주 목장 영상이 올라왔어요', body: v.title + ' · ' + md(v.week) + ' 모임', url: '#/talk/group' });
-      save(); toast('목장 영상을 올렸어요'); route();
-    };
-    on('[data-gvdel]', function (b) { if (!confirm('이 영상을 지울까요?')) return; S.groupVideos.splice(Number(b.dataset.gvdel), 1); save(); route(); });
     on('[data-restore]', function (b) { S.posts.forEach(function (p) { if (p.id === b.dataset.restore) p.hidden = false; }); save(); toast('다시 보이게 했어요'); route(); });
     on('[data-remove]', function (b) { if (!confirm('이 글을 지울까요? 되돌릴 수 없어요.')) return; S.posts = S.posts.filter(function (p) { return p.id !== b.dataset.remove; }); save(); route(); });
   }
@@ -610,24 +548,6 @@
     });
     var mf = $('#mnForm'); if (mf) mf.onsubmit = function (e) { e.preventDefault(); put(YG.addMission({ country: mf.country.value, kind: mf.kind.value, text: mf.text.value.trim(), at: md(dayKey(new Date())) }), mf.country.value + ' 소식을 올렸어요'); mf.reset(); };
     on('[data-mdel]', function (b) { if (!confirm('이 소식을 지울까요?')) return; put(YG.delMission(S.missionNews[Number(b.dataset.mdel)]), '지웠어요'); });
-    on('[data-close-ch]', function (b) { put(YG.closeChallenge(S.challenges[b.dataset.closeCh]), '챌린지를 닫았어요'); });
-    var cf = $('#chForm');
-    if (cf) cf.onsubmit = function (e) {
-      e.preventDefault();
-      if (cf.to.value < cf.from.value) { toast('끝나는 날이 시작보다 빨라요'); return; }
-      var c = { title: cf.title.value.trim(), from: cf.from.value, to: cf.to.value }, push = cf.push.checked && cf.from.value <= dayKey(new Date());
-      put(YG.addChallenge(c).then(function () { if (push) return YG.notice({ kind: 'notice', title: c.title + '가 시작됐어요', body: md(c.from) + ' ~ ' + md(c.to) + ' · 기도 공간에서 감사 기도 챌린지로 함께해요', url: '#/talk/prayer?p=vow&c=thanks' }, 'all'); }), '챌린지를 만들었어요');
-    };
-    var gvf = $('#gvForm');
-    if (gvf) gvf.onsubmit = function (e) {
-      e.preventDefault();
-      var v = { week: gvf.week.value, title: gvf.title.value.trim(), series: gvf.series.value.trim(), speaker: gvf.speaker.value.trim(), mins: Number(gvf.mins.value) || 0,
-        url: gvf.url.value.trim(), target: gvf.target.value, qs: [gvf.q1.value.trim(), gvf.q2.value.trim(), gvf.q3.value.trim()] };
-      var push = gvf.push.checked, to = v.target === '전체 목장' ? 'all' : v.target;
-      put(YG.addVideo(v).then(function () { if (push) return YG.notice({ kind: 'group', title: '이번 주 목장 영상이 올라왔어요', body: v.title + ' · ' + md(v.week) + ' 모임', url: '#/talk/group' }, to); }), '목장 영상을 올렸어요');
-      gvf.reset();
-    };
-    on('[data-gvdel]', function (b) { if (!confirm('이 영상을 지울까요?')) return; put(YG.delVideo(S.groupVideos[Number(b.dataset.gvdel)]), '지웠어요'); });
     on('[data-restore]', function (b) { put(YG.restore(byId(S.posts, b.dataset.restore)), '다시 보이게 했어요'); });
     on('[data-remove]', function (b) { if (!confirm('이 글을 지울까요? 되돌릴 수 없어요.')) return; put(YG.removePost(byId(S.posts, b.dataset.remove)), '지웠어요'); });
   }

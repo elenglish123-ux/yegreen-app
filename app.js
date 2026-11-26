@@ -11,7 +11,6 @@
   var APPROVER = '정하람 간사님';
   var SENTENCE = '죄에서 멀어져 자유케 되는 교회';
   // 감사 챌린지는 기간 동안만 열림 — 새 챌린지는 여기에 한 줄 추가
-  var CHALLENGES = [{ title: '추수감사 감사 챌린지', from: '2026-11-09', to: '2026-11-22' }];
   // 선교 소식 (앱에서만, 나라 이름만 — 선교사 이름은 안전 때문에 쓰지 않음)
   // 선교지 국기 (나연 2026-11-26: 지구 모양 대신 나라 국기)
   // 이모티콘 국기는 윈도 컴퓨터에서 글자로 보여서 국기 그림(flagcdn.com, 무료)을 씀
@@ -74,7 +73,7 @@
     try {
       if (!CLOUD) return localStorage.setItem(KEY, JSON.stringify(S));
       // 서버 모드: 이 기기에는 개인 것만 저장 (공유 데이터는 서버가 매번 다시 채움)
-      var keep = {}; ['firstRun', 'big', 'alerts', 'diary', 'readDone', 'gvSeen', 'notifRead', 'vowDone', 'thanksDays', 'routine', 'sermonDone', 'vowMin', 'customRoutines', 'customDone', 'notes', 'mPray', 'readMode', 'satNudge'].forEach(function (k) { keep[k] = S[k]; });
+      var keep = {}; ['firstRun', 'big', 'alerts', 'diary', 'readDone', 'notifRead', 'vowDone', 'thanksDays', 'routine', 'sermonDone', 'vowMin', 'customRoutines', 'customDone', 'notes', 'mPray', 'readMode', 'satNudge'].forEach(function (k) { keep[k] = S[k]; });
       localStorage.setItem(KEY + '-cloud', JSON.stringify(keep));
     } catch (e) {}
   }
@@ -150,10 +149,6 @@
     });
   }
 
-  function challengeNow() {
-    var t = dayKey(new Date());
-    return (S.challenges || CHALLENGES).filter(function (c) { return t >= c.from && t <= c.to && !c.closed; })[0] || null;
-  }
   // 오늘 함께 읽은 사람 수 (시안: 날짜로 정한 예시 숫자 + 나) — 서버 연결 후 실제 수로 바뀜
   function readCount(done) {
     if (CLOUD) return (S.reads && S.reads[dayKey(new Date())]) || 0;
@@ -176,16 +171,6 @@
   }
 
 
-  // 목장 영상 (교회가 고른 유튜브 링크) — 2026-11-18 시안, 라잇나우는 2차 미팅에서 뺌(11-22)
-  function gvSeed() {
-    if (CLOUD) { S.groupVideos = S.groupVideos || []; return; }
-    if (S.groupVideos && S.groupVideos.some(function (v) { return /rightnowmedia/.test(v.url || ''); })) S.groupVideos = null;
-    if (!S.groupVideos) S.groupVideos = [{
-      id: 'v1', week: '2026-11-22', title: '감사하라, 찬송하라, 찬양하라', series: '주일설교 · 시편 150:1-6', speaker: '고용진 목사', mins: 35,
-      url: 'https://www.youtube.com/@yegrin', target: '전체 목장', sample: true,
-      qs: ['내가 교회에 오는 가장 큰 이유는 무엇인가요?', '영상에서 마음에 남은 한 문장은?', '이번 주 우리 목장이 서로를 위해 할 수 있는 일 한 가지'],
-    }];
-  }
 
   // ---------- 화면 위·아래 ----------
   var TABS = [['home', '홈', '#/'], ['play', '말씀', '#/sermons'], ['news', '소식', '#/news'], ['talk', '나눔', '#/talk'], ['more', '더보기', '#/more']];
@@ -343,7 +328,6 @@
     if (!S.me || !S.me.approved || !S.me.group) return '';
     var dg = !CLOUD && demoGroup(S.me.group);
     var meet = CLOUD ? (S.meeting && S.meeting.text) : (S.meeting && S.meeting.custom ? S.meeting.text : dg ? dg.meet : '');
-    var v = gvCurrent();
     var lead = amLeaderOf(S.me.group) && (CLOUD || !!dg);
     var miss = lead && !gpOf(S.me.group, gpPrevWeek());
     return '<a class="card home-group" href="' + (miss ? '#/talk/group?gpw=' + gpPrevWeek() : '#/talk/group') + '"><span class="hg-ic">🏡</span><span class="hg-tx"><b>' + esc(S.me.group) + '</b><small>' +
@@ -437,23 +421,6 @@
     var v = (MEDIA.reading || []).filter(function (x) { return x.date === today; })[0];
     if (v) return { text: v.passage, from: esc(v.title) + ' 영상', video: v.videoId };
     return null;
-  }
-  function readingCard() {
-    var r = todayReading(), now = new Date(), today = dayKey(now);
-    if (!r) return '';
-    var p = parseRange(r.text), done = !!(S.readDone && S.readDone[today]);
-    var video = r.video || ((MEDIA.reading || []).filter(function (x) { return x.date === today; })[0] || {}).videoId;
-    var chips = '';
-    if (p) for (var c = p.from; c <= p.to && c - p.from < 10; c++) chips += '<a class="chip" href="' + bibleUrl(p.code, c) + '" target="_blank" rel="noopener">' + c + '장</a>';
-    return '<div class="card"><div class="sec-title" style="margin:0 0 6px"><b>📖 오늘의 성경읽기</b><span class="sub">' + (now.getMonth() + 1) + '월 ' + now.getDate() + '일 ' + WEEK[now.getDay()] + '</span></div>' +
-      '<div class="h1" style="font-size:1.35rem;color:var(--green-d)">' + (p ? esc(p.name) + ' ' + p.from + (p.to > p.from ? '-' + p.to : '') + '장' : esc(r.text)) + '</div>' +
-      '<div class="sub" style="margin-bottom:10px">' + r.from + '</div>' +
-      (chips ? '<div class="chips" style="margin-bottom:10px">' + chips + '</div>' : '') +
-      '<div class="row">' + (video ? '<a class="btn small ghost" href="#/sermons?kind=reading&v=' + video + '">▶ 통독 영상</a>' : '') +
-        '<button class="btn small' + (done ? '' : ' ghost') + '" data-readdone>' + (done ? '다 읽었어요 ✓' : '다 읽었어요') + '</button>' +
-        '<a class="btn small ghost" href="#/talk/bible?s=read">읽기표·묵상 ›</a></div>' +
-      '<div class="together"><b>' + readCount(done) + '명</b><span>오늘 함께 읽었어요<small>이름 없이 숫자만 보여요' + (CLOUD ? '' : ' · 시안 숫자') + '</small></span></div>' + readBars() +
-      (p ? '<p class="sub" style="margin-top:8px;font-size:.78rem">장을 누르면 개역개정 성경이 열려요.</p>' : '') + '</div>';
   }
   function bindHome() {
     var re = $('[data-redit]'); if (re) re.onclick = function () { S.routineEdit = !S.routineEdit; save(); route(); };
@@ -563,8 +530,7 @@
       homeGroup() +
       homeFamily() +
       (ev ? '<div class="card ev-card ev-colors"><div class="sec-title" style="margin:0 0 4px"><b>📅 다가오는 일정</b><a href="#/news?tab=jubo">주보</a></div>' + ev + '</div>' : '') +
-      (b ? '<a class="card home-jubo" href="#/news?tab=jubo"><span class="hj-ic">📰</span><span class="hj-tx"><b>' + md(b.date) + ' 주보</b><small>' + esc(b.title || '') + (bulletinNews().length ? ' · 교회 소식 ' + bulletinNews().length + '개' : '') + '</small></span><span class="hj-go">보기 ›</span></a>' : '') +
-      (S.me && S.me.approved && challengeNow() ? '<a class="card green" href="#/talk/prayer?p=vow&c=thanks" style="display:flex;align-items:center;gap:12px"><span style="font-size:1.6rem">🌾</span><div><b>감사 기도 챌린지로 함께해요</b><div class="sub" style="color:#55705f">' + (thanksDays()[dayKey(new Date())] ? '오늘 감사 기도를 드렸어요 ✓' : challengeNow().title + ' · ' + md(challengeNow().to) + '까지') + '</div></div></a>' : '');
+      (b ? '<a class="card home-jubo" href="#/news?tab=jubo"><span class="hj-ic">📰</span><span class="hj-tx"><b>' + md(b.date) + ' 주보</b><small>' + esc(b.title || '') + (bulletinNews().length ? ' · 교회 소식 ' + bulletinNews().length + '개' : '') + '</small></span><span class="hj-go">보기 ›</span></a>' : '');
   }
 
   // ---------- 말씀 ----------
@@ -833,25 +799,6 @@
     return segs(sub) + '<div class="chips">' + [['all', '전체'], ['grace', '설교 은혜'], ['word', '말씀 묵상']].map(function (c) { return '<a class="chip' + (c[0] === f ? ' on' : '') + '" href="#/talk/church?cat=' + c[0] + '">' + c[1] + '</a>'; }).join('') + '</div>' +
       graceTop + (list.map(function (p) { return postCard(p, true); }).join('') || '<p class="empty">아직 글이 없어요.</p>');
   }
-  function gvCurrent() {
-    gvSeed();
-    var mine = S.me && S.me.group;
-    return S.groupVideos.filter(function (v) { return v.target === '전체 목장' || v.target === mine; })[0] || null;
-  }
-  function gvCard() {
-    var v = gvCurrent();
-    if (!v) return '';
-    var seen = S.gvSeen && S.gvSeen[v.id];
-    return '<div class="card gv"><div class="gv-head"><span>🎬 이번 주 목장 영상</span><span>' + md(v.week) + ' 모임</span></div>' +
-      '<div class="gv-body"><div class="gv-thumb"><b>▶</b><small>' + v.mins + '분</small></div><div><b class="gv-title">' + esc(v.title) + '</b><div class="sub">' + esc(v.series) + ' · ' + esc(v.speaker) + '</div>' + (v.sample ? '<span class="tag gold">예시</span>' : '') + '</div></div>' +
-      '<button class="btn" data-gv="' + v.id + '">▶ 영상 보기' + (seen ? ' ✓' : '') + '</button>' +
-      '<div class="gv-qs"><b>나눔 질문</b><ol>' + v.qs.filter(Boolean).map(function (q) { return '<li>' + esc(q) + '</li>'; }).join('') + '</ol></div></div>';
-  }
-  function gvOpen(id) {
-    var v = S.groupVideos.filter(function (x) { return x.id === id; })[0];
-    if (!v) return;
-    S.gvSeen = S.gvSeen || {}; S.gvSeen[id] = true; save(); window.open(v.url, '_blank', 'noopener'); route();
-  }
   // ---------- 목장 기도제목 (나연 2026-11-25) ----------
   // 목자가 목장 모임 때 식구들 기도제목을 올림(글 또는 사진) → 목사님이 모든 목장의 중보기도 제목을 봄
   // 한 주 = 월~주일, 주일 날짜가 그 주의 이름. 주일이 지났는데 안 올렸으면 목자에게 알림
@@ -1040,12 +987,10 @@
       var t = mf.t.value.trim(); if (!t) return;
       put(YG.setMeeting(t).then(function () { return YG.notice({ kind: 'group', title: '목장 모임 안내', body: t, url: '#/talk/group' }, S.me.group); }), '모임 공지를 올리고 목장 식구에게 알렸어요');
     };
-    document.querySelectorAll('[data-gv]').forEach(function (b) { b.onclick = function () { gvOpen(b.dataset.gv); }; });
     var gf = $('#groupForm');
     if (gf) gf.onsubmit = function (e) { e.preventDefault(); S.me.group = gf.g.value.trim(); save(); route(); };
     document.querySelectorAll('[data-pickg]').forEach(function (b) { b.onclick = function () { S.me.group = b.dataset.pickg; S.meeting = { text: '', going: null }; save(); route(); window.scrollTo(0, 0); }; });
     var lg = $('[data-leaveg]'); if (lg) lg.onclick = function () { S.me.group = ''; save(); route(); window.scrollTo(0, 0); };
-    bindDiary();
     bindGp();
     bindPrayer();
     bindBible();
@@ -1259,15 +1204,7 @@
   // ---------- 기도 타이머 + 배경 찬송 (나연 요청 2026-11-25) ----------
   // 배경 음악은 녹음 파일을 쓰지 않음. 저작권이 끝난(공공 저작물) 옛 찬송가 선율을 앱이 직접 연주 → 연주·녹음 저작권 걱정 없음
   // 배경 음악은 화면에서 뺌 (나연 2026-11-25: 성도님 연주 녹음을 받으면 다시). 아래 오르골 코드는 종소리(chime)와 나중을 위해 남겨 둠
-  // [키, 이름, 단위 박자 빠르기(BPM), 선율 '음:박' (R=쉼표), 바탕 화음 근음]
-  var HYMNS = [
-    ['grace', '나 같은 죄인 살리신 (305장)', 66, 'D4:1 G4:2 B4:.5 G4:.5 B4:2 A4:1 G4:2 E4:1 D4:2 D4:1 G4:2 B4:.5 G4:.5 B4:2 A4:1 D5:5 B4:1 D5:1.5 B4:.5 D5:.5 B4:.5 G4:2 D4:1 E4:1.5 G4:.5 G4:.5 E4:.5 D4:2 D4:1 G4:2 B4:.5 G4:.5 B4:2 A4:1 G4:5 R:3', 'G2'],
-    ['doxology', '만복의 근원 하나님 (1장)', 60, 'G4:2 G4:1 F#4:1 E4:1 D4:1 G4:1 A4:1 B4:2 R:1 B4:2 B4:1 B4:1 A4:1 G4:1 C5:1 B4:1 A4:2 R:1 G4:2 A4:1 B4:1 A4:1 G4:1 E4:1 F#4:1 G4:2 R:1 D5:2 B4:1 G4:1 A4:1 C5:1 B4:1 A4:1 G4:3 R:4', 'G2'],
-    ['silent', '고요한 밤 거룩한 밤 (109장)', 120, 'G4:3 A4:1 G4:2 E4:6 G4:3 A4:1 G4:2 E4:6 D5:4 D5:2 B4:6 C5:4 C5:2 G4:6 A4:4 A4:2 C5:3 B4:1 A4:2 G4:3 A4:1 G4:2 E4:6 A4:4 A4:2 C5:3 B4:1 A4:2 G4:3 A4:1 G4:2 E4:6 D5:4 D5:2 F5:3 D5:1 B4:2 C5:6 E5:6 C5:2 G4:2 E4:2 G4:3 F4:1 D4:2 C4:12 R:6', 'C3'],
-    ['pad', '잔잔한 화음 (말씀 묵상)', 0, '', ''],
-    ['none', '음악 없이', 0, '', ''],
-  ];
-  var AU = null, MUS = null;
+  var AU = null;
   function audio() {
     try { if (!AU) { var C = window.AudioContext || window.webkitAudioContext; if (!C) return null; AU = new C(); } if (AU.state === 'suspended') AU.resume(); return AU; } catch (e) { return null; }
   }
@@ -1284,44 +1221,6 @@
       o.connect(g); g.connect(out); o.start(t); o.stop(t + len + 0.05);
     });
   }
-  function drone(ctx, out, notes, vol, t) {   // 아주 작은 바탕 화음
-    var g = ctx.createGain(), lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 700;
-    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 3);
-    var os = notes.map(function (n, i) { var o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = nfreq(n); o.detune.value = i * 4 - 4; o.connect(lp); o.start(t); return o; });
-    lp.connect(g); g.connect(out);
-    return { stop: function (at) { g.gain.cancelScheduledValues(at); g.gain.setValueAtTime(g.gain.value, at); g.gain.linearRampToValueAtTime(0.0001, at + 1.5); os.forEach(function (o) { o.stop(at + 1.6); }); } };
-  }
-  function musicStop() { if (MUS) { MUS.stop(); MUS = null; } }
-  function musicStart(key, vol) {
-    musicStop();
-    var h = HYMNS.filter(function (x) { return x[0] === key; })[0];
-    if (!h || key === 'none') return;
-    var ctx = audio(); if (!ctx) return;
-    var master = ctx.createGain(); master.gain.value = vol; master.connect(ctx.destination);
-    var t0 = ctx.currentTime + 0.2, timer, pads = [];
-    if (key === 'pad') {   // C–Am–F–G 화음이 8초마다 천천히 바뀜
-      var CH = [['C3', 'G3', 'E4'], ['A2', 'E3', 'C4'], ['F2', 'C3', 'A3'], ['G2', 'D3', 'B3']], ci = 0, next = t0;
-      var step = function () {
-        while (next < ctx.currentTime + 2) {
-          var d = drone(ctx, master, CH[ci % 4], 0.09, next); pads.push(d); d.stop(next + 8);
-          bell(ctx, master, nfreq(CH[ci % 4][2]) * 2, next + 0.5, 4, 0.05);
-          ci++; next += 8;
-        }
-      };
-    } else {
-      var notes = h[3].split(' ').map(function (s) { var p = s.split(':'); return [p[0], +p[1]]; }), beat = 60 / h[2], ni = 0, nt = t0;
-      var bass = drone(ctx, master, [h[4], h[4].replace(/\d/, function (d) { return +d + 1; })], 0.05, t0); pads.push(bass);
-      var step = function () {
-        while (nt < ctx.currentTime + 2) {
-          var n = notes[ni % notes.length];
-          if (n[0] !== 'R') bell(ctx, master, nfreq(n[0]), nt, Math.max(1.4, n[1] * beat * 1.8), 0.16);
-          nt += n[1] * beat; ni++;
-        }
-      };
-    }
-    step(); timer = setInterval(step, 250);
-    MUS = { key: key, gain: master, stop: function () { clearInterval(timer); var at = ctx.currentTime; master.gain.cancelScheduledValues(at); master.gain.setValueAtTime(master.gain.value, at); master.gain.linearRampToValueAtTime(0.0001, at + 1); pads.forEach(function (p) { try { p.stop(at); } catch (e) {} }); setTimeout(function () { master.disconnect(); }, 1600); } };
-  }
   function chime() {   // 기도 시간이 다 되면: 맑은 종소리 세 번 + 진동
     var ctx = audio(); if (!ctx) return;
     var g = ctx.createGain(); g.gain.value = 0.5; g.connect(ctx.destination);
@@ -1333,7 +1232,7 @@
   }
   function mmss(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); }
   var PT_TICK = null;
-  function ptClose() { clearInterval(PT_TICK); PT_TICK = null; musicStop(); var el = document.getElementById('pt'); if (el) el.remove(); document.body.style.overflow = ''; }
+  function ptClose() { clearInterval(PT_TICK); PT_TICK = null; var el = document.getElementById('pt'); if (el) el.remove(); document.body.style.overflow = ''; }
   function ptFinish(early) {   // 기도 끝: 기도한 시간 기록 + 오늘 체크
     var r = S.ptRun; if (!r) return;
     var k = dayKey(new Date(r.start)), min = Math.max(1, Math.round((Date.now() - r.start) / 60000));
@@ -1435,13 +1334,6 @@
     while (R[dayKey(d)]) { st++; d.setDate(d.getDate() - 1); }
     return { month: n, streak: st, html: '<div class="rd-month">' + ['일', '월', '화', '수', '목', '금', '토'].map(function (w) { return '<i>' + w + '</i>'; }).join('') + cells + '</div>' };
   }
-  function thanksCal() {
-    var g = monthGrid(thanksDays(), '🌾'), ch = challengeNow(), now = new Date();
-    return '<div class="thx-cal"><div class="sec-title" style="margin:0 0 8px"><b>🌾 나의 감사 도장</b><span class="sub">' + (now.getMonth() + 1) + '월</span></div>' +
-      (ch ? '<div class="ph-help" style="margin-bottom:8px">🌱 지금은 「' + esc(ch.title) + '」 기간이에요 (' + md(ch.from) + ' ~ ' + md(ch.to) + '). 매일 감사 기도로 함께해요!</div>' : '') +
-      '<div class="rd-stats"><div><b>' + g.streak + '</b><span>일 연속 감사</span></div><div><b>' + g.month + '</b><span>이번 달 감사한 날</span></div></div>' + g.html +
-      '<p class="sub" style="margin-top:8px;font-size:.76rem">감사 기도를 쓴 날에 🌾 도장이 찍혀요. 도장은 나만 볼 수 있어요.</p></div>';
-  }
   function prayerRoom(q) {
     q = q || {};
     prayerSeed(); prayerSeed2(); prayerSeed3(); prayerSeed4();
@@ -1459,7 +1351,7 @@
     var tab = byScope[q.t] ? q.t : old[q.t] || 'all';
     var hf = q.h && headOf(q.h) ? q.h : '';
     var pick = headOf(q.p) || headOf(hf) || HEADS[0];   // ?p=vow&c=thanks 로 들어오면 감사 기도 챌린지가 골라진 채로
-    var ch0 = challengeNow(), ck = ctypeOf(q.c || (ch0 ? 'thanks' : 'vow'));
+    var ck = ctypeOf(q.c || 'vow');
     var list = byScope[tab].filter(function (x) { return !hf || x.head === hf; });
     var open = list.filter(function (x) { return !x.done; }), done = list.filter(function (x) { return x.done; });
     var hard = isPastor ? byScope.pastor.filter(function (x) { return !x.mine && x.head === 'hard' && !x.done; }).length : 0;
@@ -1484,7 +1376,6 @@
           '<div class="ph-or">꾸준히 이어 가고 싶다면</div>' +
           '<button type="button" class="ph-b ph-ch wide' + (pick[0] === 'vow' ? ' on' : '') + '" data-v="vow">🏁 나의 기도 챌린지 만들기<small>작정 · 감사 · 아침 · 말씀 기도를 며칠 동안 이어 가요</small></button></div>' +
         '<div id="vowBox" class="vow-set"' + (pick[0] === 'vow' ? '' : ' hidden') + '><b>🏁 나의 기도 챌린지 만들기</b>' +
-          (ch0 ? '<div class="ph-help">🌱 지금 교회는 「' + esc(ch0.title) + '」 기간이에요 (' + md(ch0.from) + ' ~ ' + md(ch0.to) + '). 감사 기도 챌린지로 함께해요!</div>' : '') +
           '<div class="sub" style="font-weight:700">어떤 챌린지인가요?</div><div class="chips" id="vkPick" style="margin:0;flex-wrap:wrap;overflow:visible">' +
             CTYPES.map(function (c) { return '<button type="button" class="chip' + (c[0] === ck[0] ? ' on' : '') + '" data-v="' + c[0] + '" data-d="' + c[3] + '" data-m="' + c[4] + '">' + c[2] + ' ' + c[1] + '</button>'; }).join('') + '</div>' +
           '<input name="vn" maxlength="20" placeholder="챌린지 이름 (예: 가족 구원 기도)"' + (ck[0] === 'custom' ? '' : ' hidden') + '>' +
@@ -1687,12 +1578,6 @@
       var d = new Date(start); d.setDate(d.getDate() + i);
       return { key: dayKey(d), d: d, text: t, p: parseRange(t) };
     }) };
-  }
-  function readStreak() {
-    var R = S.readDone || {}, d = new Date(), n = 0;
-    if (!R[dayKey(d)]) d.setDate(d.getDate() - 1);
-    while (R[dayKey(d)]) { n++; d.setDate(d.getDate() - 1); }
-    return n;
   }
   function toggleRead(k) {
     S.readDone = S.readDone || {};
@@ -1961,67 +1846,6 @@
     while (S.diary[dayKey(d)]) { n++; d.setDate(d.getDate() - 1); }
     return n;
   }
-  function diary() {
-    var ch = challengeNow();
-    if (!ch) {
-      var past0 = Object.keys(S.diary).sort().reverse().slice(0, 10);
-      return '<div class="card" style="text-align:center;padding:28px 18px"><div style="font-size:2rem">🌱</div><div class="h2">지금은 감사 챌린지 기간이 아니에요</div><p class="sub" style="margin-top:4px">교회가 챌린지를 열면 이곳이 열리고 알림으로 알려 드려요.</p></div>' +
-        (past0.length ? '<div class="sec-title"><b>지난 감사</b></div>' + past0.map(function (k) { var x = S.diary[k]; return '<div class="card past"><b>' + md(k) + '</b><ol>' + x.items.filter(Boolean).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ol></div>'; }).join('') : '');
-    }
-    var now = new Date(), today = dayKey(now), e = S.diary[today] || { items: ['', '', ''], scope: 'me' };
-    var first = new Date(now.getFullYear(), now.getMonth(), 1).getDay(), days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    var cal = WEEK.split('').map(function (w) { return '<span>' + w + '</span>'; }).join('');
-    for (var i = 0; i < first; i++) cal += '<i></i>';
-    for (var d = 1; d <= days; d++) {
-      var k = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(d);
-      cal += '<button data-day="' + k + '" class="' + (S.diary[k] ? 'd' : '') + (k === today ? ' t' : '') + '"' + (d > now.getDate() ? ' disabled' : '') + '>' + d + '</button>';
-    }
-    var s = streak();
-    var past = Object.keys(S.diary).filter(function (k) { return k !== today; }).sort().reverse().slice(0, 10);
-    return '<div class="card green" style="padding:12px 15px"><b style="color:var(--green-d)">🌾 ' + esc(ch.title) + '</b><div class="sub" style="color:#55705f">' + md(ch.from) + ' ~ ' + md(ch.to) + ' · 기간 동안만 열려요</div></div>' +
-      '<div class="card"><div class="sec-title" style="margin:0 0 10px"><b>' + (now.getMonth() + 1) + '월의 감사</b><span style="font-size:.88rem;font-weight:800;color:var(--green)">' + (s ? '🌱 연속 ' + s + '일째' : '🌱 오늘 시작해요') + '</span></div><div class="cal">' + cal + '</div></div>' +
-      '<form class="card" id="diaryForm" style="display:flex;flex-direction:column;gap:9px"><div class="sec-title" style="margin:0"><b>오늘의 감사</b><span class="sub">' + (now.getMonth() + 1) + '월 ' + now.getDate() + '일 ' + WEEK[now.getDay()] + '요일</span></div>' +
-        [0, 1, 2].map(function (i) { return '<label class="num"><b>' + (i + 1) + '</b><input maxlength="200" ' + (i === 0 ? 'required ' : '') + 'placeholder="감사한 일' + (i === 2 ? ' (선택)' : '') + '" value="' + esc(e.items[i] || '') + '"></label>'; }).join('') +
-        '<div class="row"><select name="scope" aria-label="공개 범위" style="flex:1.2">' + ['me', 'group', 'all'].map(function (k) { return '<option value="' + k + '"' + (e.scope === k ? ' selected' : '') + '>' + (k === 'me' ? '🔒 ' : '') + SCOPES[k] + '</option>'; }).join('') + '</select><button class="btn">' + (S.diary[today] ? '고치기' : '저장') + '</button></div>' +
-        '<p class="sub">「나만 보기」 일기는 목사님·운영자도 볼 수 없어요.</p></form>' +
-      (past.length ? '<div class="sec-title"><b>지난 감사</b></div>' + past.map(function (k) {
-        var x = S.diary[k];
-        return '<div class="card past" id="day-' + k + '"><b>' + md(k) + '</b> <span class="tag">' + SCOPES[x.scope] + '</span><ol>' + x.items.filter(Boolean).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ol></div>';
-      }).join('') : '');
-  }
-  function bindDiary() {
-    var f = $('#diaryForm');
-    if (!f) return;
-    f.onsubmit = function (ev) {
-      ev.preventDefault();
-      var today = dayKey(new Date()), scope = f.scope.value;
-      var items = [].map.call(f.querySelectorAll('input'), function (i) { return i.value.trim(); });
-      if (scope === 'group' && !S.me.group) { toast(CLOUD ? '아직 목장이 정해지지 않았어요.' : '목장방에서 목장을 먼저 정해 주세요.'); return; }
-      S.diary[today] = { items: items, scope: scope };
-      if (CLOUD) {
-        // 나눈 감사일기는 서버 글로, 「나만 보기」는 이 기기에만
-        var olds = S.posts.filter(function (p) { return p.diary === today && p.mine; });
-        var jobs = olds.map(function (p) { return YG.removePost(p); });
-        if (scope !== 'me') jobs.push(YG.addPost({ cat: 'thanks', scope: scope, diary: today, text: items.filter(Boolean).map(function (t, i) { return (i + 1) + '. ' + t; }).join('\n') }));
-        save(); put(Promise.all(jobs), scope === 'me' ? '오늘의 감사를 저장했어요 🌱' : SCOPES[scope] + '에도 나눴어요 🌱'); route();
-        return;
-      }
-      S.posts = S.posts.filter(function (p) { return p.diary !== today; });
-      if (scope !== 'me') {
-        S.posts.unshift({ id: 'd' + Date.now(), diary: today, cat: 'thanks', scope: scope, group: scope === 'group' ? S.me.group : undefined, author: S.me.name,
-          text: items.filter(Boolean).map(function (t, i) { return (i + 1) + '. ' + t; }).join('\n'), at: '방금', mine: true, count: 0, reacted: false, comments: [] });
-      }
-      save();
-      toast(scope === 'me' ? '오늘의 감사를 저장했어요 🌱' : SCOPES[scope] + '에도 나눴어요 🌱');
-      route();
-    };
-    document.querySelectorAll('[data-day]').forEach(function (b) {
-      b.onclick = function () {
-        var t = document.getElementById('day-' + b.dataset.day) || (b.dataset.day === dayKey(new Date()) ? f : null);
-        if (t) t.scrollIntoView({ behavior: 'smooth', block: 'center' }); else toast('이날은 쓴 감사가 없어요.');
-      };
-    });
-  }
 
   // ---------- 더보기 ----------
   function more() {
@@ -2204,7 +2028,6 @@
     ['members', '👤', '가입 승인', '가입 신청을 확인하고 목장을 정해요', ['pastor', 'admin']],
     ['send', '📣', '알림 보내기', '공지·긴급 알림, 목장 알림', ['pastor', 'admin', 'leader']],
     ['jubo', '📰', '주보·광고', '주보 프로그램에서 온 주보를 앱에 공개', ['pastor', 'admin']],
-    ['challenge', '🌾', '감사 챌린지', '챌린지 이름과 기간을 정해 열고 닫기', ['pastor', 'admin']],
     ['mission', '🌏', '선교 소식', '나라별 소식·기도제목 올리기', ['pastor', 'admin']],
     ['family', '🤝', '교우 동정', '결혼·출산·소천·입원 소식 올리기', ['pastor', 'admin']],
     ['groups', '🏠', '목장 관리', '목장 만들기, 목자 정하기, 식구 배정', ['pastor', 'admin']],
@@ -2229,7 +2052,6 @@
         .concat(DEMO_GROUPS.map(function (g) { return { name: g.members[0], role: 'member', group: g.name }; }));
       S.groupSeedV = 2;
     }
-    if (!S.challenges) S.challenges = CHALLENGES.map(function (c) { return { title: c.title, from: c.from, to: c.to }; });
     if (!S.missionNews) S.missionNews = [];
     if (!S.adminRole) S.adminRole = 'admin';
     if (S.juboOpen == null) S.juboOpen = true;
@@ -2278,22 +2100,6 @@
         : '<p class="empty">아직 받은 주보가 없어요.</p>') + '</div>' +
       '<div class="card flat"><b>주보는 어떻게 들어오나요?</b><ol class="steps-ol"><li>주보 만들기 프로그램에서 주보 작성</li><li>「홈페이지로 보내기」를 누르면 앱으로도 들어옴</li><li>여기서 확인하고 공개 → 성도에게 "이번 주 주보" 알림</li></ol></div>' +
       '<button class="btn" data-jubo-push>이번 주 주보 알림 보내기</button>';
-  }
-
-  function adminChallenge() {
-    adminTop(1);
-    var t = dayKey(new Date());
-    return '<div class="sec-title"><b>챌린지 목록</b></div>' + S.challenges.map(function (c, i) {
-        var st = c.closed ? '닫음' : t < c.from ? '예정' : t > c.to ? '끝남' : '진행 중';
-        return '<div class="card"><div class="sec-title" style="margin:0 0 4px"><b>🌾 ' + esc(c.title) + '</b><span class="tag' + (st === '진행 중' ? '' : ' gold') + '">' + st + '</span></div><div class="sub">' + md(c.from) + ' ~ ' + md(c.to) + '</div>' +
-          (st === '진행 중' ? '<button class="btn small ghost" style="margin-top:8px" data-close-ch="' + i + '">지금 닫기</button>' : '') + '</div>';
-      }).join('') +
-      '<form class="card" id="chForm" style="display:flex;flex-direction:column;gap:10px"><b>새 챌린지 열기</b>' +
-        '<label class="field"><span>이름</span><input name="title" required maxlength="30" placeholder="예: 성탄 감사 챌린지"></label>' +
-        '<div class="row"><label class="field"><span>시작</span><input name="from" type="date" required value="' + t + '"></label><label class="field"><span>끝</span><input name="to" type="date" required></label></div>' +
-        '<label class="check"><input type="checkbox" name="push" checked>열 때 성도에게 알림 보내기</label>' +
-        '<button class="btn">챌린지 만들기</button></form>' +
-      '<p class="sub">챌린지 기간에만 나눔 › 감사 챌린지 칸이 열려요.</p>';
   }
 
   function adminMission() {
@@ -2428,24 +2234,6 @@
       (CLOUD ? '<p class="sub">「빼기」는 교회를 떠난 분을 앱에서 빼요. 그분은 더 이상 앱에 들어올 수 없어요.</p>' : '<p class="sub">연락처·생일 같은 개인정보를 관리자 화면에 둘지는 2차 미팅에서 정해요. 지금은 이름과 목장만 보여요.</p>');
   }
 
-  function nextSunday() { var d = new Date(); d.setDate(d.getDate() + ((7 - d.getDay()) % 7 || 7)); return dayKey(d); }
-  function adminGvideo() {
-    adminTop(1); gvSeed();
-    var leader = S.adminRole === 'leader';
-    var targets = leader ? [CLOUD ? S.me.group : '기쁨목장'] : ['전체 목장'].concat(S.groups.map(function (g) { return g.name; }));
-    return '<form class="card" id="gvForm" style="display:flex;flex-direction:column;gap:10px"><b>이번 주 목장 영상 올리기</b>' +
-        '<label class="field"><span>영상 링크 (유튜브 「공유」 → 링크 복사)</span><input name="url" type="url" required placeholder="https://youtu.be/..."></label>' +
-        '<label class="field"><span>제목</span><input name="title" required maxlength="40" placeholder="예: 우리는 왜 교회에 가는가?"></label>' +
-        '<div class="row"><label class="field"><span>시리즈 · 회차</span><input name="series" maxlength="40" placeholder="예: 1세션"></label><label class="field" style="flex:.6"><span>길이(분)</span><input name="mins" type="number" min="1" max="120" value="12"></label></div>' +
-        '<label class="field"><span>강사</span><input name="speaker" maxlength="30"></label>' +
-        '<label class="field"><span>나눔 질문 1</span><input name="q1" required maxlength="80"></label><label class="field"><span>나눔 질문 2</span><input name="q2" maxlength="80"></label><label class="field"><span>나눔 질문 3</span><input name="q3" maxlength="80"></label>' +
-        '<div class="row"><label class="field"><span>모임 날짜</span><input name="week" type="date" required value="' + nextSunday() + '"></label><label class="field"><span>보여 줄 목장</span><select name="target">' + targets.map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('') + '</select></label></div>' +
-        '<label class="check"><input type="checkbox" name="push" checked>목장 식구에게 알림 보내기</label>' +
-        '<button class="btn">올리기</button></form>' +
-      '<div class="sec-title"><b>올린 영상</b></div>' + S.groupVideos.map(function (v, i) {
-        return '<div class="card"><div class="sub">' + md(v.week) + ' · ' + esc(v.target) + (v.sample ? ' · 예시' : '') + '</div><b>' + esc(v.title) + '</b><div class="sub">' + esc(v.series) + '</div><button class="btn small ghost" style="margin-top:8px" data-gvdel="' + i + '">지우기</button></div>';
-      }).join('');
-  }
   function adminRoute(sub) {
     if (!S.admin) { location.hash = '#/more'; return ''; }
     adminSeed();
@@ -2454,7 +2242,6 @@
       case 'send': return adminSend();
       case 'members': return adminMembers();
       case 'jubo': return adminJubo();
-      case 'challenge': return adminChallenge();
       case 'mission': return adminMission();
       case 'family': return adminFamily();
       case 'groups': return adminGroups();
@@ -2462,23 +2249,12 @@
       case 'reading': return adminReading();
       case 'gpray': return adminGpray();
       case 'people': return adminPeople();
-      case 'gvideo': return adminGvideo();
       default: return adminHome();
     }
   }
   // 서버 모드 관리자 버튼들: 모두 서버에 쓰고, 화면은 서버 변화로 다시 그려짐
   function bindAdminCloud() {
     var on = function (sel, fn) { document.querySelectorAll(sel).forEach(function (b) { b.onclick = function (e) { fn(b, e); }; }); };
-    var gvf = $('#gvForm');
-    if (gvf) gvf.onsubmit = function (e) {
-      e.preventDefault();
-      var v = { week: gvf.week.value, title: gvf.title.value.trim(), series: gvf.series.value.trim(), speaker: gvf.speaker.value.trim(), mins: Number(gvf.mins.value) || 0,
-        url: gvf.url.value.trim(), target: gvf.target.value, qs: [gvf.q1.value.trim(), gvf.q2.value.trim(), gvf.q3.value.trim()] };
-      var job = YG.addVideo(v);
-      if (gvf.push.checked) job = job.then(function () { return YG.notice({ kind: 'group', title: '이번 주 목장 영상이 올라왔어요', body: v.title + ' · ' + md(v.week) + ' 모임', url: '#/talk/group' }, v.target === '전체 목장' ? 'all' : v.target); });
-      put(job, '목장 영상을 올렸어요');
-    };
-    on('[data-gvdel]', function (b) { if (!confirm('이 영상을 지울까요?')) return; put(YG.delVideo(S.groupVideos[Number(b.dataset.gvdel)])); });
     on('[data-ok]', function (b) {
       var a = S.pending.filter(function (x) { return x.id === b.dataset.ok; })[0], g = document.querySelector('[data-pg="' + a.id + '"]').value;
       b.disabled = true; put(YG.approve(a.id, g), a.name + '님을 승인했어요' + (g ? ' · ' + g : ''));
@@ -2490,15 +2266,6 @@
       if (!confirm('전체 교인에게 주보 알림을 보낼까요?')) return;
       put(YG.notice({ kind: 'notice', title: '이번 주 주보가 올라왔어요', body: b ? md(b.date) + ' 주보 · ' + (b.title || '') : '이번 주 주보를 확인해 보세요', url: '#/news?tab=jubo' }, 'all'), '주보 알림을 보냈어요');
     });
-    on('[data-close-ch]', function (b) { put(YG.closeChallenge(S.challenges[b.dataset.closeCh]), '챌린지를 닫았어요'); });
-    var cf = $('#chForm');
-    if (cf) cf.onsubmit = function (e) {
-      e.preventDefault();
-      if (cf.to.value < cf.from.value) { toast('끝나는 날이 시작보다 빨라요'); return; }
-      var c = { title: cf.title.value.trim(), from: cf.from.value, to: cf.to.value }, job = YG.addChallenge(c);
-      if (cf.push.checked && cf.from.value <= dayKey(new Date())) job = job.then(function () { return YG.notice({ kind: 'notice', title: c.title + '가 시작됐어요', body: md(c.from) + ' ~ ' + md(c.to) + ' · 기도 공간에서 감사 기도 챌린지로 함께해요', url: '#/talk/prayer?p=vow&c=thanks' }, 'all'); });
-      put(job, '챌린지를 만들었어요');
-    };
     var mk = $('#mnKind');
     if (mk) mk.onclick = function (e) { var b = e.target.closest('[data-v]'); if (!b) return; mk.querySelectorAll('.chip').forEach(function (c) { c.classList.toggle('on', c === b); }); };
     var mf = $('#mnForm');
@@ -2554,17 +2321,6 @@
     bindAdmin();
     var on = function (sel, fn) { document.querySelectorAll(sel).forEach(function (b) { b.onclick = function (e) { fn(b, e); }; }); };
     on('[data-role]', function (b) { S.adminRole = b.dataset.role; save(); route(); });
-    var gvf = $('#gvForm');
-    if (gvf) gvf.onsubmit = function (e) {
-      e.preventDefault();
-      var v = { id: 'v' + Date.now(), week: gvf.week.value, title: gvf.title.value.trim(), series: gvf.series.value.trim(), speaker: gvf.speaker.value.trim(), mins: Number(gvf.mins.value) || 0,
-        url: gvf.url.value.trim(), target: gvf.target.value, qs: [gvf.q1.value.trim(), gvf.q2.value.trim(), gvf.q3.value.trim()] };
-      S.groupVideos.unshift(v); save();
-      if (gvf.push.checked) receive({ kind: 'group', title: '이번 주 목장 영상이 올라왔어요', body: v.title + ' · ' + md(v.week) + ' 모임', url: '#/talk/group' });
-      else toast('목장 영상을 올렸어요');
-      route();
-    };
-    on('[data-gvdel]', function (b) { if (!confirm('이 영상을 지울까요?')) return; S.groupVideos.splice(Number(b.dataset.gvdel), 1); save(); route(); });
     on('[data-ok]', function (b) {
       var a = S.pending.filter(function (x) { return x.id === b.dataset.ok; })[0], g = document.querySelector('[data-pg="' + a.id + '"]').value;
       S.pending = S.pending.filter(function (x) { return x !== a; });
@@ -2581,17 +2337,6 @@
       var b = BULLETINS[0];
       receive({ kind: 'notice', title: '이번 주 주보가 올라왔어요', body: b ? md(b.date) + ' 주보 · ' + (b.title || '') : '이번 주 주보를 확인해 보세요', url: '#/news?tab=jubo' });
     });
-    on('[data-close-ch]', function (b) { S.challenges[b.dataset.closeCh].closed = true; save(); toast('챌린지를 닫았어요'); route(); });
-    var cf = $('#chForm');
-    if (cf) cf.onsubmit = function (e) {
-      e.preventDefault();
-      if (cf.to.value < cf.from.value) { toast('끝나는 날이 시작보다 빨라요'); return; }
-      S.challenges.unshift({ title: cf.title.value.trim(), from: cf.from.value, to: cf.to.value });
-      save();
-      if (cf.push.checked && cf.from.value <= dayKey(new Date())) receive({ kind: 'notice', title: cf.title.value.trim() + '가 시작됐어요', body: md(cf.from.value) + ' ~ ' + md(cf.to.value) + ' · 기도 공간에서 감사 기도 챌린지로 함께해요', url: '#/talk/prayer?p=vow&c=thanks' });
-      else toast('챌린지를 만들었어요');
-      route();
-    };
     var mk = $('#mnKind');
     if (mk) mk.onclick = function (e) { var b = e.target.closest('[data-v]'); if (!b) return; mk.querySelectorAll('.chip').forEach(function (c) { c.classList.toggle('on', c === b); }); };
     var mf = $('#mnForm');
