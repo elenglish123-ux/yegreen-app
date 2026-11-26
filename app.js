@@ -559,8 +559,7 @@
       // 말씀과 받은 은혜를 한 카드로 (나연 2026-11-26)
       (s ? '<div class="card hero sm"><a class="hero-main" href="#/sermons?v=' + s.videoId + '"><div class="thumb" style="background-image:url(' + thumb(s.videoId) + ')"><span class="play"></span></div>' +
         '</a><div class="hero-row"><a class="txt" href="#/sermons?v=' + s.videoId + '"><div class="label">이번 주 말씀</div><div class="h1">' + esc(s.title) + '</div><div class="sub">' + [md(s.date), s.passage, s.preacher].filter(Boolean).map(esc).join(' · ') + '</div></a>' + homeGrace(s) + '</div>' + homeGracePeek(s) + '</div>' : '') +   // 제목 옆 빈 곳에 은혜 나누기 + 아래 미리보기 (나연 2026-11-26)
-      homeRoutine() +
-      readingCard() +
+      homeRoutine() +   // 성경읽기는 루틴 칸 하나로 (큰 카드는 뺌, 나연 2026-11-26)
       homeGroup() +
       homeFamily() +
       (ev ? '<div class="card ev-card ev-colors"><div class="sec-title" style="margin:0 0 4px"><b>📅 다가오는 일정</b><a href="#/news?tab=jubo">주보</a></div>' + ev + '</div>' : '') +
