@@ -499,3 +499,9 @@ img.flag { width: 22px; height: 15px; object-fit: cover; border-radius: 3px; ver
 .card.home-grace { display: flex; align-items: center; gap: 12px; color: inherit; margin-top: -4px; background: #f6faf7; border: 1px solid #dfe9e2; padding: 11px 14px; }
 .ev-more summary { cursor: pointer; font-size: .86rem; font-weight: 700; color: var(--green-d); padding: 10px 0 4px; list-style: none; text-align: center; } .ev-more summary::-webkit-details-marker { display: none; } .ev-more[open] summary { color: #8a8478; }
 .card.hero .hero-main { display: block; color: inherit; } .home-grace { display: flex; align-items: center; gap: 10px; color: inherit; border-top: 1px solid #eee9e0; padding: 11px 16px; background: #f8fbf9; } .home-grace .hj-ic { font-size: 1.25rem; }
+/* 말씀 카드 안 은혜 줄을 카드와 한 몸으로 (2026-11-26) */
+.card.hero .home-grace { background: transparent; border-top: 0; margin: 0 16px; padding: 10px 0 14px; border-top: 1px dashed #e6e1d6; }
+.card.hero .txt { padding-bottom: 10px; }
+.card.hero .home-grace .hj-ic { font-size: 1.05rem; }
+.card.hero .home-grace .hj-tx b { font-size: .9rem; color: var(--green-d); }
+.card.hero .home-grace .hj-go { background: var(--green); color: #fff; border-radius: 999px; padding: 5px 12px; font-size: .8rem; }
