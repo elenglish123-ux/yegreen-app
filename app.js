@@ -496,7 +496,7 @@
       readingCard() +
       homeGroup() +
       homeFamily() +
-      (ev ? '<div class="card ev-card ev-colors"><div class="sec-title" style="margin:0 0 4px"><b>📅 다가오는 일정</b><a href="#/news?tab=jubo">주보</a></div>' + ev + '</div>' : '') +
+      (ev ? '<div class="card ev-card ev-colors"><div class="sec-title" style="margin:0 0 4px"><b class="sec-ic-t"><svg class="sec-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="8.5" cy="14.5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="14.5" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="14.5" r="1" fill="currentColor" stroke="none"/></svg>다가오는 일정</b><a href="#/news?tab=jubo">주보</a></div>' + ev + '</div>' : '') +
       (b ? '<a class="card home-jubo" href="#/news?tab=jubo"><span class="hj-ic">📰</span><span class="hj-tx"><b>' + md(b.date) + ' 주보</b><small>' + esc(b.title || '') + (bulletinNews().length ? ' · 교회 소식 ' + bulletinNews().length + '개' : '') + '</small></span><span class="hj-go">보기 ›</span></a>' : '') +
       (S.me && S.me.approved && challengeNow() ? '<a class="card green" href="#/talk/prayer?p=vow&c=thanks" style="display:flex;align-items:center;gap:12px"><span style="font-size:1.6rem">🌾</span><div><b>감사 기도 챌린지로 함께해요</b><div class="sub" style="color:#55705f">' + (thanksDays()[dayKey(new Date())] ? '오늘 감사 기도를 드렸어요 ✓' : challengeNow().title + ' · ' + md(challengeNow().to) + '까지') + '</div></div></a>' : '');
   }
