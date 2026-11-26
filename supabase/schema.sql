@@ -45,6 +45,16 @@ language sql stable security definer set search_path = public as $$
   select coalesce((public.yg_me()->>'qt')::boolean, false)
 $$;
 
+-- 소그룹 (새신자반·목자학교·선교회 등, 목장과 따로 여러 개) (2026-11-27)
+create or replace function public.yg_in_sg(name text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce(public.yg_approved() and (public.yg_me()->'sgs') ? name, false)
+$$;
+create or replace function public.yg_sg_leader(name text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select public.yg_approved() and exists (select 1 from public.docs where col = 'sgroups' and id = name and data->>'leaderUid' = auth.uid()::text)
+$$;
+
 -- ---------- 읽기 규칙 ----------
 drop policy if exists docs_read on public.docs;
 create policy docs_read on public.docs for select using (
@@ -58,15 +68,20 @@ create policy docs_read on public.docs for select using (
     when 'posts' then public.yg_role() in ('admin', 'pastor')
       or (public.yg_approved() and (data->>'scope' = 'all'
           or (data->>'scope' = 'group' and data->>'group' = public.yg_group())
-          or (data->>'scope' = 'qt' and public.yg_qt())))
+          or (data->>'scope' = 'qt' and public.yg_qt())
+          or (data->>'scope' = 'sg' and public.yg_in_sg(data->>'group'))))
     when 'pastorNotes' then public.yg_role() = 'pastor'
       or (public.yg_approved() and data->>'uid' = auth.uid()::text)
     when 'notices' then public.yg_role() in ('admin', 'pastor')
       or (public.yg_approved() and (data->>'to' = 'all' or data->>'to' = public.yg_group()
-          or (data->>'to' = 'leader:' || public.yg_group() and public.yg_role() = 'leader')))   -- 목자님만 (2026-11-25)
+          or (data->>'to' = 'leader:' || public.yg_group() and public.yg_role() = 'leader')   -- 목자님만 (2026-11-25)
+          or (data->>'to' like 'sg:%' and public.yg_in_sg(substr(data->>'to', 4)))))
     when 'newcomers' then public.yg_role() in ('admin', 'pastor')
     when 'groups' then public.yg_approved()
-    when 'groupVideos' then public.yg_approved()
+    when 'sgroups' then public.yg_approved()
+    when 'lessons' then public.yg_role() in ('admin', 'pastor') or public.yg_in_sg(data->>'sg')
+    when 'answers' then public.yg_role() in ('admin', 'pastor') or data->>'uid' = auth.uid()::text
+      or public.yg_sg_leader(data->>'sg')
     when 'missionNews' then public.yg_approved()
     when 'family' then public.yg_approved()   -- 교우 동정 (2026-11-26)
     when 'challenges' then public.yg_approved()
@@ -154,7 +169,7 @@ begin
   if c = 'members' then
     if kind = 'create' then
       return u is not null and id = u and n->>'status' = 'pending' and n->>'role' = 'member'
-        and coalesce(n->>'group', '') = '' and public.yg_str(n->'name', 20);
+        and coalesce(n->>'group', '') = '' and (n->'sgs') is null and public.yg_str(n->'name', 20);
     elsif kind = 'update' then
       return staff and ((o->'role') is not distinct from (n->'role') or pastor)
         and (coalesce(o->>'role', '') <> 'pastor' or pastor);
@@ -165,8 +180,9 @@ begin
 
   elsif c = 'posts' then
     if kind = 'create' then
-      return ok and n->>'uid' = u and n->>'scope' in ('all', 'group', 'qt')
-        and (n->>'scope' = 'all' or (g <> '' and n->>'group' = g) or (n->>'scope' = 'qt' and public.yg_qt()))
+      return ok and n->>'uid' = u and n->>'scope' in ('all', 'group', 'qt', 'sg')
+        and (n->>'scope' = 'all' or (n->>'scope' = 'group' and g <> '' and n->>'group' = g) or (n->>'scope' = 'qt' and public.yg_qt())
+             or (n->>'scope' = 'sg' and public.yg_in_sg(n->>'group')))
         and public.yg_str(n->'text', case when n->>'cat' in ('qt', 'gpray') then 3000 else 1000 end)   -- 필사·목장 기도제목은 길게 (2026-11-25)
         and coalesce(jsonb_array_length(n->'reactors'), 0) = 0
         and coalesce(jsonb_array_length(n->'comments'), 0) = 0
@@ -174,7 +190,8 @@ begin
         and (coalesce((n->>'notice')::boolean, false) = false or staff);
     elsif kind = 'update' then
       if staff then return true; end if;
-      if not (ok and (o->>'scope' = 'all' or (o->>'scope' = 'group' and o->>'group' = g) or (o->>'scope' = 'qt' and public.yg_qt()))) then return false; end if;
+      if not (ok and (o->>'scope' = 'all' or (o->>'scope' = 'group' and o->>'group' = g) or (o->>'scope' = 'qt' and public.yg_qt())
+                      or (o->>'scope' = 'sg' and public.yg_in_sg(o->>'group')))) then return false; end if;
       if not public.yg_only(o, n, array['reactors', 'comments', 'hidden', 'answered']) then return false; end if;
       -- 기도 「응답됐어요」: 쓴 사람만 (2026-11-25)
       if (o->'answered') is distinct from (n->'answered') and o->>'uid' is distinct from u then return false; end if;
@@ -205,17 +222,31 @@ begin
       or (ok and g = id and public.yg_only(o, n, array['rsvp'])
           and public.yg_changed(o->'rsvp', n->'rsvp') <@ array[u]);
 
-  elsif c = 'groupVideos' then
-    if kind = 'create' then return staff or (leader and n->>'target' = g);
-    elsif kind = 'delete' then return staff or (leader and o->>'target' = g);
-    else return staff; end if;
+  elsif c = 'sgroups' then
+    return staff;
+
+  elsif c = 'lessons' then
+    if kind = 'create' then return (staff or public.yg_sg_leader(n->>'sg')) and public.yg_str(n->'title', 40);
+    elsif kind = 'update' then return (staff or public.yg_sg_leader(o->>'sg')) and (o->'sg') is not distinct from (n->'sg');
+    else return staff or public.yg_sg_leader(o->>'sg'); end if;
+
+  elsif c = 'answers' then
+    -- 내 답변: 문서 번호 = 영상번호_내uid, 내 소그룹 것만. 담당자·목사님·관리자는 답글만 달 수 있음
+    if kind = 'create' then
+      return ok and n->>'uid' = u and id = (n->>'lesson') || '_' || u and public.yg_in_sg(n->>'sg')
+        and (n->'reply') is null and (n->'replyBy') is null;
+    elsif kind = 'update' then
+      if ok and o->>'uid' = u and public.yg_only(o, n, array['a', 'watched', 'ts', 'name']) then return true; end if;
+      return (staff or public.yg_sg_leader(o->>'sg')) and public.yg_only(o, n, array['reply', 'replyBy', 'replyTs']);
+    else return staff or (ok and o->>'uid' = u); end if;
 
   elsif c in ('missionNews', 'family', 'challenges', 'settings', 'site') then
     return staff;
 
   elsif c = 'notices' then
     if kind = 'create' then
-      return (staff or (leader and n->>'to' = g)) and public.yg_str(n->'title', 40) and public.yg_str(n->'body', 200);
+      return (staff or (leader and n->>'to' = g) or (n->>'to' like 'sg:%' and public.yg_sg_leader(substr(n->>'to', 4))))
+        and public.yg_str(n->'title', 40) and public.yg_str(n->'body', 200);
     elsif kind = 'delete' then return staff;
     else return false; end if;
 

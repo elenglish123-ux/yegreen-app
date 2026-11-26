@@ -769,6 +769,7 @@
     if (p.scope === 'group' && p.group === null && !CLOUD) return true;   // 시안 예시 목장 글은 목장을 안 골라도 보이게
     if (p.scope === 'group') return !!S.me.group &&(p.group === null || p.group === S.me.group);
     if (p.scope === 'pastor') return !!p.mine || (CLOUD ? S.me.role === 'pastor' : !!S.admin && S.adminRole === 'pastor');   // 시안에서도 목사님 역할이면 보임
+    if (p.scope === 'sg') return isStaffMe() || (S.me.sgs || []).indexOf(p.group) >= 0;   // 소그룹 글
     if (p.scope === 'qt') return !CLOUD || !!S.me.qt || S.me.role === 'admin' || S.me.role === 'pastor';   // 큐티 모임 (목장과 따로)
     return true;
   }
@@ -792,7 +793,7 @@
     if (sub === 'bible') return segs(sub) + bibleRoom(q);
     if (sub === 'group') { setTimeout(gpRemind, 0); return segs(sub) + groupRoom(q); }
     var f = q.cat === 'pray' ? 'all' : q.cat || 'all';   // 기도제목 칩은 뺌: 기도는 기도 공간에서 (전체 목록에는 계속 나옴, 나연 2026-11-26)
-    var list = S.posts.filter(function (p) { return p.scope !== 'group' && p.scope !== 'qt' && canSee(p) && (f === 'all' || p.cat === f || p.notice); });
+    var list = S.posts.filter(function (p) { return p.scope !== 'group' && p.scope !== 'qt' && p.scope !== 'sg' && canSee(p) && (f === 'all' || p.cat === f || p.notice); });
     list.sort(function (a, b) { return (b.notice ? 1 : 0) - (a.notice ? 1 : 0); });
     var ser = (MEDIA.sunday || [])[0];
     var graceTop = ser && (f === 'all' || f === 'grace') ? '<a class="card grace" href="#/sermons?v=' + ser.videoId + '&g=1"><div class="label" style="color:#cfe3d6">이번 주 설교 · ' + md(ser.date) + '</div><b>' + esc(ser.title) + '</b><div style="font-size:.88rem;opacity:.85;margin-top:4px">이 설교로 받은 은혜와 이번 주 적용을 나눠 주세요 ✎</div></a>' : '';
@@ -930,7 +931,8 @@
       };
     });
   }
-  function groupRoom(q) {
+  function groupRoom(q) { return sgChips(q) + (q.sg ? sgRoom(q.sg) : groupRoom0(q)); }   // 소그룹 칩 (2026-11-27)
+  function groupRoom0(q) {
     if (!S.me.group && CLOUD) {
       return '<div class="card" style="text-align:center;padding:26px 18px"><div style="font-size:2rem">🏠</div><div class="h2">아직 목장이 정해지지 않았어요</div><p class="sub" style="margin-top:6px">' + APPROVER + '이 목장을 정해 드리면 이곳에서 목장 식구들과 나눌 수 있어요.</p></div>';
     }
@@ -970,6 +972,217 @@
       (posts.map(function (p) { return postCard(p, true); }).join('') || '<p class="empty">목장에 첫 나눔을 남겨 보세요.</p>') +
       '<details class="card"><summary style="font-weight:700;cursor:pointer">👥 목장 식구 ' + members.length + '명 보기</summary><div class="members">' + members.map(function (n) { return '<span>' + esc(n.name) + '</span>'; }).join('') + '</div></details>';
   }
+  // ================= 소그룹 (나연 2026-11-27) =================
+  // 목장과 따로 여러 개에 들 수 있는 모임: 새신자반 · 목자학교 · 여선교회 등. 교회(관리자)가 만들고 식구를 넣음.
+  // 소그룹방: 소개 · 교육 영상(보고 나서 질문에 답하기) · 소그룹 나눔. 답변은 쓴 사람 · 담당자 · 목사님/관리자만 봐요.
+  var SG_KINDS = [['newcomer', '🌱', '새신자'], ['school', '📚', '양육·학교'], ['mission', '🙌', '선교회'], ['etc', '👥', '기타 모임']];
+  function sgKind(k) { return SG_KINDS.filter(function (x) { return x[0] === k; })[0] || SG_KINDS[3]; }
+  function sgSeed() {   // 시안 예시 (실제 서버에서는 관리자가 만든 것만)
+    if (CLOUD) { S.sgroups = S.sgroups || []; S.lessons = S.lessons || []; S.answers = S.answers || []; return; }
+    if (S.sgSeed !== 2) {
+      var vid = ((MEDIA.sunday || [])[0] || {}).videoId || '', vid2 = ((MEDIA.sunday || [])[1] || {}).videoId || vid, vid3 = ((MEDIA.sunday || [])[2] || {}).videoId || vid;
+      S.sgroups = [
+        { id: '새신자반', name: '새신자반', kind: 'newcomer', leader: '김은혜', desc: '처음 오신 분과 함께 4주 동안 신앙의 기초를 배워요. 영상을 보고 질문에 답해 주세요.', names: ['김은혜', '박하늘', '서지안', '홍새벽'] },
+        { id: '목자학교', name: '목자학교', kind: 'school', leader: '정바울', desc: '목자로 섬길 분들을 위한 훈련 모임이에요.', names: ['정바울', '이다정', '최선한'] },
+        { id: '1여선교회', name: '1여선교회', kind: 'mission', leader: '윤미소', desc: '20~59년생 여선교회 모임이에요.', names: ['윤미소', '한지혜', '우채원'] },
+      ];
+      S.lessons = [
+        { id: 'l1', sg: '새신자반', no: 1, title: '하나님은 어떤 분이신가요?', url: vid ? 'https://youtu.be/' + vid : '', note: '예시: 실제로는 담당자가 교육 영상 링크를 올려요.', qs: ['영상에서 마음에 남은 한 문장은 무엇인가요?', '내가 생각했던 하나님과 다른 점이 있었나요?', '이번 주에 하나님께 드리고 싶은 기도 한 줄을 적어 주세요.'] },
+        { id: 'l2', sg: '새신자반', no: 2, title: '예수님은 누구신가요?', url: vid2 ? 'https://youtu.be/' + vid2 : '', note: '', qs: ['예수님에 대해 새롭게 알게 된 것은 무엇인가요?', '궁금한 점이 있다면 적어 주세요.'] },
+        { id: 'l3', sg: '새신자반', no: 3, title: '교회는 어떤 곳인가요?', url: vid3 ? 'https://youtu.be/' + vid3 : '', note: '', qs: ['예그린교회에서 함께하고 싶은 모임이 있나요?'] },
+      ];
+      S.answers = [{ id: 'l1_demo', sg: '새신자반', lesson: 'l1', uid: 'demo', name: '박하늘', watched: true, a: ['하나님은 나를 먼저 찾아오시는 분이라는 말이 남았어요.', '멀리 계신 분인 줄 알았어요.', '이번 주도 함께해 주세요.'], at: '어제', reply: '하늘 성도님, 나눠 주셔서 고마워요. 다음 주에 같이 이야기해요 🙂', replyBy: '김은혜' }];
+      S.sgSeed = 2; save();
+    }
+    if (S.me && !S.me.sgs) { S.me.sgs = ['새신자반']; save(); }   // 시안: 처음엔 새신자반 식구로
+  }
+  function mySgs() {   // 내가 들어갈 수 있는 소그룹 (목사님·관리자는 전부)
+    sgSeed();
+    return (S.sgroups || []).filter(function (g) { return isStaffMe() || (S.me.sgs || []).indexOf(g.name) >= 0; });
+  }
+  function sgOf(name) { return (S.sgroups || []).filter(function (g) { return g.name === name; })[0] || null; }
+  function sgLeadMe(g) { return !!g && (isStaffMe() || (CLOUD ? g.leaderUid === S.me.uid : g.leader === S.me.name)); }
+  function lessonsOf(name) { return (S.lessons || []).filter(function (l) { return l.sg === name; }).sort(function (a, b) { return (a.no || 0) - (b.no || 0); }); }
+  function myAnswer(lid) { var me = CLOUD ? S.me.uid : 'me'; return (S.answers || []).filter(function (a) { return a.lesson === lid && a.uid === me; })[0] || null; }
+  function ytId(u) { var m = String(u || '').match(/(?:youtu\.be\/|v=|embed\/|shorts\/|live\/)([\w-]{11})/); return m ? m[1] : ''; }
+  // 목장방 맨 위: 우리 목장 + 내 소그룹 칩
+  function sgChips(q) {
+    var list = mySgs(); if (!list.length) return '';
+    return '<div class="chips sg-chips"><a class="chip' + (q.sg ? '' : ' on') + '" href="#/talk/group">🏡 ' + esc(S.me.group || '우리 목장') + '</a>' +
+      list.map(function (g) { return '<a class="chip' + (q.sg === g.name ? ' on' : '') + '" href="#/talk/group?sg=' + encodeURIComponent(g.name) + '">' + sgKind(g.kind)[1] + ' ' + esc(g.name) + '</a>'; }).join('') + '</div>';
+  }
+  function sgRoom(name) {
+    var g = sgOf(name);
+    if (!g || mySgs().indexOf(g) < 0) return '<p class="empty">이 소그룹에 들어갈 수 없어요.</p>';
+    var K = sgKind(g.kind), lead = sgLeadMe(g), ls = lessonsOf(g.name);
+    var done = ls.filter(function (l) { var a = myAnswer(l.id); return a && a.a && a.a.some(Boolean); }).length;
+    var posts = S.posts.filter(function (p) { return p.scope === 'sg' && p.group === g.name && canSee(p); });
+    var names = g.names || [];
+    return '<div class="card group-card sg-card"><div class="sub" style="color:#cfe3d6">' + K[1] + ' ' + K[2] + ' 소그룹</div><div class="big">' + esc(g.name) + '</div>' +
+        '<div style="font-size:.9rem;opacity:.85">' + (g.leader ? '담당 ' + esc(g.leader) + ' · ' : '') + '식구 ' + names.length + '명 · 소그룹 식구만 볼 수 있어요</div>' +
+        (g.desc ? '<p style="margin-top:8px;font-size:.92rem;opacity:.95">' + esc(g.desc) + '</p>' : '') + '</div>' +
+      (ls.length || lead ? '<div class="card"><div class="sec-title" style="margin:0 0 6px"><b>📺 교육 영상</b><span class="sub">' + (ls.length ? '답변 ' + done + '/' + ls.length : '') + '</span></div>' +
+        (ls.length ? '<div class="sg-prog"><i style="width:' + Math.round(done / ls.length * 100) + '%"></i></div>' : '') +
+        (ls.map(function (l) {
+          var a = myAnswer(l.id), st = a && a.a && a.a.some(Boolean) ? (a.reply ? '💬 답글 왔어요' : '✓ 답변했어요') : a && a.watched ? '✏️ 답변하기' : '▶ 보기';
+          var n = lead ? (S.answers || []).filter(function (x) { return x.lesson === l.id && x.a && x.a.some(Boolean); }).length : 0;
+          return '<a class="ls-row' + (a && a.a && a.a.some(Boolean) ? ' done' : '') + '" href="#/lesson/' + encodeURIComponent(l.id) + '"><span class="ls-no">' + (l.no || '') + '강</span><span class="ls-t"><b>' + esc(l.title) + '</b><small>질문 ' + (l.qs || []).filter(Boolean).length + '개' + (lead ? ' · 답변 ' + n + '명' : '') + '</small></span><span class="ls-st">' + st + '</span></a>';
+        }).join('') || '<p class="sub">아직 올린 영상이 없어요.</p>') +
+        (lead ? '<a class="btn small ghost" style="margin-top:10px" href="#/lesson/new?sg=' + encodeURIComponent(g.name) + '">＋ 교육 영상 올리기</a>' : '') + '</div>' : '') +
+      '<div class="sec-title"><b>💬 ' + esc(g.name) + ' 나눔</b><a href="#/write?to=sg&sg=' + encodeURIComponent(g.name) + '">글쓰기 ✎</a></div>' +
+      (posts.map(function (p) { return postCard(p, true); }).join('') || '<p class="empty">소그룹에 첫 나눔을 남겨 보세요.</p>') +
+      (names.length ? '<details class="card"><summary style="font-weight:700;cursor:pointer">👥 식구 ' + names.length + '명 보기</summary><div class="members">' + names.map(function (n) { return '<span>' + esc(n) + (n === g.leader ? ' (담당)' : '') + '</span>'; }).join('') + '</div></details>' : '');
+  }
+  // 교육 영상 한 편: 영상 → 「다 봤어요」 → 질문에 답하기 · 담당자는 모든 답변 보고 답글
+  function lesson(id, q) {
+    sgSeed();
+    if (id === 'new') return lessonForm(q.sg, null);
+    var l = (S.lessons || []).filter(function (x) { return x.id === id; })[0], g = l && sgOf(l.sg);
+    renderTop({ back: g ? g.name : '목장방', white: true });
+    if (!l || !g || mySgs().indexOf(g) < 0) return '<p class="empty">영상을 찾을 수 없어요.</p>';
+    if (q.edit && sgLeadMe(g)) return lessonForm(g.name, l);
+    var a = myAnswer(l.id) || {}, watched = !!a.watched, yt = ytId(l.url), lead = sgLeadMe(g), qs = (l.qs || []).filter(Boolean);
+    var html = '<div class="card ls-card"><div class="label">' + esc(g.name) + ' · ' + (l.no || '') + '강</div><div class="h1" style="margin:2px 0 10px">' + esc(l.title) + '</div>' +
+        (yt ? '<div class="ls-video"><iframe src="https://www.youtube.com/embed/' + yt + '?rel=0" title="' + esc(l.title) + '" allow="encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>' +
+            '<a class="sub" href="https://youtu.be/' + yt + '" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px">유튜브에서 열기 ›</a>'
+          : l.url ? '<a class="btn ghost" href="' + esc(l.url) + '" target="_blank" rel="noopener">▶ 영상 보러 가기</a>' : '<p class="sub">영상 링크가 아직 없어요.</p>') +
+        (l.note ? '<p class="sub" style="margin-top:8px">' + esc(l.note) + '</p>' : '') +
+        '<button class="btn' + (watched ? '' : ' ghost') + '" style="margin-top:12px" data-lswatch="' + esc(l.id) + '">' + (watched ? '✓ 영상 다 봤어요' : '영상 다 봤어요') + '</button></div>';
+    html += '<form class="card" id="lsForm" data-ls="' + esc(l.id) + '" style="display:flex;flex-direction:column;gap:12px"><b>✏️ 질문에 답해 주세요</b>' +
+      (watched ? '' : '<p class="sub">영상을 다 본 뒤 「영상 다 봤어요」를 누르면 답을 보낼 수 있어요.</p>') +
+      qs.map(function (t, i) { return '<label class="field"><span>' + (i + 1) + '. ' + esc(t) + '</span><textarea name="a' + i + '" rows="3" maxlength="600"' + (watched ? '' : ' disabled') + '>' + esc((a.a || [])[i] || '') + '</textarea></label>'; }).join('') +
+      '<p class="sub" style="font-size:.78rem">🔒 답변은 나와 담당자' + (g.leader ? '(' + esc(g.leader) + ')' : '') + ', 목사님만 볼 수 있어요.</p>' +
+      '<button class="btn"' + (watched ? '' : ' disabled') + '>' + (a.a && a.a.some(Boolean) ? '답변 고치기' : '답변 보내기') + '</button></form>';
+    if (a.reply) html += '<div class="card green"><b style="color:var(--green-d)">💬 ' + esc(a.replyBy || '담당자') + '님의 답글</b><p style="margin-top:6px">' + esc(a.reply) + '</p></div>';
+    if (lead) {
+      var all = (S.answers || []).filter(function (x) { return x.lesson === l.id; });
+      html += '<div class="sec-title"><b>📋 답변 모아 보기 ' + all.filter(function (x) { return x.a && x.a.some(Boolean); }).length + '명</b><a href="#/lesson/' + encodeURIComponent(l.id) + '?edit=1">영상 고치기</a></div>' +
+        (all.map(function (x) {
+          return '<div class="card ans-card"><div class="sec-title" style="margin:0 0 6px"><b>' + esc(x.name || '') + '</b><span class="sub">' + (x.watched ? '영상 봄' : '영상 안 봄') + (x.at ? ' · ' + esc(x.at) : '') + '</span></div>' +
+            qs.map(function (t, i) { return '<div class="ans-q">' + (i + 1) + '. ' + esc(t) + '</div><p class="ans-a">' + (x.a && x.a[i] ? esc(x.a[i]) : '<span class="sub">(아직 안 씀)</span>') + '</p>'; }).join('') +
+            '<form class="row ans-reply" data-areply="' + esc(x.id) + '"><input name="r" maxlength="300" placeholder="답글 남기기" value="' + esc(x.reply || '') + '"><button class="btn small" style="flex:0 0 auto">' + (x.reply ? '고치기' : '보내기') + '</button></form></div>';
+        }).join('') || '<p class="empty">아직 답변이 없어요.</p>');
+    }
+    return html;
+  }
+  function lessonForm(sgName, l) {
+    var g = sgOf(sgName);
+    renderTop({ back: g ? g.name : '목장방', white: true });
+    if (!g || !sgLeadMe(g)) return '<p class="empty">담당자만 영상을 올릴 수 있어요.</p>';
+    var no = l ? l.no : lessonsOf(g.name).length + 1, qs = l ? l.qs || [] : [];
+    return '<form class="card" id="lsNew" data-sg="' + esc(g.name) + '"' + (l ? ' data-id="' + esc(l.id) + '"' : '') + ' style="display:flex;flex-direction:column;gap:10px"><b>' + (l ? '교육 영상 고치기' : '📺 ' + esc(g.name) + ' 교육 영상 올리기') + '</b>' +
+      '<div class="row"><label class="field" style="flex:0 0 80px"><span>몇 강</span><input name="no" type="number" min="1" max="99" value="' + no + '"></label><label class="field"><span>제목</span><input name="title" required maxlength="40" value="' + esc(l ? l.title : '') + '" placeholder="예: 하나님은 어떤 분이신가요?"></label></div>' +
+      '<label class="field"><span>영상 링크 (유튜브 「공유」 → 링크 복사 · 「일부 공개」 영상도 돼요)</span><input name="url" type="url" value="' + esc(l ? l.url : '') + '" placeholder="https://youtu.be/..."></label>' +
+      '<label class="field"><span>짧은 안내 (선택)</span><input name="note" maxlength="100" value="' + esc(l ? l.note || '' : '') + '"></label>' +
+      [0, 1, 2, 3, 4].map(function (i) { return '<label class="field"><span>질문 ' + (i + 1) + (i ? ' (선택)' : '') + '</span><input name="q' + i + '" maxlength="100"' + (i ? '' : ' required') + ' value="' + esc(qs[i] || '') + '"></label>'; }).join('') +
+      (l ? '' : '<label class="check"><input type="checkbox" name="push" checked>소그룹 식구에게 알림 보내기</label>') +
+      '<button class="btn">' + (l ? '고치기' : '올리기') + '</button>' + (l ? '<button type="button" class="btn ghost" data-lsdel="' + esc(l.id) + '">이 영상 지우기</button>' : '') + '</form>';
+  }
+  function bindLesson() {
+    var w = $('[data-lswatch]');
+    if (w) w.onclick = function () {
+      var id = w.dataset.lswatch, l = (S.lessons || []).filter(function (x) { return x.id === id; })[0], a = myAnswer(id), on = !(a && a.watched);
+      if (CLOUD) { put(YG.saveAnswer(l, { watched: on }), on ? '다 봤어요 ✓ 이제 질문에 답해 주세요' : ''); return; }
+      if (!a) { a = { id: id + '_me', sg: l.sg, lesson: id, uid: 'me', name: S.me.name, a: [] }; S.answers.push(a); }
+      a.watched = on; save(); route(); if (on) toast('다 봤어요 ✓ 이제 질문에 답해 주세요');
+    };
+    var f = $('#lsForm');
+    if (f) f.onsubmit = function (e) {
+      e.preventDefault();
+      var id = f.dataset.ls, l = (S.lessons || []).filter(function (x) { return x.id === id; })[0];
+      var ans = [].map.call(f.querySelectorAll('textarea'), function (t) { return t.value.trim(); });
+      if (!ans.some(Boolean)) { toast('한 가지라도 적어 주세요.'); return; }
+      if (CLOUD) { f.querySelector('.btn').disabled = true; put(YG.saveAnswer(l, { a: ans, watched: true }), '답변을 보냈어요. 담당자가 읽어요 🙏'); return; }
+      var a = myAnswer(id); if (!a) { a = { id: id + '_me', sg: l.sg, lesson: id, uid: 'me', name: S.me.name }; S.answers.push(a); }
+      a.a = ans; a.watched = true; a.at = '방금'; save(); toast('답변을 보냈어요. 담당자가 읽어요 🙏'); route();
+    };
+    document.querySelectorAll('[data-areply]').forEach(function (rf) {
+      rf.onsubmit = function (e) {
+        e.preventDefault();
+        var t = rf.r.value.trim(), x = (S.answers || []).filter(function (y) { return y.id === rf.dataset.areply; })[0]; if (!x) return;
+        if (CLOUD) { put(YG.replyAnswer(x, t), '답글을 남겼어요'); return; }
+        x.reply = t; x.replyBy = S.me.name; save(); toast('답글을 남겼어요'); route();
+      };
+    });
+    var nf = $('#lsNew');
+    if (nf) nf.onsubmit = function (e) {
+      e.preventDefault();
+      var sg = nf.dataset.sg, l = { sg: sg, no: Number(nf.no.value) || 1, title: nf.title.value.trim(), url: nf.url.value.trim(), note: nf.note.value.trim(),
+        qs: [0, 1, 2, 3, 4].map(function (i) { return nf['q' + i].value.trim(); }).filter(Boolean) };
+      var push = nf.push && nf.push.checked, back = '#/talk/group?sg=' + encodeURIComponent(sg);
+      if (CLOUD) {
+        var job = nf.dataset.id ? YG.updLesson(nf.dataset.id, l) : YG.addLesson(l);
+        if (push) job = job.then(function () { return YG.notice({ kind: 'group', title: sg + ' 교육 영상이 올라왔어요', body: l.no + '강 · ' + l.title, url: back }, 'sg:' + sg); });
+        put(job.then(function () { location.hash = back; }), nf.dataset.id ? '고쳤어요' : '영상을 올렸어요');
+        return;
+      }
+      if (nf.dataset.id) { var o = S.lessons.filter(function (x) { return x.id === nf.dataset.id; })[0]; Object.assign(o, l); }
+      else { l.id = 'l' + Date.now(); S.lessons.push(l); }
+      save(); toast(nf.dataset.id ? '고쳤어요' : '영상을 올렸어요' + (push ? ' · 식구들에게 알림을 보냈어요' : '')); location.hash = back;
+    };
+    var d = $('[data-lsdel]');
+    if (d) d.onclick = function () {
+      if (!confirm('이 교육 영상을 지울까요? 받은 답변은 남아 있어요.')) return;
+      var l = (S.lessons || []).filter(function (x) { return x.id === d.dataset.lsdel; })[0], back = '#/talk/group?sg=' + encodeURIComponent(l.sg);
+      if (CLOUD) { put(YG.delLesson(l).then(function () { location.hash = back; }), '지웠어요'); return; }
+      S.lessons = S.lessons.filter(function (x) { return x !== l; }); save(); location.hash = back;
+    };
+  }
+  // 관리자: 소그룹 만들기 · 담당자 · 식구 넣기
+  function adminSgroups() {
+    adminTop(1); sgSeed();
+    var people = (S.people || []).slice().sort(function (a, b) { return a.name < b.name ? -1 : 1; });
+    return (S.sgroups || []).map(function (g, gi) {
+      var K = sgKind(g.kind), names = g.names || [];
+      return '<details class="card sg-adm"><summary><b>' + K[1] + ' ' + esc(g.name) + '</b><span class="sub"> · ' + K[2] + ' · 식구 ' + names.length + '명' + (g.leader ? ' · 담당 ' + esc(g.leader) : '') + '</span></summary>' +
+        '<label class="field" style="margin-top:10px"><span>소개</span><input data-sgdesc="' + gi + '" maxlength="80" value="' + esc(g.desc || '') + '"></label>' +
+        '<label class="field"><span>담당자 (교육 영상을 올리고 답변을 봐요)</span><select data-sglead="' + gi + '"><option value="">정하지 않음</option>' + people.map(function (p) { return '<option value="' + esc(p.id || p.name) + '"' + (p.name === g.leader ? ' selected' : '') + '>' + esc(p.name) + (p.group ? ' · ' + esc(p.group) : '') + '</option>'; }).join('') + '</select></label>' +
+        '<div class="sub" style="font-weight:700;margin:8px 0 4px">식구 고르기</div><div class="sg-pick">' + people.map(function (p) { var on = names.indexOf(p.name) >= 0; return '<label class="' + (on ? 'on' : '') + '"><input type="checkbox" data-sgmem="' + gi + '" value="' + esc(p.id || p.name) + '"' + (on ? ' checked' : '') + '>' + esc(p.name) + '</label>'; }).join('') + '</div>' +
+        '<button class="btn small ghost" style="margin-top:10px" data-sgdel="' + gi + '">이 소그룹 지우기</button></details>';
+    }).join('') +
+      '<form class="card" id="sgForm" style="display:flex;flex-direction:column;gap:10px"><b>＋ 새 소그룹 만들기</b>' +
+        '<label class="field"><span>이름</span><input name="n" required maxlength="20" placeholder="예: 새신자반, 목자학교, 2여선교회"></label>' +
+        '<label class="field"><span>종류</span><select name="k">' + SG_KINDS.map(function (k) { return '<option value="' + k[0] + '">' + k[1] + ' ' + k[2] + '</option>'; }).join('') + '</select></label>' +
+        '<label class="field"><span>소개 (선택)</span><input name="d" maxlength="80"></label><button class="btn">만들기</button></form>' +
+      '<p class="sub">한 사람이 여러 소그룹에 들 수 있어요. 소그룹 식구는 나눔 › 목장방 맨 위 칩에서 들어가요.</p>';
+  }
+  function bindSgAdmin() {
+    var f = $('#sgForm');
+    if (f) f.onsubmit = function (e) {
+      e.preventDefault();
+      var n = f.n.value.trim(); if (!n) return;
+      if (sgOf(n)) { toast('이미 있는 이름이에요'); return; }
+      var g = { id: n, name: n, kind: f.k.value, desc: f.d.value.trim(), leader: '', names: [] };
+      if (CLOUD) { put(YG.addSgroup(g), n + '을 만들었어요'); return; }
+      S.sgroups.push(g); save(); toast(n + '을 만들었어요'); route();
+    };
+    function personOf(v) { return (S.people || []).filter(function (p) { return (p.id || p.name) === v; })[0]; }
+    document.querySelectorAll('[data-sgdesc]').forEach(function (i) { i.onchange = function () { var g = S.sgroups[i.dataset.sgdesc]; if (CLOUD) { put(YG.updSgroup(g, { desc: i.value.trim() }), '소개를 바꿨어요'); return; } g.desc = i.value.trim(); save(); toast('소개를 바꿨어요'); }; });
+    document.querySelectorAll('[data-sglead]').forEach(function (s) {
+      s.onchange = function () {
+        var g = S.sgroups[s.dataset.sglead], p = personOf(s.value);
+        if (CLOUD) { put(YG.updSgroup(g, { leader: p ? p.name : '', leaderUid: p ? p.id : '' }), '담당자를 정했어요'); return; }
+        g.leader = p ? p.name : ''; save(); toast('담당자를 정했어요'); route();
+      };
+    });
+    document.querySelectorAll('[data-sgmem]').forEach(function (c) {
+      c.onchange = function () {
+        var g = S.sgroups[c.dataset.sgmem], p = personOf(c.value); if (!p) return;
+        if (CLOUD) { put(YG.setSgMember(g, p, c.checked), p.name + (c.checked ? '님을 넣었어요' : '님을 뺐어요')); return; }
+        g.names = (g.names || []).filter(function (n) { return n !== p.name; }); if (c.checked) g.names.push(p.name);
+        if (p.name === S.me.name) { S.me.sgs = (S.me.sgs || []).filter(function (n) { return n !== g.name; }); if (c.checked) S.me.sgs.push(g.name); }
+        c.parentNode.classList.toggle('on', c.checked); save();
+      };
+    });
+    document.querySelectorAll('[data-sgdel]').forEach(function (b) {
+      b.onclick = function () {
+        var g = S.sgroups[b.dataset.sgdel];
+        if (!confirm('「' + g.name + '」 소그룹을 지울까요? 교육 영상과 답변은 남지만 더 이상 들어갈 수 없어요.')) return;
+        if (CLOUD) { put(YG.delSgroup(g), '지웠어요'); return; }
+        S.sgroups = S.sgroups.filter(function (x) { return x !== g; }); save(); route();
+      };
+    });
+  }
   function bindTalk() {
     document.querySelectorAll('[data-react]').forEach(function (b) {
       b.onclick = function (e) { e.preventDefault(); react(b.dataset.react); route(); };
@@ -1005,12 +1218,12 @@
   // 글쓰기
   function write(q) {
     if (!S.me || !S.me.approved) { location.hash = '#/talk'; return ''; }
-    var to = q.to === 'group' ? 'group' : 'all';
+    var to = q.to === 'group' ? 'group' : q.to === 'sg' && q.sg ? 'sg' : 'all', sgTo = to === 'sg' ? q.sg : '';
     renderTop({ back: '취소', white: true, right: '<button class="pill-btn" id="postBtn" disabled>올리기</button>' });
     return '<div><div class="sub" style="font-weight:700;margin-bottom:6px">어떤 글인가요?</div><div class="chips" id="catPick">' +
         Object.keys(CATS).filter(function (k) { return ['thanks', 'qt', 'gpray'].indexOf(k) < 0; }).map(function (k, i) { return '<button class="chip' + ((q.cat ? k === q.cat : i === 0) ? ' on' : '') + '" data-v="' + k + '">' + CATS[k] + '</button>'; }).join('') + '</div></div>' +
       '<div><div class="sub" style="font-weight:700;margin-bottom:6px">누구에게 보일까요?</div><div class="chips" id="scopePick">' +
-        ['pastor', 'group', 'all'].map(function (k) { return '<button class="chip' + (k === to ? ' on' : '') + '" data-v="' + k + '">' + (k === 'pastor' ? '🔒 ' : '') + SCOPES[k] + '</button>'; }).join('') + '</div></div>' +
+        (sgTo ? '<button class="chip on" data-v="sg" data-sg="' + esc(sgTo) + '">👥 ' + esc(sgTo) + '</button>' : ['pastor', 'group', 'all'].map(function (k) { return '<button class="chip' + (k === to ? ' on' : '') + '" data-v="' + k + '">' + (k === 'pastor' ? '🔒 ' : '') + SCOPES[k] + '</button>'; }).join('')) + '</div></div>' +
       '<textarea id="wText" rows="9" maxlength="1000" placeholder="' + (q.cat === 'grace' ? '이 설교로 받은 은혜와 이번 주 적용을 짧게 적어 주세요.' : '교회 식구들과 나누고 싶은 이야기를 적어 주세요.') + '"></textarea><div class="counter"><span id="wCount">0</span> / 1000</div>' +
       '<div class="card green sub" style="color:#55705f">💡 다른 사람의 이름이나 사정은 허락을 받고 적어 주세요.</div>';
   }
@@ -1026,20 +1239,21 @@
     t.oninput = function () { $('#wCount').textContent = t.value.length; $('#postBtn').disabled = !t.value.trim(); };
     $('#postBtn').onclick = function () {
       var scope = $('#scopePick .on').dataset.v, cat = $('#catPick .on').dataset.v;
-      var vid = cat === 'grace' && (MEDIA.sunday || [])[0] ? MEDIA.sunday[0].videoId : undefined;   // 은혜 글은 이번 주 설교에 묶어 말씀 탭 은혜 칸에도 모이게
+      var vid = cat === 'grace' && (MEDIA.sunday || [])[0] ? MEDIA.sunday[0].videoId : undefined;
+      var sgName = scope === 'sg' ? $('#scopePick .on').dataset.sg : '', backTo = scope === 'group' ? '#/talk/group' : scope === 'sg' ? '#/talk/group?sg=' + encodeURIComponent(sgName) : '#/talk/church';   // 은혜 글은 이번 주 설교에 묶어 말씀 탭 은혜 칸에도 모이게
       if (scope === 'group' && !S.me.group) { toast(CLOUD ? '아직 목장이 정해지지 않았어요.' : '목장방에서 목장을 먼저 정해 주세요.'); return; }
       if (CLOUD) {
         $('#postBtn').disabled = true;
-        YG.addPost({ cat: cat, scope: scope, text: t.value.trim(), vid: vid }).then(function () {
-          toast(scope === 'pastor' ? '목사님께만 보냈어요.' : SCOPES[scope] + '에 올렸어요.');
-          location.replace(scope === 'group' ? '#/talk/group' : '#/talk/church');
+        YG.addPost({ cat: cat, scope: scope, sg: sgName, text: t.value.trim(), vid: vid }).then(function () {
+          toast(scope === 'pastor' ? '목사님께만 보냈어요.' : (scope === 'sg' ? sgName : SCOPES[scope]) + '에 올렸어요.');
+          location.replace(backTo);
         }, function (e) { console.warn(e); $('#postBtn').disabled = false; toast('올리지 못했어요. 인터넷 연결을 확인해 주세요.'); });
         return;
       }
-      S.posts.unshift({ id: 'p' + Date.now(), cat: cat, vid: vid, scope: scope, group: scope === 'group' ? S.me.group : undefined, author: S.me.name, text: t.value.trim(), at: '방금', mine: true, count: 0, reacted: false, comments: [] });
+      S.posts.unshift({ id: 'p' + Date.now(), cat: cat, vid: vid, scope: scope, group: scope === 'group' ? S.me.group : scope === 'sg' ? sgName : undefined, author: S.me.name, text: t.value.trim(), at: '방금', mine: true, count: 0, reacted: false, comments: [] });
       save();
-      toast(scope === 'pastor' ? '목사님께만 보냈어요.' : SCOPES[scope] + '에 올렸어요.');
-      location.replace(scope === 'group' ? '#/talk/group' : '#/talk/church');
+      toast(scope === 'pastor' ? '목사님께만 보냈어요.' : (scope === 'sg' ? sgName : SCOPES[scope]) + '에 올렸어요.');
+      location.replace(backTo);
     };
     t.focus();
   }
@@ -2031,6 +2245,7 @@
     ['mission', '🌏', '선교 소식', '나라별 소식·기도제목 올리기', ['pastor', 'admin']],
     ['family', '🤝', '교우 동정', '결혼·출산·소천·입원 소식 올리기', ['pastor', 'admin']],
     ['groups', '🏠', '목장 관리', '목장 만들기, 목자 정하기, 식구 배정', ['pastor', 'admin']],
+    ['sgroups', '🌱', '소그룹', '새신자반·목자학교·선교회 만들기, 담당자·식구 정하기', ['pastor', 'admin']],
     ['reports', '🚩', '나눔 관리', '신고된 글 확인 · 숨기기 · 지우기', ['pastor', 'admin']],
     ['gpray', '🙏', '목장 기도제목', '목장별로 올라온 중보기도 제목 · 안 올린 목장 알림', ['pastor', 'admin']],
     ['reading', '📖', '성경읽기 현황', '이번 주 함께 읽은 사람 수', ['pastor', 'admin', 'leader']],
@@ -2245,6 +2460,7 @@
       case 'mission': return adminMission();
       case 'family': return adminFamily();
       case 'groups': return adminGroups();
+      case 'sgroups': return adminSgroups();
       case 'reports': return adminReports();
       case 'reading': return adminReading();
       case 'gpray': return adminGpray();
@@ -2315,6 +2531,7 @@
     }
   }
   function bindAdminAll() {
+    bindSgAdmin();
     bindGpAdmin();
     bindFamily();
     if (CLOUD) return bindAdminCloud();
@@ -2438,6 +2655,7 @@
       case 'news': tab = 2; html = p[1] != null ? newsDetail(Number(p[1])) : news(r.q); break;
       case 'talk': tab = 3; html = talk(p[1], r.q); after = function () { bindGate(); bindTalk(); }; break;
       case 'write': tab = -1; html = write(r.q); after = bindWrite; break;
+      case 'lesson': tab = 3; html = lesson(decodeURIComponent(p[1] || ''), r.q); after = bindLesson; break;   // 소그룹 교육 영상
       case 'post': tab = -1; html = post(p[1]); after = function () { bindPost(p[1]); }; break;
       case 'more': tab = 4; html = more(); after = bindMore; break;
       case 'about': tab = 4; html = about(); break;

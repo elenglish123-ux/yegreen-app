@@ -241,7 +241,7 @@
   function subDoc(name, col, id) { subs.push(A.watchDoc(col, id, function (d) { cache[name] = d; rebuild(); }, fail(name))); }
 
   function resubscribe() {
-    var k = member && member.status === 'approved' ? [member.role, member.group].join('|') : '';
+    var k = member && member.status === 'approved' ? [member.role, member.group, (member.sgs || []).join(',')].join('|') : '';
     if (k === key) return rebuild();
     key = k; unsubAll(); firstNotices = true;
     if (!k) return rebuild();
@@ -252,12 +252,17 @@
     sub('mission', 'missionNews', []);
     sub('family', 'family', []);   // 교우 동정 (2026-11-26)
     sub('groups', 'groups', []);
+    // 소그룹 (2026-11-27): 목록은 모두, 교육 영상·답변·글은 내 소그룹 것만 (답변은 서버 규칙이 내 것·담당 소그룹 것만 줌)
+    var sgs = (member.sgs || []).filter(Boolean);
+    sub('sgroups', 'sgroups', []);
+    if (isStaff()) { sub('lessons', 'lessons', []); sub('answers', 'answers', []); }
+    else if (sgs.length) { sub('lessons', 'lessons', [['sg', 'in', sgs]]); sub('answers', 'answers', [['sg', 'in', sgs]]); sub('postsSg', 'posts', [['scope', '==', 'sg'], ['group', 'in', sgs]]); }
     sub('reads', 'reads', []);
     subDoc('settings', 'settings', 'app');
     if (isStaff()) { sub('notices', 'notices', []); sub('members', 'members', []); sub('newcomers', 'newcomers', []); }
     else {
       // 「목자님만」 알림은 to = 'leader:목장이름' (2026-11-25)
-      sub('notices', 'notices', [['to', 'in', g ? ['all', g].concat(member.role === 'leader' ? ['leader:' + g] : []) : ['all']]]);
+      sub('notices', 'notices', [['to', 'in', (g ? ['all', g].concat(member.role === 'leader' ? ['leader:' + g] : []) : ['all']).concat(sgs.map(function (x) { return 'sg:' + x; }))]]);
       if (g) sub('groupMembers', 'members', [['group', '==', g], ['status', '==', 'approved']]);
     }
   }
@@ -284,19 +289,25 @@
       S.me = uid && member === false ? { uid: uid, missing: true } : null;
       S.admin = false;
     } else {
-      S.me = { uid: uid, name: member.name, group: member.group || '', qt: !!member.qt, approved: member.status === 'approved', status: member.status, role: member.role || 'member' };
+      S.me = { uid: uid, name: member.name, group: member.group || '', qt: !!member.qt, sgs: (member.sgs || []).slice(), approved: member.status === 'approved', status: member.status, role: member.role || 'member' };
       S.admin = isLeader();
       S.adminRole = S.admin ? member.role : 'member';
     }
     if (!key) { S.cloudReady = true; render(); return; }
-    var posts = [].concat(cache.posts || [], cache.postsAll || [], cache.postsGroup || []).map(function (d) { return mapPost(d, 'posts'); })
+    var posts = [].concat(cache.posts || [], cache.postsAll || [], cache.postsGroup || [], cache.postsSg || []).map(function (d) { return mapPost(d, 'posts'); })
       .concat((cache.notes || []).map(function (d) { return mapPost(d, 'pastorNotes'); }));
     var seen = {};
     S.posts = posts.filter(function (p) { if (seen[p.id]) return false; seen[p.id] = 1; return true; }).sort(byTs);
     S.family = (cache.family || []).slice();
+    S.sgroups = (cache.sgroups || []).map(function (g) { return { id: g.id, name: g.name || g.id, kind: g.kind || 'etc', desc: g.desc || '', leader: g.leader || '', leaderUid: g.leaderUid || '', names: g.names || [] }; })
+      .sort(function (a, b) { return a.name < b.name ? -1 : 1; });
+    S.lessons = (cache.lessons || []).map(function (l) { return { id: l.id, sg: l.sg, no: l.no || 0, title: l.title || '', url: l.url || '', note: l.note || '', qs: l.qs || [] }; });
+    var leadSg = S.sgroups.filter(function (g) { return g.leaderUid === uid; }).map(function (g) { return g.name; });
+    S.answers = (cache.answers || []).filter(function (a) { return isStaff() || a.uid === uid || leadSg.indexOf(a.sg) >= 0; })
+      .map(function (a) { return { id: a.id, sg: a.sg, lesson: a.lesson, uid: a.uid, name: a.name || '', watched: !!a.watched, a: a.a || [], at: rel(a.ts), reply: a.reply || '', replyBy: a.replyBy || '' }; });
     S.missionNews = (cache.mission || []).slice().sort(byTs).map(function (n) { n.at = n.at || rel(n.ts); return n; });
     var ms = cache.members || cache.groupMembers || [];
-    S.people = ms.filter(function (m) { return m.status === 'approved'; }).map(function (m) { return { id: m.id, name: m.name, role: m.role, group: m.group || '', qt: !!m.qt }; });
+    S.people = ms.filter(function (m) { return m.status === 'approved'; }).map(function (m) { return { id: m.id, name: m.name, role: m.role, group: m.group || '', qt: !!m.qt, sgs: m.sgs || [] }; });
     S.pending = ms.filter(function (m) { return m.status === 'pending'; }).sort(byTs).map(function (m) { return { id: m.id, name: m.name, group: m.wantGroup || '', at: rel(m.ts), memo: m.memo || '' }; });
     S.groups = (cache.groups || []).map(function (g) {
       return { id: g.id, name: g.name || g.id, leader: g.leader || '', count: S.people.filter(function (p) { return p.group === (g.name || g.id); }).length };
@@ -376,7 +387,7 @@
 
   YG.addPost = function (p) {
     return need() || A.add(p.scope === 'pastor' ? 'pastorNotes' : 'posts', {
-      uid: uid, author: myName(), cat: p.cat, scope: p.scope === 'pastor' ? 'pastor' : p.scope, group: p.scope === 'group' ? member.group : '',
+      uid: uid, author: myName(), cat: p.cat, scope: p.scope === 'pastor' ? 'pastor' : p.scope, group: p.scope === 'group' ? member.group : p.scope === 'sg' ? String(p.sg || '') : '',
       text: p.text, diary: p.diary || '', head: p.head || '', verse: String(p.verse || '').slice(0, 40), vow: p.vow ? { kind: String(p.vow.kind || 'vow'), name: String(p.vow.name || '').slice(0, 20), days: +p.vow.days, mins: +p.vow.mins, start: String(p.vow.start) } : null, img: String(p.img || '').slice(0, 200000), qday: String(p.qday || ''), vid: String(p.vid || '').slice(0, 20), week: String(p.week || ''), lead: String(p.lead || '').slice(0, 20), items: (p.items || []).slice(0, 40).map(function (x) { return { n: String(x.n || '').slice(0, 20), t: String(x.t || '').slice(0, 150) }; }), common: String(p.common || '').slice(0, 200), notice: !!p.notice && isStaff(), reactors: [], comments: [], hidden: false, ts: now(),
     });
   };
@@ -405,6 +416,24 @@
   YG.addFamily = function (f) { f = Object.assign({}, f); f.ts = now(); return A.add('family', f); };   // 교우 동정
   YG.delFamily = function (f) { return A.del('family', f.id); };
   YG.notice = function (msg, to) { return A.add('notices', { kind: msg.kind || 'notice', title: msg.title, body: msg.body || '', url: msg.url || '#/', to: to || 'all', ts: now(), by: myName() }); };
+  // 소그룹 (2026-11-27)
+  YG.addSgroup = function (g) { return A.set('sgroups', g.name, { name: g.name, kind: g.kind || 'etc', desc: g.desc || '', leader: '', leaderUid: '', names: [], ts: now() }); };
+  YG.updSgroup = function (g, patch) { return A.update('sgroups', g.id || g.name, patch); };
+  YG.delSgroup = function (g) { return A.del('sgroups', g.id || g.name); };
+  YG.setSgMember = function (g, p, on) {   // 교인 문서의 sgs + 소그룹 문서의 이름 목록을 함께
+    return A.update('members', p.id, { sgs: on ? A.union(g.name) : A.remove(g.name) })
+      .then(function () { return A.update('sgroups', g.id || g.name, { names: on ? A.union(p.name) : A.remove(p.name) }); });
+  };
+  YG.addLesson = function (l) { l = Object.assign({}, l); l.ts = now(); l.by = uid; return A.add('lessons', l); };
+  YG.updLesson = function (id, l) { return A.update('lessons', id, { no: l.no, title: l.title, url: l.url, note: l.note, qs: l.qs }); };
+  YG.delLesson = function (l) { return A.del('lessons', l.id); };
+  YG.saveAnswer = function (l, patch) {   // 내 답변: 문서 번호 = 영상번호_내uid
+    var d = { sg: l.sg, lesson: l.id, uid: uid, name: myName(), ts: now() };
+    if (patch.a) d.a = patch.a.slice(0, 5).map(function (x) { return String(x || '').slice(0, 600); });
+    if (patch.watched != null) d.watched = !!patch.watched;
+    return need() || A.set('answers', l.id + '_' + uid, d, true);
+  };
+  YG.replyAnswer = function (a, text) { return need() || A.update('answers', a.id, { reply: String(text || '').slice(0, 300), replyBy: myName(), replyTs: now() }); };
   YG.setJubo = function (open) { return A.set('settings', 'app', { juboOpen: !!open }, true); };
   YG.today = function () { return dayKey(new Date()); };
 })();
