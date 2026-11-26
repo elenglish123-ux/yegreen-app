@@ -496,7 +496,7 @@
       readingCard() +
       homeGroup() +
       homeFamily() +
-      (ev ? '<div class="card ev-card ev-colors"><div class="sec-title" style="margin:0 0 4px"><b>🗓 다가오는 일정</b><a href="#/news?tab=jubo">주보</a></div>' + ev + '</div>' : '') +
+      (ev ? '<div class="card ev-card ev-colors"><div class="sec-title" style="margin:0 0 4px"><b>📅 다가오는 일정</b><a href="#/news?tab=jubo">주보</a></div>' + ev + '</div>' : '') +
       (b ? '<a class="card home-jubo" href="#/news?tab=jubo"><span class="hj-ic">📰</span><span class="hj-tx"><b>' + md(b.date) + ' 주보</b><small>' + esc(b.title || '') + (bulletinNews().length ? ' · 교회 소식 ' + bulletinNews().length + '개' : '') + '</small></span><span class="hj-go">보기 ›</span></a>' : '') +
       (S.me && S.me.approved && challengeNow() ? '<a class="card green" href="#/talk/prayer?p=vow&c=thanks" style="display:flex;align-items:center;gap:12px"><span style="font-size:1.6rem">🌾</span><div><b>감사 기도 챌린지로 함께해요</b><div class="sub" style="color:#55705f">' + (thanksDays()[dayKey(new Date())] ? '오늘 감사 기도를 드렸어요 ✓' : challengeNow().title + ' · ' + md(challengeNow().to) + '까지') + '</div></div></a>' : '');
   }
