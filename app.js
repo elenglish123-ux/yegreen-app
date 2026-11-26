@@ -271,7 +271,14 @@
     items.push('<a href="#/admin/members"' + (pend ? ' class="alert"' : '') + '><b>' + pend + '</b><span>가입 신청</span></a>');
     return '<div class="card home-staff"><div class="hs-t">' + (pastor ? '🙏 목사님께' : '🛠 관리자') + '</div><div class="hs-row">' + items.join('') + '</div></div>';
   }
-  function homeRoutine() {   // 오늘의 신앙 루틴: 성경읽기 · 필사 · 기도
+  function homeGrace(s) {   // 이번 주 말씀 바로 아래: 받은 은혜 미리보기 한 줄 (나연 2026-11-26)
+    if (!s || !S.me || !S.me.approved) return '';
+    graceSeed();
+    var list = S.posts.filter(function (p) { return p.cat === 'grace' && p.vid === s.videoId && !p.hidden && canSee(p); });
+    var last = list[0];
+    return '<a class="card home-grace" href="#/sermons?v=' + s.videoId + '&g=1"><span class="hj-ic">💬</span><span class="hj-tx"><b>이 말씀으로 받은 은혜' + (list.length ? ' ' + list.length : '') + '</b><small>' +
+      (last ? esc(last.author || '') + ' · ' + esc(String(last.text || '').replace(/^\(예시\)\s*/, '').slice(0, 40)) : '첫 은혜를 나눠 주세요') + '</small></span><span class="hj-go">나누기 ›</span></a>';
+  }  function homeRoutine() {   // 오늘의 신앙 루틴: 성경읽기 · 필사 · 기도
     if (!S.me || !S.me.approved) return '';
     var today = dayKey(new Date());
     var read = !!(S.readDone && S.readDone[today]);
@@ -412,11 +419,14 @@
     var s = (MEDIA.sunday || [])[0];
     var evs = upcoming(), byDay = [];   // 같은 날 일정은 한 줄로 묶음
     evs.forEach(function (e) { var g = byDay[byDay.length - 1]; if (g && g.date === e.date) g.items.push(e); else byDay.push({ date: e.date, items: [e] }); });
-    var ev = byDay.map(function (g) {
+    var cut = new Date(); cut.setDate(cut.getDate() + 14); cut = dayKey(cut);   // 2주 안은 바로, 그 뒤는 「더보기」 (나연 2026-11-26)
+    var evRow = function (g) {
       var d = new Date(g.date + 'T00:00:00'), sp = g.items.some(function (e) { return !e.weekly; });
       return '<a class="ev' + (sp ? ' special' : '') + '" href="' + g.items[0].url + '"><div class="day"><b>' + d.getDate() + '</b><small>' + (d.getMonth() + 1) + '월 ' + WEEK[d.getDay()] + '</small></div><div class="ev-list">' +
         g.items.map(function (e) { return '<div><b class="t">' + (e.weekly ? '' : '🎉 ') + esc(e.title) + '</b><span class="sub">' + esc(e.sub) + '</span></div>'; }).join('') + '</div></a>';
-    }).join('');
+    };
+    var near = byDay.filter(function (g) { return g.date <= cut; }), far = byDay.filter(function (g) { return g.date > cut; });
+    var ev = near.map(evRow).join('') + (far.length ? '<details class="ev-more"><summary>더보기 · 그 뒤 일정 ' + far.reduce(function (s, g) { return s + g.items.length; }, 0) + '개</summary>' + far.map(evRow).join('') + '</details>' : '');
     var news = bulletinNews().slice(0, 2).map(function (n, i) {
       return '<a href="#/news/' + i + '" style="display:block;padding:6px 0;font-size:.98rem">· ' + inl(n.t) + '</a>';
     }).join('');
@@ -425,6 +435,7 @@
     return homeStaff() +
       (s ? '<a class="card hero sm" href="#/sermons?v=' + s.videoId + '"><div class="thumb" style="background-image:url(' + thumb(s.videoId) + ')"><span class="play"></span></div>' +
         '<div class="txt"><div class="label">이번 주 말씀</div><div class="h1">' + esc(s.title) + '</div><div class="sub">' + [md(s.date), s.passage, s.preacher].filter(Boolean).map(esc).join(' · ') + '</div></div></a>' : '') +
+      homeGrace(s) +
       homeRoutine() +
       readingCard() +
       homeGroup() +
@@ -486,6 +497,7 @@
   }
   function bindGrace() {
     var f = $('#grForm'); if (!f) return;
+    if (/[?&]g=1/.test(location.hash)) setTimeout(function () { var gb = $('.grace-box'); if (gb) { window.scrollTo(0, gb.getBoundingClientRect().top + window.scrollY - 70); f.t.focus({ preventScroll: true }); } }, 150);   // 홈에서 「나누기」로 오면 은혜 칸으로
     var vid = (location.hash.match(/[?&]v=([^&]+)/) || [])[1] || ((MEDIA.sunday || [])[0] || {}).videoId;
     var cur = $('.player iframe'); if (cur) { var m = cur.src.match(/embed\/([^?]+)/); if (m) vid = m[1]; }
     $('#grPick').onclick = function (e) { var b = e.target.closest('[data-v]'); if (!b) return; $('#grPick').querySelectorAll('.chip').forEach(function (c) { c.classList.toggle('on', c === b); }); };

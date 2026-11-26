@@ -496,3 +496,5 @@ textarea { resize: none; line-height: 1.55; }
 .hj-go { font-weight: 800; color: var(--green-d); white-space: nowrap; font-size: .88rem; }
 img.flag { width: 22px; height: 15px; object-fit: cover; border-radius: 3px; vertical-align: -2px; box-shadow: 0 0 0 1px rgba(0,0,0,.08); } .flag-ic { display: inline-block; width: 22px; text-align: center; }
 .ev-list { display: flex; flex-direction: column; gap: 4px; min-width: 0; } .ev-list > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; } .ev-list .t { font-size: .96rem; } .ev-list .sub { font-size: .8rem; } .ev.special .day b { color: #c9502a; }
+.card.home-grace { display: flex; align-items: center; gap: 12px; color: inherit; margin-top: -4px; background: #f6faf7; border: 1px solid #dfe9e2; padding: 11px 14px; }
+.ev-more summary { cursor: pointer; font-size: .86rem; font-weight: 700; color: var(--green-d); padding: 10px 0 4px; list-style: none; text-align: center; } .ev-more summary::-webkit-details-marker { display: none; } .ev-more[open] summary { color: #8a8478; }
