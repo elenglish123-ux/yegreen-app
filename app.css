@@ -555,3 +555,16 @@ img.flag { display: inline-block; margin-right: 4px; } .sec-title b:has(img.flag
 .hr-del { font: inherit; font-size: .74rem; background: #fff; border: 1px solid #e3e0d8; border-radius: 999px; padding: 2px 8px; cursor: pointer; color: #6f6a60; margin: 2px; }
 .hr-row { min-width: 0; } .hr-it { min-width: 0; } .hr-it b { white-space: normal; word-break: keep-all; line-height: 1.25; text-align: center; } .hr-row[style*="repeat(4"] .hr-it b { font-size: .76rem; } .hr-row[style*="repeat(4"] .hr-it { padding: 8px 2px; }
 .sec-ic-t { display: inline-flex; align-items: center; gap: 6px; } .sec-ic { width: 20px; height: 20px; color: var(--green-d); flex: 0 0 auto; }
+/* 말씀 탭 다듬기 (2026-11-26) */
+.stool-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.card.stool summary, .card.grace-box summary, .vmore summary { cursor: pointer; list-style: none; font-weight: 700; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.card.stool summary::-webkit-details-marker, .card.grace-box summary::-webkit-details-marker, .vmore summary::-webkit-details-marker { display: none; }
+.card.stool summary small { font-weight: 500; font-size: .76rem; color: #8a8478; }
+.card.stool p { font-size: .98rem; line-height: 1.75; margin: 0 0 10px; }
+.card.stool ol { padding-left: 20px; margin: 0; } .card.stool ol li { line-height: 1.7; margin-bottom: 6px; }
+.card.stool[open] summary { margin-bottom: 8px; }
+#sNote { width: 100%; font: inherit; font-size: .95rem; line-height: 1.6; padding: 10px 12px; border: 1px solid #e3e0d8; border-radius: 10px; resize: vertical; background: #fffdf7; }
+.gb-sum span { font-size: .82rem; font-weight: 700; color: #fff; background: var(--green); border-radius: 999px; padding: 4px 11px; white-space: nowrap; }
+.card.grace-box[open] .gb-sum { margin-bottom: 10px; }
+.card.grace-box[open] .gb-sum span { background: #eef5f0; color: var(--green-d); }
+.vmore summary { justify-content: center; color: var(--green-d); font-size: .88rem; padding: 10px 0; }

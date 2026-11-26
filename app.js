@@ -74,7 +74,7 @@
     try {
       if (!CLOUD) return localStorage.setItem(KEY, JSON.stringify(S));
       // 서버 모드: 이 기기에는 개인 것만 저장 (공유 데이터는 서버가 매번 다시 채움)
-      var keep = {}; ['firstRun', 'big', 'alerts', 'diary', 'readDone', 'gvSeen', 'notifRead', 'vowDone', 'thanksDays', 'routine', 'sermonDone', 'vowMin', 'customRoutines', 'customDone'].forEach(function (k) { keep[k] = S[k]; });
+      var keep = {}; ['firstRun', 'big', 'alerts', 'diary', 'readDone', 'gvSeen', 'notifRead', 'vowDone', 'thanksDays', 'routine', 'sermonDone', 'vowMin', 'customRoutines', 'customDone', 'notes'].forEach(function (k) { keep[k] = S[k]; });
       localStorage.setItem(KEY + '-cloud', JSON.stringify(keep));
     } catch (e) {}
   }
@@ -514,15 +514,28 @@
     if (cur) {
       html += '<div class="player"><iframe src="https://www.youtube.com/embed/' + cur.videoId + '?rel=0&playsinline=1" title="' + esc(cur.title) + '" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>' +
         '<div>' + (cur.series ? '<div class="label">' + esc(cur.series) + '</div>' : '') + '<div class="h1">' + esc(cur.title) + '</div><div class="sub">' + [md(cur.date), cur.passage, cur.preacher].filter(Boolean).map(esc).join(' · ') + '</div></div>' +
-        (S.me && S.me.approved ? '<button class="btn small' + (S.sermonDone && S.sermonDone[cur.videoId] ? '' : ' ghost') + '" data-sdone="' + esc(cur.videoId) + '" style="align-self:flex-start">' + (S.sermonDone && S.sermonDone[cur.videoId] ? '✓ 이 말씀 들었어요' : '▶️ 다 들었어요') + '</button>' : '') + graceBox(cur);
+        sermonTools(cur) + graceBox(cur);
     }
-    html += '<div class="vlist" id="vlist">' + list.map(function (i) {
-      return '<a class="vrow' + (cur && i.videoId === cur.videoId ? ' on' : '') + '" href="#/sermons?kind=' + kind + '&v=' + i.videoId + '" data-s="' + esc((i.title + ' ' + (i.passage || '')).toLowerCase()) + '"><div class="thumb" style="background-image:url(' + thumb(i.videoId) + ')"></div><div><b>' + esc(i.title) + '</b><div class="sub">' + [md(i.date), i.passage].filter(Boolean).map(esc).join(' · ') + '</div></div></a>';
-    }).join('') + '</div>' +
-      '<a class="btn ghost" href="https://www.youtube.com/@yegrin" target="_blank" rel="noopener">유튜브 채널에서 더 보기</a>';
+    // 지난 설교는 5개만 바로, 나머지는 「더보기」 (나연 2026-11-26)
+    function vrow(i) { return '<a class="vrow' + (cur && i.videoId === cur.videoId ? ' on' : '') + '" href="#/sermons?kind=' + kind + '&v=' + i.videoId + '" data-s="' + esc((i.title + ' ' + (i.passage || '')).toLowerCase()) + '"><div class="thumb" style="background-image:url(' + thumb(i.videoId) + ')"></div><div><b>' + esc(i.title) + '</b><div class="sub">' + [md(i.date), i.passage].filter(Boolean).map(esc).join(' · ') + '</div></div></a>'; }
+    html += '<div class="sec-title" style="margin:6px 0 0"><b>지난 말씀</b><span class="sub">' + list.length + '편</span></div><div class="vlist" id="vlist">' + list.slice(0, 5).map(vrow).join('') +
+      (list.length > 5 ? '<details class="vmore" id="vmore"><summary>지난 말씀 ' + (list.length - 5) + '편 더 보기</summary>' + list.slice(5).map(vrow).join('') + '</details>' : '') + '</div>' +      '<a class="btn ghost" href="https://www.youtube.com/@yegrin" target="_blank" rel="noopener">유튜브 채널에서 더 보기</a>';
     return html;
   }
-  // ---------- 영상 아래 「이 말씀으로 받은 은혜」 (나연 2026-11-25) ----------
+  // 말씀 영상 아래 도구 (나연 2026-11-26): 다 들었어요 · 본문 바로 읽기 · 말씀 요약과 나눔 질문(그 주 주보) · 나만의 설교 노트
+  function sermonTools(cur) {
+    var me = S.me && S.me.approved, out = '<div class="stool-row">';
+    if (me) out += '<button class="btn small' + (S.sermonDone && S.sermonDone[cur.videoId] ? '' : ' ghost') + '" data-sdone="' + esc(cur.videoId) + '">' + (S.sermonDone && S.sermonDone[cur.videoId] ? '✓ 이 말씀 들었어요' : '▶️ 다 들었어요') + '</button>';
+    var first = String(cur.passage || '').split(/[,·]/)[0].split(':')[0].trim(), pr = first && parseRange(first);
+    if (pr) out += '<a class="btn small ghost" href="' + bibleUrl(pr.code, pr.from) + '" target="_blank" rel="noopener">📖 ' + esc(cur.passage) + ' 읽기</a>';
+    out += '</div>';
+    var b = BULLETINS.filter(function (x) { return x.date === cur.date; })[0], M = b && b.mokjang;
+    if (M && (M.summary || M.questions)) out += '<details class="card stool"><summary>📝 말씀 요약 · 나눔 질문 <small>' + md(b.date) + ' 주보</small></summary>' +
+      (M.summary ? '<div class="jsub">말씀 요약</div>' + String(M.summary).split(/\n\s*\n/).map(function (x) { return '<p>' + inl(x.trim()).replace(/\n/g, '<br>') + '</p>'; }).join('') : '') +
+      (M.questions ? '<div class="jsub">나눔 질문</div><ol>' + lines(M.questions).map(function (q) { return '<li>' + inl(q) + '</li>'; }).join('') + '</ol>' : '') + '</details>';
+    if (me) { var note = (S.notes || {})[cur.videoId] || ''; out += '<details class="card stool"' + (note ? ' open' : '') + '><summary>✏️ 나의 설교 노트 <small>나만 보여요</small></summary><textarea id="sNote" data-vid="' + esc(cur.videoId) + '" rows="5" maxlength="3000" placeholder="들으면서 마음에 남는 말씀과 생각을 적어 보세요. 저절로 저장돼요.">' + esc(note) + '</textarea><div class="sub" id="sNoteMsg" style="font-size:.74rem;margin-top:4px">' + (note ? '저장돼 있어요' : '') + '</div></details>'; }
+    return out;
+  }  // ---------- 영상 아래 「이 말씀으로 받은 은혜」 (나연 2026-11-25) ----------
   // 은혜 글은 cat 'grace' + vid(영상 번호). 교회 나눔 「말씀 은혜」에도 함께 보임. 「나만 보기」는 이 휴대폰에(yegreen-grace-v1)
   var GKEY = 'yegreen-grace-v1';
   function graces() { try { return JSON.parse(localStorage.getItem(GKEY)) || []; } catch (e) { return []; } }
@@ -546,14 +559,16 @@
         (!x.mine ? '<button class="btn small' + (x.reacted ? '' : ' ghost') + '" data-gamen="' + x.id + '">🙌 아멘 ' + x.count + '</button>' : (x.count ? '<span class="sub" style="font-size:.8rem">🙌 ' + x.count + '명이 아멘했어요</span>' : '')) +
         (x.mine ? '<button class="btn small ghost" data-gdel="' + x.id + '"' + (x.local ? ' data-local="1"' : '') + ' style="flex:0 0 auto">지우기</button>' : '') + '</div></div>';
     }).join('');
-    return '<div class="card grace-box"><div class="sec-title" style="margin:0 0 8px"><b>💬 이 말씀으로 받은 은혜</b><span class="sub">' + list.length + '개</span></div>' +
+    var ppl = {}; list.forEach(function (x) { ppl[x.author || x.id] = 1; });   // 은혜 칸은 접어 두고 한 줄로 (나연 2026-11-26), 홈 「나누기」로 오면 펼침
+    return '<details class="card grace-box" data-gvid="' + esc(cur.videoId) + '"' + (/[?&]g=1/.test(location.hash) || S.graceOpen === cur.videoId ? ' open' : '') + '><summary class="gb-sum"><b>💬 이 말씀으로 받은 은혜</b><span>' + Object.keys(ppl).length + '명 · 나누기 ›</span></summary>' +
       '<form id="grForm" style="display:flex;flex-direction:column;gap:8px">' +
         '<textarea name="t" rows="3" maxlength="1000" required placeholder="이 말씀으로 받은 은혜와 이번 주 적용을 나눠 주세요."></textarea>' +
         '<div class="chips" id="grPick" style="margin:0;flex-wrap:wrap;overflow:visible">' + WSCOPES.map(function (s) { return '<button type="button" class="chip' + (s[0] === 'all' ? ' on' : '') + '" data-v="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div>' +
         '<button class="btn">은혜 나누기</button></form>' +
-      (items ? '<div class="gr-list">' + items + '</div>' : '<p class="sub" style="text-align:center;margin:12px 0 2px">아직 나눈 은혜가 없어요. 첫 은혜를 나눠 주세요 🙏</p>') + '</div>';
+      (items ? '<div class="gr-list">' + items + '</div>' : '<p class="sub" style="text-align:center;margin:12px 0 2px">아직 나눈 은혜가 없어요. 첫 은혜를 나눠 주세요 🙏</p>') + '</details>';
   }
   function bindGrace() {
+    var gbx = $('.grace-box'); if (gbx) gbx.ontoggle = function () { S.graceOpen = gbx.open ? gbx.dataset.gvid : null; save(); };   // 펼친 채로 두기
     var f = $('#grForm'); if (!f) return;
     if (/[?&]g=1/.test(location.hash)) setTimeout(function () { var gb = $('.grace-box'); if (gb) { window.scrollTo(0, gb.getBoundingClientRect().top + window.scrollY - 70); f.t.focus({ preventScroll: true }); } }, 150);   // 홈에서 「나누기」로 오면 은혜 칸으로
     var vid = (location.hash.match(/[?&]v=([^&]+)/) || [])[1] || ((MEDIA.sunday || [])[0] || {}).videoId;
@@ -582,6 +597,7 @@
     });
   }
   function bindSermons() {
+    var sn = $('#sNote'); if (sn) { var tmr; sn.oninput = function () { clearTimeout(tmr); tmr = setTimeout(function () { S.notes = S.notes || {}; if (sn.value.trim()) S.notes[sn.dataset.vid] = sn.value; else delete S.notes[sn.dataset.vid]; save(); var m = $('#sNoteMsg'); if (m) m.textContent = '저장했어요 ✓'; }, 500); }; }
     var sd = $('[data-sdone]'); if (sd) sd.onclick = function () { S.sermonDone = S.sermonDone || {}; var v = sd.dataset.sdone; if (S.sermonDone[v]) delete S.sermonDone[v]; else S.sermonDone[v] = dayKey(new Date()); save(); route(); if (S.sermonDone[v]) toast('이번 주 말씀을 들었어요 ▶️'); };   // 신앙 루틴 「이번 주 말씀」
     var b = $('[data-search]'), input = $('#sq');
     bindGrace();
@@ -590,6 +606,7 @@
     input.oninput = function () {
       var v = input.value.trim().toLowerCase();
       document.querySelectorAll('#vlist .vrow').forEach(function (r) { r.hidden = v && r.dataset.s.indexOf(v) < 0; });
+      var vm = $('#vmore'); if (vm && v) vm.open = true;
     };
   }
 
