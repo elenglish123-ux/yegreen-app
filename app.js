@@ -344,7 +344,8 @@
     var b = BULLETINS[0];
     var L = b ? b.news.filter(function (n) { return !/환영/.test(n.t); }) : [];
     // 시안에서만: 연극 모집 광고에 예시 포스터 (실제 서버에서는 주보 만들기에서 넣은 포스터만)
-    if (!CLOUD) L.forEach(function (n) { if (!n.poster && /스크루테이프/.test(n.t)) n.poster = '../app/sian-poster.jpg'; });
+    var SIAN = [[/스크루테이프/, 'sian-poster.jpg'], [/새생명/, 'sian-poster-newlife.jpg'], [/추수감사/, 'sian-poster-thanks.jpg'], [/교적/, 'sian-poster-photo.jpg']];
+    if (!CLOUD) L.forEach(function (n) { SIAN.forEach(function (s) { if (!n.poster && s[0].test(n.t)) n.poster = '../app/' + s[1]; }); });
     return L;
   }
   function lines(body) { return String(body || '').split('\n').map(function (l) { return l.trim().replace(/^(?:[-•·]|\*(?!\*))\s*/, ''); }).filter(Boolean); }
@@ -632,7 +633,9 @@
     if (tab === 'notice') {
       html += bulletinNews().map(function (n, i) {
         var m = (n.t + ' ' + (lines(n.b)[0] || '')).match(/(\d{1,2})월\s?(\d{1,2})일/);   // 카드에 보이는 첫 줄의 날짜만 (아래 줄 날짜로 잘못 표시되던 것 고침)
-        return '<a class="card news-item" href="#/news/' + i + '"><div class="day">' + (m ? '<b>' + m[2] + '</b><small>' + m[1] + '월</small>' : '<b style="font-size:1rem">안내</b>') + '</div><div><b style="font-size:1.02rem">' + inl(n.t) + '</b>' + (n.poster ? ' <span class="pst-tag">🖼 포스터</span>' : '') + '<div class="sub">' + esc(lines(n.b)[0] || '') + '</div></div></a>';
+        return '<a class="card news-item" href="#/news/' + i + '"><div class="day">' + (m ? '<b>' + m[2] + '</b><small>' + m[1] + '월</small>' : '<b style="font-size:1rem">안내</b>') + '</div><div><b style="font-size:1.02rem">' + inl(n.t) + '</b>' + '<div class="sub">' + esc(lines(n.b)[0] || '') + '</div></div>' +
+          // 포스터가 있으면 오른쪽에 작은 그림 → 눌러 보게 (나연 2026-11-26)
+          (n.poster ? '<span class="news-thumb"><img src="' + esc(DATA_ROOT + n.poster) + '" alt="" loading="lazy"><i>포스터</i></span>' : '') + '</a>';
       }).join('') || '<p class="empty">아직 올라온 소식이 없어요.</p>';
       if (b) html += '<p class="sub" style="text-align:center">' + md(b.date) + ' 주보 기준</p>';
     } else if (tab === 'jubo') {
@@ -649,7 +652,7 @@
     if (!n) return '<p class="empty">소식을 찾을 수 없어요.</p>';
     return '<div class="card"><div class="label">' + (BULLETINS[0] ? md(BULLETINS[0].date) + ' 광고' : '광고') + '</div><div class="h1" style="margin:4px 0 12px">' + inl(n.t) + '</div><ul class="news-body">' + lines(n.b).map(function (l) { return '<li>' + inl(l) + '</li>'; }).join('') + '</ul>' +
       // 광고 포스터 (주보 만들기에서 넣은 것). 누르면 원본 크기로 (나연 2026-11-26)
-      (n.poster ? '<a class="news-poster" href="' + esc(DATA_ROOT + n.poster) + '" target="_blank" rel="noopener"><img src="' + esc(DATA_ROOT + n.poster) + '" alt="' + esc(String(n.t).replace(/\*\*/g, '')) + ' 포스터"><small>눌러서 크게 보기</small></a>' : '') + '</div>';
+      (n.poster ? '<a class="news-poster" href="' + esc(DATA_ROOT + n.poster) + '" data-zoom="' + esc(DATA_ROOT + n.poster) + '"><img src="' + esc(DATA_ROOT + n.poster) + '" alt="' + esc(String(n.t).replace(/\*\*/g, '')) + ' 포스터"><small>🔍 눌러서 크게 보기</small></a>' : '') + '</div>';
   }
 
   // ---------- 나눔 ----------
@@ -1979,6 +1982,8 @@
     }
     var t = e.target.closest('[data-toggle-alert]');
     if (t) { S.alerts[t.dataset.toggleAlert] = true; save(); toast('새 소식 알림을 켰어요.'); route(); }
+    var zm = e.target.closest('[data-zoom]');   // 포스터 크게 보기 (앱 안에서, 누르면 닫힘)
+    if (zm) { e.preventDefault(); var ov = document.createElement('div'); ov.className = 'zoom-ov'; ov.innerHTML = '<img src="' + esc(zm.dataset.zoom) + '" alt=""><button type="button" aria-label="닫기">✕</button>'; ov.onclick = function () { ov.remove(); }; document.body.appendChild(ov); return; }
     var jp = e.target.closest('[data-jump]');   // 주보 바로가기 칩
     if (jp) { e.preventDefault(); var el = document.getElementById(jp.dataset.jump); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     var mp = e.target.closest('[data-mpray]');   // 선교지 🙏 기도할게요 (그날 하루 표시)
