@@ -266,12 +266,14 @@
     if (!S.me || !S.me.approved || !isStaffMe()) return '';
     prayerSeed4(); gpSeed();
     var pastor = CLOUD ? S.me.role === 'pastor' : S.adminRole === 'pastor';
-    var hard = S.posts.filter(function (p) { return p.cat === 'pray' && p.scope === 'pastor' && p.head === 'hard' && !p.answered && !p.mine && !p.hidden; }).length;
+    // 목사님께 온 기도 전부 (힘든 기도만이 아니라, 나연 2026-11-26). 힘든 기도가 끼어 있으면 ❗로 표시
+    var toP = S.posts.filter(function (p) { return p.cat === 'pray' && p.scope === 'pastor' && !p.answered && !p.mine && !p.hidden; });
+    var all = toP.length, hard = toP.filter(function (p) { return p.head === 'hard'; }).length;
     var groups = CLOUD ? (S.groups || []).map(function (g) { return g.name; }) : DEMO_GROUPS.map(function (g) { return g.name; });
     var wk = gpPrevWeek(), done = groups.filter(function (n) { return gpOf(n, wk); }).length;
     var pend = (S.pending || []).length;
     var items = [];
-    if (pastor) items.push('<a href="#/talk/prayer?t=pastor"' + (hard ? ' class="alert"' : '') + '><b>' + (hard ? '❗ ' : '') + hard + '</b><span>힘든 기도</span></a>');
+    if (pastor) items.push('<a href="#/talk/prayer?t=pastor"' + (all ? ' class="alert"' : '') + '><b>' + (hard ? '❗ ' : '') + all + '</b><span>목사님께 온 기도</span></a>');
     if (groups.length) items.push('<a href="#/admin/gpray"><b>' + done + '/' + groups.length + '</b><span>목장 기도제목</span></a>');
     items.push('<a href="#/admin/members"' + (pend ? ' class="alert"' : '') + '><b>' + pend + '</b><span>가입 신청</span></a>');
     items.push('<a href="#/admin/send"><b>📣</b><span>공지 보내기</span></a>');
@@ -1096,8 +1098,10 @@
     save();
   }
   function prayerSeed4() {   // 시안: 다른 성도가 목사님께만 보낸 힘든 기도 (목사님 한 줄 ❗ 예시, 나연 2026-11-26)
-    if (CLOUD || S.prayerSeed4) return;
-    S.prayerSeed4 = 1;
+    if (CLOUD || S.prayerSeed5) return;
+    S.prayerSeed5 = 1;
+    if (!S.posts.some(function (x) { return x.id === 'h8'; })) S.posts.push({ id: 'h8', cat: 'pray', head: 'thanks', scope: 'pastor', author: '서빛나', mine: false, text: '목사님, 기도해 주신 덕분에 아버지 수술이 잘 끝났어요. 정말 감사합니다.', at: '어제', count: 0, reacted: false, comments: [] });
+    if (S.posts.some(function (x) { return x.id === 'h7'; })) { save(); return; }
     S.posts.push({ id: 'h7', cat: 'pray', head: 'hard', scope: 'pastor', author: '강온유', mine: false, text: '목사님, 요즘 가정 일로 마음이 많이 무거워요. 주일에 잠깐 기도 받을 수 있을까요?', at: '오늘', count: 0, reacted: false, comments: [] });
     save();
   }  // 화면에 그릴 한 줄: 「나만」(이 휴대폰) 기도와 서버(나눔) 기도를 같은 모양으로
