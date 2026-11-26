@@ -435,8 +435,8 @@
       return '<a class="ev' + (sp ? ' special' : '') + '" href="' + g.items[0].url + '"><div class="day"><b>' + d.getDate() + '</b><small>' + (d.getMonth() + 1) + '월 ' + WEEK[d.getDay()] + '</small></div><div class="ev-list">' +
         g.items.map(function (e) { return '<div><b class="t">' + (e.weekly ? '' : '🎉 ') + esc(e.title) + '</b><span class="sub">' + esc(e.sub) + '</span></div>'; }).join('') + '</div></a>';
     };
-    var near = byDay.filter(function (g) { return g.date <= cut; }), far = byDay.filter(function (g) { return g.date > cut; });
-    var ev = near.map(evRow).join('') + (far.length ? '<details class="ev-more"><summary>더보기 · 그 뒤 일정 ' + far.reduce(function (s, g) { return s + g.items.length; }, 0) + '개</summary>' + far.map(evRow).join('') + '</details>' : '');
+    var near = byDay.slice(0, 3), far = byDay.slice(3);   // 3줄만 바로, 나머지는 「더보기」 (나연 2026-11-26)
+    var ev = near.map(evRow).join('') + (far.length ? '<details class="ev-more"><summary>더보기 · 일정 ' + far.reduce(function (s, g) { return s + g.items.length; }, 0) + '개 더</summary>' + far.map(evRow).join('') + '</details>' : '');
     var news = bulletinNews().slice(0, 2).map(function (n, i) {
       return '<a href="#/news/' + i + '" style="display:block;padding:6px 0;font-size:.98rem">· ' + inl(n.t) + '</a>';
     }).join('');
