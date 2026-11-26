@@ -271,11 +271,23 @@
     items.push('<a href="#/admin/members"' + (pend ? ' class="alert"' : '') + '><b>' + pend + '</b><span>가입 신청</span></a>');
     return '<div class="card home-staff"><div class="hs-t">' + (pastor ? '🙏 목사님께' : '🛠 관리자') + '</div><div class="hs-row">' + items.join('') + '</div></div>';
   }
-  function homeGrace(s) {   // 말씀 제목 옆 빈 곳: 은혜 수 + 나누기 (나연 2026-11-26)
-    if (!s || !S.me || !S.me.approved) return '';
+  function graceOf(s) {   // 이 설교에 달린 은혜 글 + 나눈 사람 수
     graceSeed();
-    var n = S.posts.filter(function (p) { return p.cat === 'grace' && p.vid === s.videoId && !p.hidden && canSee(p); }).length;
-    return '<a class="hero-grace" href="#/sermons?v=' + s.videoId + '&g=1"><span class="hg-ico">💬</span><b>은혜 ' + n + '</b><small>나누기</small></a>';
+    var list = S.posts.filter(function (p) { return p.cat === 'grace' && p.vid === s.videoId && !p.hidden && canSee(p); });
+    var who = {}; list.forEach(function (p) { who[p.uid || p.author || p.id] = 1; });
+    return { list: list, people: Object.keys(who).length };
+  }
+  function homeGrace(s) {   // 말씀 제목 옆 빈 곳: 나눈 사람 수 + 나누기 (나연 2026-11-26)
+    if (!s || !S.me || !S.me.approved) return '';
+    var g = graceOf(s);
+    return '<a class="hero-grace" href="#/sermons?v=' + s.videoId + '&g=1"><span class="hg-ico">💬</span><b>' + g.people + '명</b><small>나누기</small></a>';
+  }
+  function homeGracePeek(s) {   // 카드 아래: 가장 최근 은혜 한 줄 미리보기
+    if (!s || !S.me || !S.me.approved) return '';
+    var g = graceOf(s), last = g.list[0];
+    return '<a class="hero-peek" href="#/sermons?v=' + s.videoId + '&g=1">' + (last
+      ? '<div class="pk-t"><b>' + esc(last.author || '') + '</b> ' + esc(String(last.text || '').replace(/^\(예시\)\s*/, '').slice(0, 80)) + '</div><div class="pk-n">💬 ' + g.people + '명이 은혜를 나눴어요 ›</div>'
+      : '이 말씀으로 받은 은혜를 처음 나눠 주세요 ✍️') + '</a>';
   }  function homeRoutine() {   // 오늘의 신앙 루틴: 성경읽기 · 필사 · 기도
     if (!S.me || !S.me.approved) return '';
     var today = dayKey(new Date());
@@ -433,7 +445,7 @@
     return homeStaff() +
       // 말씀과 받은 은혜를 한 카드로 (나연 2026-11-26)
       (s ? '<div class="card hero sm"><a class="hero-main" href="#/sermons?v=' + s.videoId + '"><div class="thumb" style="background-image:url(' + thumb(s.videoId) + ')"><span class="play"></span></div>' +
-        '</a><div class="hero-row"><a class="txt" href="#/sermons?v=' + s.videoId + '"><div class="label">이번 주 말씀</div><div class="h1">' + esc(s.title) + '</div><div class="sub">' + [md(s.date), s.passage, s.preacher].filter(Boolean).map(esc).join(' · ') + '</div></a>' + homeGrace(s) + '</div></div>' : '') +   // 제목 옆 빈 곳에 은혜 나누기 (나연 2026-11-26)
+        '</a><div class="hero-row"><a class="txt" href="#/sermons?v=' + s.videoId + '"><div class="label">이번 주 말씀</div><div class="h1">' + esc(s.title) + '</div><div class="sub">' + [md(s.date), s.passage, s.preacher].filter(Boolean).map(esc).join(' · ') + '</div></a>' + homeGrace(s) + '</div>' + homeGracePeek(s) + '</div>' : '') +   // 제목 옆 빈 곳에 은혜 나누기 + 아래 미리보기 (나연 2026-11-26)
       homeRoutine() +
       readingCard() +
       homeGroup() +
