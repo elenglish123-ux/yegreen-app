@@ -365,7 +365,11 @@
     if (!b) return null;
     return { name: b[0], code: b[2], from: Number(m[2]), to: Number(m[3] || m[2]) };
   }
-  function bibleUrl(code, chap) { return 'https://www.bskorea.or.kr/bible/korbibReadpage.php?version=GAE&book=' + code + '&chap=' + chap; }
+  // 폰에서 읽기 편한 개역개정 모바일 페이지(홀리넷). 대한성서공회 페이지는 폰에서 글이 옆으로 잘림
+  function bibleUrl(code, chap) {
+    var n = BOOKS.map(function (b) { return b[2]; }).indexOf(code) + 1;
+    return 'http://www.holybible.or.kr/mobile/B_GAE/cgi/bibleftxt.php?VR=GAE&VL=' + n + '&CN=' + chap + '&CV=99';
+  }
   // 오늘 읽을 곳: 주보 진도(주일부터 7일) → 없으면 오늘 올라온 성경통독 영상
   function todayReading() {
     var now = new Date(), today = dayKey(now);
