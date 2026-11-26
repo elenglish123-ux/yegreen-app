@@ -7,6 +7,9 @@
 //   (표·보안 규칙은 supabase/schema.sql). 파이어베이스 연결 코드는 혹시 몰라 남겨 둠.
 (function () {
   var sb = window.YG_SERVER && window.YG_SERVER.url ? window.YG_SERVER : null;
+  // 이 컴퓨터(localhost)에서 열면 시험이 교회 실제 서버에 쓰지 않도록 시안으로. 실제 서버로 보려면 주소에 ?real=1 (2026-11-26)
+  if (/[?&]real=1/.test(location.search)) sessionStorage.setItem('yg-real', '1');
+  if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && sessionStorage.getItem('yg-real') !== '1') sb = null;
   var cfg = window.FIREBASE_CONFIG;
   var mock = /[?&]mock=1/.test(location.search) || sessionStorage.getItem('yg-mock') === '1';
   if (mock) sessionStorage.setItem('yg-mock', '1');
