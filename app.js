@@ -34,10 +34,10 @@
       admin: false,
       alerts: { notice: true, event: true, sermon: false, talk: true, group: true, diary: false, quiet: true },
       notifs: [
-        { id: 'n1', kind: 'notice', title: '감사주간이 시작됐어요', body: '11월 9일부터 21일까지, 감사일기로 함께해요.', url: '#/talk/prayer?p=vow&c=thanks', at: '11월 9일', read: false },
+        { id: 'n1', kind: 'notice', title: '감사주간이 시작됐어요', body: '11월 9일부터 21일까지, 기도 공간의 감사 기도로 함께해요.', url: '#/talk/prayer?p=vow&c=thanks', at: '11월 9일', read: false },
       ],
       posts: [
-        { id: 'p0', notice: true, cat: 'thanks', scope: 'all', author: '교회 공지', text: '11월 9일부터 21일까지 감사주간이에요. 감사일기에 오늘의 감사를 적고 나눠 주세요.', at: '공지', count: 0, reacted: false, comments: [] },
+        { id: 'p0', notice: true, cat: 'thanks', scope: 'all', author: '교회 공지', text: '11월 9일부터 21일까지 감사주간이에요. 기도 공간 「감사 기도」에 오늘의 감사를 적고 나눠 주세요.', at: '공지', count: 0, reacted: false, comments: [] },
         { id: 'p1', cat: 'pray', scope: 'all', author: '이소망', text: '이번 주 수술을 앞둔 어머니를 위해 함께 기도해 주세요.', at: '어제', count: 12, reacted: false, comments: [{ author: '박은혜', text: '어머님 위해 기도할게요 🙏' }] },
         { id: 'p2', cat: 'thanks', scope: 'all', author: '최믿음', text: '오랜만에 온 가족이 함께 예배드릴 수 있어서 감사했어요.', at: '2일 전', count: 9, reacted: false, comments: [] },
         { id: 'g1', cat: 'pray', scope: 'group', group: null, author: '정하늘', text: '다음 주 면접이 있어요. 준비한 만큼 잘 말할 수 있도록 기도 부탁드려요.', at: '어제', count: 6, reacted: false, comments: [] },
@@ -412,7 +412,7 @@
   // 토요일 오후 5시 뒤 앱을 열면, 이번 주(주일부터) 밀린 말씀이 있을 때 하루 한 번 안내 (닫힌 앱 알림은 서버 작업 뒤)
   function satNudge() {
     var now = new Date(), today = dayKey(now);
-    if (!(S.me && S.me.approved) || now.getDay() !== 6 || now.getHours() < 17 || (S.satNudge || '') === today) return;
+    if (!(S.me && S.me.approved) || (S.alerts && S.alerts.missed === false) || now.getDay() !== 6 || now.getHours() < 17 || (S.satNudge || '') === today) return;
     var sun = new Date(now); sun.setDate(sun.getDate() - 6);
     var n = missedDays().filter(function (x) { return x.key >= dayKey(sun); }).length;
     if (!n) return;
@@ -751,7 +751,7 @@
         (join ? '<label class="field"><span>이름</span><input name="name" maxlength="12" required autocomplete="name" placeholder="예: 홍길동"></label>' : '') +
         phone + pin +
         (join ? '<label class="field"><span>비밀번호 한 번 더</span><input name="pin2" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" required></label>' +
-          '<details class="sub"><summary style="cursor:pointer">개인정보는 이렇게 써요</summary><p style="margin-top:6px">이름·휴대폰 번호·목장은 교인 확인과 앱 이용에만 써요. 나눔에 쓴 기도제목 같은 신앙 정보는 고른 범위(목사님께만·우리 목장·교회 전체)에만 보여요. 「나만의 기도 공간」과 「나만 보기」 감사일기는 서버에 올라가지 않아요. 교회를 떠나면 정보를 지워요.</p></details>' +
+          '<details class="sub"><summary style="cursor:pointer">개인정보는 이렇게 써요</summary><p style="margin-top:6px">이름·휴대폰 번호·목장은 교인 확인과 앱 이용에만 써요. 나눔에 쓴 기도제목 같은 신앙 정보는 고른 범위(목사님께만·우리 목장·교회 전체)에만 보여요. 「나만 보기」 기도와 감사 기도는 서버에 올라가지 않아요. 교회를 떠나면 정보를 지워요.</p></details>' +
           '<label class="check"><input type="checkbox" name="a1" required>개인정보 수집·이용 동의 (필수)</label>' +
           '<label class="check"><input type="checkbox" name="a2" required>민감정보(신앙) 처리 동의 (필수)</label>' : '') +
         '<p class="sub" id="authMsg" style="color:var(--red);min-height:1em"></p>' +
@@ -811,7 +811,7 @@
     if (p.hidden) return '<div class="card sub">신고되어 운영자 확인을 기다리는 글이에요.</div>';
     return '<a class="card post' + (clamp ? ' clamp' : '') + (p.notice ? ' green pin' : '') + '" href="#/post/' + p.id + '">' +
       (p.notice ? '<span class="tag" style="background:#fff">📌 공지</span> <b>' + esc(p.text.split('.')[0]) + '</b><p class="sub" style="color:#55705f;margin-top:4px">' + esc(p.text) + '</p>' :
-      '<div class="who">' + av(p.author) + '<div><b>' + esc(p.author) + ' <span class="tag">' + (p.head && headOf(p.head) ? headOf(p.head)[2] + ' ' + esc(headOf(p.head)[1]) : CATS[p.cat]) + '</span>' + (p.scope === 'pastor' ? ' <span class="tag lock">🔒 목사님께만</span>' : '') + (p.diary ? ' <span class="tag gold">감사일기</span>' : '') + (p.answered ? ' <span class="tag gold">🙌 응답됐어요</span>' : '') + '</b><div class="sub">' + esc(p.at) + '</div></div></div>' +
+      '<div class="who">' + av(p.author) + '<div><b>' + esc(p.author) + ' <span class="tag">' + (p.head && headOf(p.head) ? headOf(p.head)[2] + ' ' + esc(headOf(p.head)[1]) : CATS[p.cat]) + '</span>' + (p.scope === 'pastor' ? ' <span class="tag lock">🔒 목사님께만</span>' : '') + (p.diary ? ' <span class="tag gold">감사 기도</span>' : '') + (p.answered ? ' <span class="tag gold">🙌 응답됐어요</span>' : '') + '</b><div class="sub">' + esc(p.at) + '</div></div></div>' +
       '<p class="text">' + esc(p.text) + '</p>' + (p.img ? '<img class="post-img" src="' + p.img + '" alt="" loading="lazy">' : '') +
       '<span class="rx' + (p.reacted ? ' on' : '') + '" data-react="' + p.id + '">' + (p.cat === 'pray' ? (p.head ? '🙏 함께 기도했어요' : '🙏 기도했어요') : '🙌 아멘') + ' ' + p.count + '</span> <span class="rx">💬 ' + p.comments.length + '</span>') + '</a>';
   }
@@ -2032,14 +2032,13 @@
       '<div class="card list" style="padding:2px 16px">' +
         '<a href="#/about"><span class="ico">⛪</span>교회 소개</a>' +
         '<a href="#/worship"><span class="ico">🕊</span>예배·모임 안내</a>' +
-        '<a href="#/mission"><span class="ico">🌏</span>선교 소식 · 기도제목</a>' +
         '<a href="#/visit"><span class="ico">📍</span>오시는 길 · 헌금 안내</a></div>' +
       '<div class="card list" style="padding:2px 16px">' +
         '<a href="#/alerts"><span class="ico">🔔</span>알림함 · 알림 설정</a>' +
         '<button data-big><span class="ico">🔠</span>큰 글씨로 보기<span class="tg right' + (S.big ? ' on' : '') + '"></span></button>' +
         (CLOUD ? '' : '<button data-admin><span class="ico" style="background:var(--yellow)">🛠</span>운영자 메뉴 보기 (시안)<span class="tg right' + (S.admin ? ' on' : '') + '"></span></button>') +
         (S.admin ? '<a href="#/admin"><span class="ico" style="background:var(--yellow)">🛠</span>관리자 화면' + (adminTodo() ? ' <span class="badge-inline">' + adminTodo() + '</span>' : '') + '</a>' : '') + '</div>' +
-      (CLOUD ? '<div class="card flat"><b>🔒 내 정보는 이렇게 보호돼요</b><p class="sub" style="margin-top:4px">「목사님께만」 글은 담임목사님만, 목장 글은 우리 목장만 봐요. 나만의 기도 공간과 「나만 보기」 감사일기는 이 휴대폰에만 있어요.</p></div>' +
+      (CLOUD ? '<div class="card flat"><b>🔒 내 정보는 이렇게 보호돼요</b><p class="sub" style="margin-top:4px">「목사님께만」 글은 담임목사님만, 목장 글은 우리 목장만 봐요. 「나만 보기」 기도와 감사 기도, 성경읽기 기록은 이 휴대폰에만 있어요.</p></div>' +
           '<p class="sub" style="text-align:center">예그린교회 앱 · 1.0' + (YG.mock ? ' (연습 서버)' : '') + '</p>'
         : '<div class="note"><b>시안 안내</b> 지금은 이 휴대폰에만 저장되고 다른 성도에게 보이지 않아요. 예시 글·이름은 실제 성도가 아니에요.</div>' +
           '<button class="btn ghost" data-reset>시안 처음 상태로 되돌리기</button>' +
@@ -2051,7 +2050,7 @@
     var a = $('[data-admin]');
     if (a) a.onclick = function () { S.admin = !S.admin; save(); route(); };
     var r = $('[data-reset]');
-    if (r) r.onclick = function () { if (confirm('시안에 적은 글과 감사일기를 모두 지우고 처음으로 돌아갈까요?')) { S = sample(); S.firstRun = false; save(); applyBig(); location.hash = '#/'; route(); } };
+    if (r) r.onclick = function () { if (confirm('시안에 적은 글과 기도를 모두 지우고 처음으로 돌아갈까요?')) { S = sample(); S.firstRun = false; save(); applyBig(); location.hash = '#/'; route(); } };
   }
   document.addEventListener('click', function (e) {
     if (e.target.closest('[data-logout]')) {
@@ -2111,9 +2110,26 @@
   function worship() {
     renderTop({ back: '뒤로', white: true });
     function table(rows) { return '<table class="wt">' + rows.map(function (r) { return '<tr><td>' + r[0] + (r[2] ? '<div class="sub">' + r[2] + '</div>' : '') + '</td><td>' + r[1] + '</td></tr>'; }).join('') + '</table>'; }
-    return '<div class="card"><div class="h2">예배 시간</div>' + table([['주일 1부 예배', '오전 8:50', '본당'], ['주일 2부 예배', '오전 10:50', '본당'], ['주일 오후예배', '오후 1:00', '본당'], ['수요예배', '오후 7:30', '본당'], ['금요성령집회', '오후 8:30', '본당'], ['새벽예배', '오전 5:30', '화~금 · 본당']]) + '</div>' +
+    // 주보(교회 안내·예배·모임)에서 그대로 가져옴: 간사님이 주보만 고치면 여기도 바뀜 (나연 2026-11-26)
+    var b = BULLETINS[0], F = b && b.fixed || {}, W = b && b.worship || {};
+    function hm(t) { var m = String(t).match(/^(\d{1,2}):(\d{2})$/); if (!m) return esc(t); var h = +m[1]; return (h < 12 ? '오전 ' : '오후 ') + (h > 12 ? h - 12 : h) + ':' + m[2]; }
+    function rowsOf(text, pre) { return String(text || '').split('\n').map(function (l) { return l.split('|').map(function (x) { return x.trim(); }); }).filter(function (c) { return c[0]; })
+      .map(function (c) { var name = c[0].replace(/\(([^)]*)\)/, ''), when = (c[0].match(/\(([^)]*)\)/) || [])[1];
+        var wk = ((b && b.weekday) || []).filter(function (w) { return w.n && name.indexOf(w.n) === 0; })[0];
+        var sub = [when, c[2]].filter(Boolean).join(' · ') + (wk && wk.c ? '<br>' + esc(wk.c.split('\n')[0]) : '');
+        return [(pre || '') + esc(name) + (pre && !/예배/.test(name) ? ' 예배' : ''), hm(c[1] || ''), sub]; }); }
+    if (F.times1 || F.times3) {
+      var meet = (W.aftTitle ? [[esc(W.aftTitle), esc(W.aftTime || '')]] : []).concat(lines(b.meetings).map(function (l) {
+        var m = l.match(/^\[([^\]]+)\]\s*(.*)$/), rest = m ? m[2] : l, note = (rest.match(/\(([^)]*)\)\s*$/) || [])[1];
+        return [esc(m ? m[1] : l), esc(rest.replace(/\s*\([^)]*\)\s*$/, '')), note ? esc(note) : '']; }));
+      return '<div class="card"><div class="h2">예배 시간</div>' + table(rowsOf(F.times1, '주일 ').concat(rowsOf(F.times3))) + '</div>' +
+        (F.times2 ? '<div class="card"><div class="h2">주일학교</div>' + table(rowsOf(F.times2)) + '</div>' : '') +
+        (meet.length ? '<div class="card"><div class="h2">모임</div>' + table(meet) + '</div>' : '') +
+        '<p class="sub" style="text-align:center">' + md(b.date) + ' 주보 기준</p>';
+    }
+    return '<div class="card"><div class="h2">예배 시간</div>' + table([['주일 1부 예배', '오전 8:50', '본당'], ['주일 2부 예배', '오전 10:50', '본당'], ['수요예배', '오후 7:30', '본당'], ['금요성령집회', '오후 8:30', '본당'], ['새벽예배', '오전 5:30', '화~금 · 본당']]) + '</div>' +
       '<div class="card"><div class="h2">주일학교</div>' + table([['유치부', '11:00', '교육관 4층'], ['아동부', '11:00', '소예배실'], ['청소년부', '13:20', '교육관 4층'], ['청년부', '13:20', '교육관 4층']]) + '</div>' +
-      '<div class="card"><div class="h2">모임</div>' + table([['전도모임', '토 오전 11:00'], ['성전 청소', '토 오전 10:00'], ['에벤에셀 중창단', '주일 오후 2:30'], ['북한을 위한 기도회', '수 오전 10:30', '격주'], ['기도하는 목장 모임', '목장별']]) + '</div>';
+      '<div class="card"><div class="h2">모임</div>' + table([['전도모임', '토 오전 11:00'], ['성전 청소', '토 오전 10:00'], ['에벤에셀 중창단', '주일 오후 2:30'], ['북한을 위한 기도회', '수 오전 10:30', '격주'], ['기도하는 목장 모임', '주일 오후 1:00']]) + '</div>';
   }
   function visit() {
     renderTop({ back: '뒤로', white: true });
@@ -2164,13 +2180,14 @@
       }).join('') || '<p class="empty">받은 알림이 없어요.</p>') +
       '<div class="sec-title"><b>받을 알림</b></div><div class="card list" style="padding:2px 16px">' +
         ALERT_KINDS.map(function (k) { return '<button data-al="' + k[0] + '">' + k[1] + '<span class="tg right' + (S.alerts[k[0]] ? ' on' : '') + '"></span></button>'; }).join('') +
-        '<button data-al="diary">감사일기 쓰기 · 밤 9시<span class="tg right' + (S.alerts.diary ? ' on' : '') + '"></span></button>' +
+        '<button data-al="diary">감사 기도 · 밤 9시<span class="tg right' + (S.alerts.diary ? ' on' : '') + '"></span></button>' +
+        '<button data-al="missed">성경읽기 밀린 말씀 · 토요일 저녁<span class="tg right' + (S.alerts.missed !== false ? ' on' : '') + '"></span></button>' +
         '<button data-al="quiet">밤 10시~아침 7시 조용히<span class="tg right' + (S.alerts.quiet ? ' on' : '') + '"></span></button></div>';
     return html;
   }
   function bindAlerts() {
     document.querySelectorAll('[data-al]').forEach(function (b) {
-      b.onclick = function () { var k = b.dataset.al; S.alerts[k] = !S.alerts[k]; save(); b.querySelector('.tg').classList.toggle('on', S.alerts[k]); };
+      b.onclick = function () { var k = b.dataset.al; S.alerts[k] = !(k === 'missed' ? S.alerts[k] !== false : S.alerts[k]); /* 밀린 말씀 안내는 처음에 켜져 있음 */ save(); b.querySelector('.tg').classList.toggle('on', S.alerts[k]); };
     });
     document.querySelectorAll('[data-nid]').forEach(function (a) {
       a.addEventListener('click', function () { S.notifRead = S.notifRead || {}; S.notifs.forEach(function (n) { if (n.id === a.dataset.nid) { n.read = true; S.notifRead[n.id] = true; } }); save(); });
@@ -2238,7 +2255,7 @@
       (CLOUD ? '' : '<div class="note"><b>권한은 아직 안(案)이에요.</b> 누가 어떤 메뉴를 쓸지는 2차 미팅에서 목사님과 정해요. 위에서 역할을 바꾸면 그 사람에게 보이는 메뉴가 달라져요.</div>') +
       '<a class="btn ghost" href="admin.html" target="_blank" rel="noopener">💻 PC용 관리자 화면 열기</a>' +
       '<a class="btn ghost" href="admin.html#/videomake" target="_blank" rel="noopener">🎞 설교 영상 만들기 (PC에서)</a>' +
-      '<div class="card flat"><b>🔒 관리자도 볼 수 없는 것</b><p class="sub" style="margin-top:4px">나만의 기도 공간, 「나만 보기」 감사일기는 휴대폰 안에만 있어서 관리자 화면에 나오지 않아요.</p></div>';
+      '<div class="card flat"><b>🔒 관리자도 볼 수 없는 것</b><p class="sub" style="margin-top:4px">「나만 보기」 기도와 감사 기도는 휴대폰 안에만 있어서 관리자 화면에 나오지 않아요.</p></div>';
   }
 
   function adminMembers() {

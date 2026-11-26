@@ -124,7 +124,7 @@
         '<div class="grid">' +
           '<div class="card"><h2>🌾 감사 챌린지<a class="more" href="#/challenge">관리</a></h2>' + (ch ? '<b>' + esc(ch.title) + '</b><div style="color:var(--muted);font-size:14px">' + md(ch.from) + ' ~ ' + md(ch.to) + ' · 진행 중</div>' : '<p style="color:var(--muted)">지금 열린 챌린지가 없어요.</p>') + '</div>' +
           '<div class="card"><h2>📰 이번 주 주보<a class="more" href="#/jubo">관리</a></h2>' + (b ? '<b>' + md(b.date) + ' · ' + esc(b.title || '') + '</b><div style="color:var(--muted);font-size:14px">' + (S.juboOpen ? '앱에 공개 중' : '공개 안 함') + '</div>' : '<p style="color:var(--muted)">받은 주보가 없어요.</p>') + '</div>' +
-          '<div class="card lock"><b>🔒 관리자도 볼 수 없는 것</b><p>나만의 기도 공간과 「나만 보기」 감사일기는 성도 휴대폰 안에만 있어요.</p></div>' +
+          '<div class="card lock"><b>🔒 관리자도 볼 수 없는 것</b><p>「나만 보기」 기도와 감사 기도는 성도 휴대폰 안에만 있어요.</p></div>' +
         '</div>' +
       '</div>';
   }
