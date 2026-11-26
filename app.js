@@ -226,9 +226,7 @@
       out.push({ date: dayKey(nextOf(p.days)), title: title, sub: (p.label ? p.label + ' ' : '') + p.rest, url: url, weekly: true });
     }
     var W = b.worship || {};
-    if (W.times) weekly('주일예배', W.times, '#/worship');
-    if (W.aftTitle) weekly(W.aftTitle, W.aftTime || '주일', '#/talk/group');
-    (b.weekday || []).forEach(function (w) { if (w.n && w.t) weekly(w.n, w.t, '#/worship'); });
+    // 정규예배(주일·새벽·수요·금요)와 목장 모임은 매주 같아서 뺌 (나연 2026-11-26) — 모임 안내와 특별 행사만
     lines(b.meetings).forEach(function (l) { var m = l.match(/^\[([^\]]+)\]\s*(.*)$/); if (m) weekly(m[1], m[2], '#/news?tab=jubo'); });
     // 소식에 날짜가 적힌 행사 (예: 12월 25일(금) 11시 성탄절 예배)
     var y0 = Number(b.date.slice(0, 4)), m0 = Number(b.date.slice(5, 7));
