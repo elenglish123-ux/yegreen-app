@@ -1910,7 +1910,7 @@
   function missionBody() {   // 소식 › 선교 소식 칩에서도 씀
     return '<div class="card green"><div class="h2" style="color:var(--green-d)">함께하는 선교</div><p class="sub" style="color:#55705f;margin-top:4px">선교지 소식과 기도제목은 등록 교인만 보는 앱에만 올려요. 안전을 위해 선교사님 이름은 쓰지 않아요.</p></div>' +
       MISSIONS.map(function (m) {
-        return '<div class="card"><div class="sec-title" style="margin:0 0 6px"><b><span class="flag">' + (FLAGS[m[0]] || '🌏') + '</span> ' + esc(m[0]) + '</b><span class="sub">' + esc(m[1]) + '</span></div>' +
+        return '<div class="card"><div class="sec-title" style="margin:0 0 6px"><b>' + flagOf(m[0]) + ' ' + esc(m[0]) + '</b><span class="sub">' + esc(m[1]) + '</span></div>' +
           (function () {
             var ns = (S.missionNews || []).filter(function (n) { return n.country === m[0]; });
             return ns.length ? ns.map(function (n) { return '<div class="mnews"><div class="sub" style="font-size:.75rem">' + esc(n.at) + (n.kind === 'pray' ? ' · 🙏 기도제목' : ' · 📮 소식') + '</div><p>' + esc(n.text) + '</p></div>'; }).join('')
