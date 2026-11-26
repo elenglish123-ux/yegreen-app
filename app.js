@@ -344,7 +344,7 @@
     var b = BULLETINS[0];
     return b ? b.news.filter(function (n) { return !/환영/.test(n.t); }) : [];
   }
-  function lines(body) { return String(body || '').split('\n').map(function (l) { return l.trim().replace(/^[-•*·]\s*/, ''); }).filter(Boolean); }
+  function lines(body) { return String(body || '').split('\n').map(function (l) { return l.trim().replace(/^(?:[-•·]|\*(?!\*))\s*/, ''); }).filter(Boolean); }
   function inl(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'); }
 
   // ---------- 오늘의 성경읽기 ----------
@@ -622,7 +622,7 @@
     var b = BULLETINS[0];
     if (tab === 'notice') {
       html += bulletinNews().map(function (n, i) {
-        var m = (n.t + ' ' + n.b).match(/(\d{1,2})월\s?(\d{1,2})일/);
+        var m = (n.t + ' ' + (lines(n.b)[0] || '')).match(/(\d{1,2})월\s?(\d{1,2})일/);   // 카드에 보이는 첫 줄의 날짜만 (아래 줄 날짜로 잘못 표시되던 것 고침)
         return '<a class="card news-item" href="#/news/' + i + '"><div class="day">' + (m ? '<b>' + m[2] + '</b><small>' + m[1] + '월</small>' : '<b style="font-size:1rem">안내</b>') + '</div><div><b style="font-size:1.02rem">' + inl(n.t) + '</b><div class="sub">' + esc(lines(n.b)[0] || '') + '</div></div></a>';
       }).join('') || '<p class="empty">아직 올라온 소식이 없어요.</p>';
       if (b) html += '<p class="sub" style="text-align:center">' + md(b.date) + ' 주보 기준</p>';
