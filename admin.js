@@ -8,7 +8,7 @@
   var MEDIA = (window.MEDIA && window.MEDIA.lists) || {};
   var ROLES = { pastor: '담임목사', admin: '관리자(간사)', leader: '목자' };
   var ROLE_ALL = { pastor: '담임목사', admin: '관리자', leader: '목자', member: '성도' };
-  var CATS = { grace: '말씀 은혜', thanks: '감사', pray: '기도제목', group: '목장 이야기' };
+  var CATS = { grace: '설교 은혜', thanks: '감사', pray: '기도제목', group: '목장 이야기' };
   var MISSIONS = ['인도', '필리핀', '파푸아뉴기니', '일본', '북한', '오픈도어선교회'];
   var COLORS = ['#7ab648', '#2b86c5', '#c9a45c', '#d9776a', '#8a6fc4', '#3f9e8f'];
   // 메뉴와 권한(안) — 앱의 ADMIN_MENUS와 같은 표

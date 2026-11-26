@@ -6,7 +6,7 @@
   var BULLETINS = window.BULLETINS || [];
   var DATA_ROOT = 'https://elenglish123-ux.github.io/yegreen-site/';
   var KINDS = [['sunday', '주일설교'], ['dawn', '새벽예배'], ['reading', '성경통독'], ['study', '성경공부']];
-  var CATS = { grace: '말씀 은혜', thanks: '감사', pray: '기도제목', group: '목장 이야기', word: '📖 말씀 묵상', qt: '✍️ 필사', gpray: '🙏 목장 기도제목' };
+  var CATS = { grace: '설교 은혜', thanks: '감사', pray: '기도제목', group: '목장 이야기', word: '📖 말씀 묵상', qt: '✍️ 필사', gpray: '🙏 목장 기도제목' };
   // 목사님 결정(2026-11-18): 등록 교인만, 가입 승인은 정하람 간사
   var APPROVER = '정하람 간사님';
   var SENTENCE = '죄에서 멀어져 자유케 되는 교회';
@@ -305,7 +305,7 @@
     var g = graceOf(s), last = g.list[0];
     return '<a class="hero-peek" href="#/sermons?v=' + s.videoId + '&g=1">' + (last
       ? '<div class="pk-t"><b>' + esc(last.author || '') + '</b> ' + esc(String(last.text || '').replace(/^\(예시\)\s*/, '').slice(0, 80)) + '</div><div class="pk-n">💬 ' + g.people + '명이 은혜를 나눴어요 ›</div>'
-      : '이 말씀으로 받은 은혜를 처음 나눠 주세요 ✍️') + '</a>';
+      : '이 설교로 받은 은혜를 처음 나눠 주세요 ✍️') + '</a>';
   }  // 오늘의 신앙 루틴: 각자 고르는 칸 (나연 2026-11-26). 기본 = 성경읽기 · 오늘의 기도 · 이번 주 말씀
   var ROUTINES = [['read', '📖 성경읽기'], ['pray', '🙏 오늘의 기도'], ['sermon', '▶️ 이번 주 말씀'], ['grace', '💬 은혜 나누기'], ['thanks', '🌾 감사 한 가지'], ['pil', '✍️ 필사']];
   function routineOf(id) {
@@ -601,8 +601,8 @@
       (M.questions ? '<div class="jsub">나눔 질문</div><ol>' + lines(M.questions).map(function (q) { return '<li>' + inl(q) + '</li>'; }).join('') + '</ol>' : '') + '</details>';
     if (me) { var note = (S.notes || {})[cur.videoId] || ''; out += '<details class="card stool"' + (note ? ' open' : '') + '><summary>✏️ 나의 설교 노트 <small>나만 보여요</small></summary><textarea id="sNote" data-vid="' + esc(cur.videoId) + '" rows="5" maxlength="3000" placeholder="들으면서 마음에 남는 말씀과 생각을 적어 보세요. 저절로 저장돼요.">' + esc(note) + '</textarea><div class="sub" id="sNoteMsg" style="font-size:.74rem;margin-top:4px">' + (note ? '저장돼 있어요' : '') + '</div></details>'; }
     return out;
-  }  // ---------- 영상 아래 「이 말씀으로 받은 은혜」 (나연 2026-11-25) ----------
-  // 은혜 글은 cat 'grace' + vid(영상 번호). 교회 나눔 「말씀 은혜」에도 함께 보임. 「나만 보기」는 이 휴대폰에(yegreen-grace-v1)
+  }  // ---------- 영상 아래 「이 설교로 받은 은혜」 (나연 2026-11-25) ----------
+  // 은혜 글은 cat 'grace' + vid(영상 번호). 교회 나눔 「설교 은혜」에도 함께 보임. 「나만 보기」는 이 휴대폰에(yegreen-grace-v1)
   var GKEY = 'yegreen-grace-v1';
   function graces() { try { return JSON.parse(localStorage.getItem(GKEY)) || []; } catch (e) { return []; } }
   function graceSeed() {
@@ -615,7 +615,7 @@
     save();
   }
   function graceBox(cur) {
-    if (!S.me || !S.me.approved) return '<a class="card grace-box" href="#/talk" style="display:block"><b>💬 이 말씀으로 받은 은혜</b><p class="sub" style="margin:4px 0 0">교인 등록을 하면 은혜를 나누고 다른 분들 나눔도 볼 수 있어요 ›</p></a>';
+    if (!S.me || !S.me.approved) return '<a class="card grace-box" href="#/talk" style="display:block"><b>💬 이 설교로 받은 은혜</b><p class="sub" style="margin:4px 0 0">교인 등록을 하면 은혜를 나누고 다른 분들 나눔도 볼 수 있어요 ›</p></a>';
     graceSeed();
     var list = graces().filter(function (x) { return x.vid === cur.videoId; }).map(function (x) { return { id: x.id, local: true, mine: true, text: x.text, at: x.at, scope: 'me', count: 0 }; })
       .concat(S.posts.filter(function (p) { return p.cat === 'grace' && p.vid === cur.videoId && !p.hidden && canSee(p); }).map(function (p) { return { id: p.id, mine: !!p.mine, text: p.text, at: p.at, scope: p.scope, author: p.author, count: p.count || 0, reacted: !!p.reacted }; }));
@@ -626,9 +626,9 @@
         (x.mine ? '<button class="btn small ghost" data-gdel="' + x.id + '"' + (x.local ? ' data-local="1"' : '') + ' style="flex:0 0 auto">지우기</button>' : '') + '</div></div>';
     }).join('');
     var ppl = {}; list.forEach(function (x) { ppl[x.author || x.id] = 1; });   // 은혜 칸은 접어 두고 한 줄로 (나연 2026-11-26), 홈 「나누기」로 오면 펼침
-    return '<details class="card grace-box" data-gvid="' + esc(cur.videoId) + '"' + (/[?&]g=1/.test(location.hash) || S.graceOpen === cur.videoId ? ' open' : '') + '><summary class="gb-sum"><b>💬 이 말씀으로 받은 은혜</b><span>' + Object.keys(ppl).length + '명 · 나누기 ›</span></summary>' +
+    return '<details class="card grace-box" data-gvid="' + esc(cur.videoId) + '"' + (/[?&]g=1/.test(location.hash) || S.graceOpen === cur.videoId ? ' open' : '') + '><summary class="gb-sum"><b>💬 이 설교로 받은 은혜</b><span>' + Object.keys(ppl).length + '명 · 나누기 ›</span></summary>' +
       '<form id="grForm" style="display:flex;flex-direction:column;gap:8px">' +
-        '<textarea name="t" rows="3" maxlength="1000" required placeholder="이 말씀으로 받은 은혜와 이번 주 적용을 나눠 주세요."></textarea>' +
+        '<textarea name="t" rows="3" maxlength="1000" required placeholder="이 설교로 받은 은혜와 이번 주 적용을 나눠 주세요."></textarea>' +
         '<div class="chips" id="grPick" style="margin:0;flex-wrap:wrap;overflow:visible">' + WSCOPES.map(function (s) { return '<button type="button" class="chip' + (s[0] === 'all' ? ' on' : '') + '" data-v="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div>' +
         '<button class="btn">은혜 나누기</button></form>' +
       (items ? '<div class="gr-list">' + items + '</div>' : '<p class="sub" style="text-align:center;margin:12px 0 2px">아직 나눈 은혜가 없어요. 첫 은혜를 나눠 주세요 🙏</p>') + '</details>';
@@ -829,8 +829,8 @@
     var list = S.posts.filter(function (p) { return p.scope !== 'group' && p.scope !== 'qt' && canSee(p) && (f === 'all' || p.cat === f || p.notice); });
     list.sort(function (a, b) { return (b.notice ? 1 : 0) - (a.notice ? 1 : 0); });
     var ser = (MEDIA.sunday || [])[0];
-    var graceTop = ser && (f === 'all' || f === 'grace') ? '<a class="card grace" href="#/sermons?v=' + ser.videoId + '&g=1"><div class="label" style="color:#cfe3d6">이번 주 설교 · ' + md(ser.date) + '</div><b>' + esc(ser.title) + '</b><div style="font-size:.88rem;opacity:.85;margin-top:4px">이 말씀으로 받은 은혜와 이번 주 적용을 나눠 주세요 ✎</div></a>' : '';
-    return segs(sub) + '<div class="chips">' + [['all', '전체'], ['grace', '말씀 은혜'], ['word', '말씀 묵상']].map(function (c) { return '<a class="chip' + (c[0] === f ? ' on' : '') + '" href="#/talk/church?cat=' + c[0] + '">' + c[1] + '</a>'; }).join('') + '</div>' +
+    var graceTop = ser && (f === 'all' || f === 'grace') ? '<a class="card grace" href="#/sermons?v=' + ser.videoId + '&g=1"><div class="label" style="color:#cfe3d6">이번 주 설교 · ' + md(ser.date) + '</div><b>' + esc(ser.title) + '</b><div style="font-size:.88rem;opacity:.85;margin-top:4px">이 설교로 받은 은혜와 이번 주 적용을 나눠 주세요 ✎</div></a>' : '';
+    return segs(sub) + '<div class="chips">' + [['all', '전체'], ['grace', '설교 은혜'], ['word', '말씀 묵상']].map(function (c) { return '<a class="chip' + (c[0] === f ? ' on' : '') + '" href="#/talk/church?cat=' + c[0] + '">' + c[1] + '</a>'; }).join('') + '</div>' +
       graceTop + (list.map(function (p) { return postCard(p, true); }).join('') || '<p class="empty">아직 글이 없어요.</p>');
   }
   function gvCurrent() {
@@ -1066,7 +1066,7 @@
         Object.keys(CATS).filter(function (k) { return ['thanks', 'qt', 'gpray'].indexOf(k) < 0; }).map(function (k, i) { return '<button class="chip' + ((q.cat ? k === q.cat : i === 0) ? ' on' : '') + '" data-v="' + k + '">' + CATS[k] + '</button>'; }).join('') + '</div></div>' +
       '<div><div class="sub" style="font-weight:700;margin-bottom:6px">누구에게 보일까요?</div><div class="chips" id="scopePick">' +
         ['pastor', 'group', 'all'].map(function (k) { return '<button class="chip' + (k === to ? ' on' : '') + '" data-v="' + k + '">' + (k === 'pastor' ? '🔒 ' : '') + SCOPES[k] + '</button>'; }).join('') + '</div></div>' +
-      '<textarea id="wText" rows="9" maxlength="1000" placeholder="' + (q.cat === 'grace' ? '설교 말씀으로 받은 은혜와 이번 주 적용을 짧게 적어 주세요.' : '교회 식구들과 나누고 싶은 이야기를 적어 주세요.') + '"></textarea><div class="counter"><span id="wCount">0</span> / 1000</div>' +
+      '<textarea id="wText" rows="9" maxlength="1000" placeholder="' + (q.cat === 'grace' ? '이 설교로 받은 은혜와 이번 주 적용을 짧게 적어 주세요.' : '교회 식구들과 나누고 싶은 이야기를 적어 주세요.') + '"></textarea><div class="counter"><span id="wCount">0</span> / 1000</div>' +
       '<div class="card green sub" style="color:#55705f">💡 다른 사람의 이름이나 사정은 허락을 받고 적어 주세요.</div>';
   }
   function bindWrite() {
