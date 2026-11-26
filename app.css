@@ -568,3 +568,17 @@ img.flag { display: inline-block; margin-right: 4px; } .sec-title b:has(img.flag
 .card.grace-box[open] .gb-sum { margin-bottom: 10px; }
 .card.grace-box[open] .gb-sum span { background: #eef5f0; color: var(--green-d); }
 .vmore summary { justify-content: center; color: var(--green-d); font-size: .88rem; padding: 10px 0; }
+
+/* 선교 소식: 소식 없는 나라는 한 카드에 한 줄씩 */
+.ms-list { padding: 4px 16px; }
+.ms-row { display: flex; align-items: center; gap: 8px; padding: 11px 0; border-bottom: 1px solid #eee8de; }
+.ms-row:last-child { border-bottom: 0; }
+.ms-row > b { font-size: 1rem; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+.ms-row > .sub { flex: 1; font-size: .8rem; min-width: 0; }
+.ms-row .rx { flex: none; padding: 4px 10px; font-size: .8rem; }
+button.rx { cursor: pointer; font-family: inherit; }
+/* 주보 바로가기 칩 */
+.jb-jump { position: sticky; top: calc(62px + env(safe-area-inset-top)); z-index: 15; display: flex; flex-wrap: wrap; gap: 5px; padding: 8px 2px; margin: 0 -2px 4px; background: var(--bg, #f6f3ee); scrollbar-width: none; }
+.jb-jump::-webkit-scrollbar { display: none; }
+.jb-jump a { flex: 1 0 auto; text-align: center; padding: 6px 8px; border-radius: 16px; background: #fff; border: 1px solid #e2ddd3; font-size: .85rem; font-weight: 700; color: var(--green-d); text-decoration: none; }
+.jb-anchor { height: 0; scroll-margin-top: 120px; }

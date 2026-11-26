@@ -74,7 +74,7 @@
     try {
       if (!CLOUD) return localStorage.setItem(KEY, JSON.stringify(S));
       // 서버 모드: 이 기기에는 개인 것만 저장 (공유 데이터는 서버가 매번 다시 채움)
-      var keep = {}; ['firstRun', 'big', 'alerts', 'diary', 'readDone', 'gvSeen', 'notifRead', 'vowDone', 'thanksDays', 'routine', 'sermonDone', 'vowMin', 'customRoutines', 'customDone', 'notes'].forEach(function (k) { keep[k] = S[k]; });
+      var keep = {}; ['firstRun', 'big', 'alerts', 'diary', 'readDone', 'gvSeen', 'notifRead', 'vowDone', 'thanksDays', 'routine', 'sermonDone', 'vowMin', 'customRoutines', 'customDone', 'notes', 'mPray'].forEach(function (k) { keep[k] = S[k]; });
       localStorage.setItem(KEY + '-cloud', JSON.stringify(keep));
     } catch (e) {}
   }
@@ -424,36 +424,42 @@
     }
     function paras(text) { return String(text || '').split(/\n\s*\n/).map(function (x) { return x.trim(); }).filter(Boolean).map(function (x) { return '<p>' + inl(x).replace(/\n/g, '<br>') + '</p>'; }).join(''); }
     var order = (W.order || []).filter(function (o) { return o.a || o.c || o.w; });
-    return '<div class="card jubo-cover"><div class="label">' + md(b.date) + ' 주일 주보' + (b.church && b.church.denom ? ' · ' + esc(b.church.denom) : '') + '</div>' +
+    function A(id) { return '<div class="jb-anchor" id="jb-' + id + '"></div>'; }
+    // 주보가 길어서 맨 위에 바로가기 칩 (나연 2026-11-26)
+    var jump = [['worship', '예배'], ['news', '광고'], ['week', '모임'], ['serve', '섬김'], ['mok', '목장'], ['read', '성경'], ['info', '안내']].filter(function (j) {
+      return { worship: 1, news: (b.news || []).length, week: (b.weekday || []).length || b.meetings, serve: (b.serve || []).length, mok: M.summary || M.questions, read: (b.reading || []).length, info: 1 }[j[0]];
+    });
+    return '<div class="jb-jump">' + jump.map(function (j) { return '<a href="javascript:void 0" data-jump="jb-' + j[0] + '">' + j[1] + '</a>'; }).join('') + '</div>' +
+      '<div class="card jubo-cover"><div class="label">' + md(b.date) + ' 주일 주보' + (b.church && b.church.denom ? ' · ' + esc(b.church.denom) : '') + '</div>' +
         '<div class="jt">' + esc(b.title || '') + '</div>' + (b.titleEn ? '<div class="je">' + esc(b.titleEn) + '</div>' : '') +
         (b.verse ? '<p class="jverse">' + esc(b.verse) + '</p>' : '') +
         (b.verseRef ? (p ? '<a class="jv" href="' + bibleUrl(p.code, p.from) + '" target="_blank" rel="noopener">📖 ' + esc(b.verseRef) + ' ›</a>' : '<div class="jv">📖 ' + esc(b.verseRef) + '</div>') : '') + '</div>' +
       // 예배
-      sec('⛪ 주일 예배' + (W.times ? ' <small>' + esc(W.times) + '</small>' : ''),
+      A('worship') + sec('⛪ 주일 예배' + (W.times ? ' <small>' + esc(W.times) + '</small>' : ''),
         (order.length ? '<table class="jubo-order">' + order.map(function (o) { return '<tr' + (o.hi ? ' class="hi"' : '') + '><th>' + esc(o.a) + '</th><td>' + esc(o.c || '') + '</td><td class="w">' + esc(o.w || '') + '</td></tr>'; }).join('') + '</table>' : '') +
         (W.note ? '<p class="jnote">' + esc(W.note) + '</p>' : '') +
         (W.aftTitle ? '<div class="jaft"><b>' + esc(W.aftTime || '') + '</b> ' + esc(W.aftTitle) + '</div>' : '')) +
       // 교회 소식
-      (b.news || []).map(function (n) { return sec(inl(n.t), ul(n.b)); }).join('') +
+      A('news') + (b.news || []).map(function (n) { return sec(inl(n.t), ul(n.b)); }).join('') +
       // 주중 예배 · 모임
-      sec('🕯 주중 예배', (b.weekday || []).filter(function (w) { return w.n; }).map(function (w) { return '<div class="jwk"><b>' + esc(w.n) + '</b><span>' + esc(w.t || '') + '</span><p>' + esc(w.c || '').replace(/\n/g, '<br>') + '</p></div>'; }).join('')) +
+      A('week') + sec('🕯 주중 예배', (b.weekday || []).filter(function (w) { return w.n; }).map(function (w) { return '<div class="jwk"><b>' + esc(w.n) + '</b><span>' + esc(w.t || '') + '</span><p>' + esc(w.c || '').replace(/\n/g, '<br>') + '</p></div>'; }).join('')) +
       sec('🤝 모임 안내', ul(b.meetings)) +
       // 섬김 안내: 주보처럼 날짜별 표 (안내 · 청소 · 식사/설거지)
-      ((b.serve || []).filter(function (s) { return s.g || s.c || s.m; }).length ? '<div class="card jubo-sec"><h3>🍽 섬김 안내</h3><div class="jserve-wrap"><table class="jserve-t"><tr><th></th>' +
+      A('serve') + ((b.serve || []).filter(function (s) { return s.g || s.c || s.m; }).length ? '<div class="card jubo-sec"><h3>🍽 섬김 안내</h3><div class="jserve-wrap"><table class="jserve-t"><tr><th></th>' +
         b.serve.map(function (s, i) { var d = new Date(start); d.setDate(d.getDate() + 7 * i); return '<th>' + (d.getMonth() + 1) + '/' + d.getDate() + '</th>'; }).join('') + '</tr>' +
         [['안내', 'g'], ['청소', 'c'], ['식사·설거지', 'm']].map(function (r) { return '<tr><th>' + r[0] + '</th>' + b.serve.map(function (s) { return '<td>' + esc(s[r[1]] || '').replace(/\n/g, '<br>') + '</td>'; }).join('') + '</tr>'; }).join('') +
         '</table></div></div>' : '') +      // 목장
-      (M.summary || M.questions ? '<div class="card jubo-sec jubo-mok"><h3>🏡 ' + esc(M.title || '목장') + (M.titleEn ? ' <small>' + esc(M.titleEn) + '</small>' : '') + '</h3>' +
+      A('mok') + (M.summary || M.questions ? '<div class="card jubo-sec jubo-mok"><h3>🏡 ' + esc(M.title || '목장') + (M.titleEn ? ' <small>' + esc(M.titleEn) + '</small>' : '') + '</h3>' +
         (M.steps ? '<div class="jsub">목장 순서</div>' + ul(M.steps) : '') +
         (M.summary ? '<div class="jsub">말씀 요약</div>' + paras(M.summary) : '') +
         (M.questions ? '<div class="jsub">나눔 질문</div><ol>' + lines(M.questions).map(function (q) { return '<li>' + inl(q) + '</li>'; }).join('') + '</ol>' : '') +
         (M.prayer ? '<div class="jsub">기도</div>' + ul(M.prayer) : '') + '</div>' : '') +
-      (b.reading && b.reading.length ? '<div class="card jubo-sec"><h3>📖 이번 주 성경읽기</h3><div class="jubo-read">' + b.reading.slice(0, 7).map(function (r, i) {
+      A('read') + (b.reading && b.reading.length ? '<div class="card jubo-sec"><h3>📖 이번 주 성경읽기</h3><div class="jubo-read">' + b.reading.slice(0, 7).map(function (r, i) {
         var d = new Date(start); d.setDate(d.getDate() + i);
         return '<div><b>' + days[i] + '</b><small>' + (d.getMonth() + 1) + '/' + d.getDate() + '</small><span>' + esc(r) + '</span></div>';
       }).join('') + '</div></div>' : '') +
       // 뒷면(표지 쪽)·교회 안내도 다 펼쳐서 (나연 2026-11-25)
-      sec('🕐 예배 시간', (F.times1 || F.times2 || F.times3 ? rows([F.times1, F.times2, F.times3].filter(Boolean).join('\n')) : '')) +
+      A('info') + sec('🕐 예배 시간', (F.times1 || F.times2 || F.times3 ? rows([F.times1, F.times2, F.times3].filter(Boolean).join('\n')) : '')) +
       sec('🌿 예그린 비전', F.vision ? '<div class="jvision">' + lines(F.vision).map(function (l) { var x = l.split('|'); return '<div><b>' + esc((x[0] || '').trim()) + '</b><span>' + esc((x[1] || '').trim()) + '</span></div>'; }).join('') + '</div>' : '') +
       sec('🌏 함께하는 선교지', F.missions ? '<div class="jmis">' + lines(F.missions).map(function (l) { var x = l.split(/\s+-\s+/); return '<div>' + flagOf(x[0]) + ' ' + (x[1] ? '<b>' + esc(x[0]) + '</b> ' + esc(x[1]) : '<b>' + esc(x[0]) + '</b>') + '</div>'; }).join('') + '</div>' : '') +
       sec('🙋 새가족 등록 안내', F.newcomer ? '<div class="jflow">' + lines(F.newcomer).map(function (l) { return '<span>' + esc(l) + '</span>'; }).join('<i>›</i>') + '</div>' : '') +
@@ -1968,7 +1974,19 @@
     }
     var t = e.target.closest('[data-toggle-alert]');
     if (t) { S.alerts[t.dataset.toggleAlert] = true; save(); toast('새 소식 알림을 켰어요.'); route(); }
+    var jp = e.target.closest('[data-jump]');   // 주보 바로가기 칩
+    if (jp) { e.preventDefault(); var el = document.getElementById(jp.dataset.jump); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    var mp = e.target.closest('[data-mpray]');   // 선교지 🙏 기도할게요 (그날 하루 표시)
+    if (mp) {
+      var k = dayKey(new Date()) + '|' + mp.dataset.mpray; S.mPray = S.mPray || {};
+      if (S.mPray[k]) delete S.mPray[k]; else { S.mPray[k] = 1; toast(mp.dataset.mpray + '을 위해 기도해 주셔서 고마워요 🙏'); }
+      save(); mp.classList.toggle('on', !!S.mPray[k]); mp.textContent = S.mPray[k] ? '🙏 기도했어요' : '🙏 기도할게요';
+    }
   });
+  function mPrayBtn(c) {
+    var on = !!(S.mPray || {})[dayKey(new Date()) + '|' + c];
+    return '<button type="button" class="rx' + (on ? ' on' : '') + '" data-mpray="' + esc(c) + '">' + (on ? '🙏 기도했어요' : '🙏 기도할게요') + '</button>';
+  }
   function applyBig() { document.documentElement.classList.toggle('big', !!S.big); }
 
   function about() {
@@ -1983,15 +2001,21 @@
   }
   function mission() { renderTop({ back: '뒤로', white: true }); return missionBody(); }
   function missionBody() {   // 소식 › 선교 소식 칩에서도 씀
-    return '<div class="card green"><div class="h2" style="color:var(--green-d)">함께하는 선교</div><p class="sub" style="color:#55705f;margin-top:4px">선교지 소식과 기도제목은 등록 교인만 보는 앱에만 올려요. 안전을 위해 선교사님 이름은 쓰지 않아요.</p></div>' +
-      MISSIONS.map(function (m) {
+    // 소식이 없는 나라는 한 카드에 한 줄씩 (같은 안내 문장이 여섯 번 반복되던 것 정리, 나연 2026-11-26)
+    function newsOf(m) { return (S.missionNews || []).filter(function (n) { return n.country === m[0]; }); }
+    var quiet = MISSIONS.filter(function (m) { return !newsOf(m).length; });
+    return '<div class="card green"><div class="h2" style="color:var(--green-d)">함께하는 선교</div><p class="sub" style="color:#55705f;margin-top:4px">선교지에서 소식이 오면 교회가 이곳에 올리고, 기도제목을 함께 나눠요. 등록 교인만 볼 수 있고, 안전을 위해 선교사님 이름은 쓰지 않아요.</p></div>' +
+      (quiet.length ? '<div class="card ms-list">' + quiet.map(function (m) {
+        return '<div class="ms-row"><b>' + flagOf(m[0]) + ' ' + esc(m[0]) + '</b><span class="sub">' + esc(m[1]) + '</span>' + mPrayBtn(m[0]) + '</div>';
+      }).join('') + '</div>' : '') +
+      MISSIONS.filter(function (m) { return newsOf(m).length; }).map(function (m) {
         return '<div class="card"><div class="sec-title" style="margin:0 0 6px"><b>' + flagOf(m[0]) + ' ' + esc(m[0]) + '</b><span class="sub">' + esc(m[1]) + '</span></div>' +
           (function () {
             var ns = (S.missionNews || []).filter(function (n) { return n.country === m[0]; });
             return ns.length ? ns.map(function (n) { return '<div class="mnews"><div class="sub" style="font-size:.75rem">' + esc(n.at) + (n.kind === 'pray' ? ' · 🙏 기도제목' : ' · 📮 소식') + '</div><p>' + esc(n.text) + '</p></div>'; }).join('')
               : '<p class="sub">선교지에서 소식이 오면 교회가 이곳에 올리고, 기도제목을 함께 나눠요.</p>';
           })() +
-          '<span class="rx">🙏 기도할게요</span></div>';
+          mPrayBtn(m[0]) + '</div>';
       }).join('');
   }
   function worship() {
