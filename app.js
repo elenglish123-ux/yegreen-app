@@ -342,7 +342,10 @@
   }
   function bulletinNews() {
     var b = BULLETINS[0];
-    return b ? b.news.filter(function (n) { return !/환영/.test(n.t); }) : [];
+    var L = b ? b.news.filter(function (n) { return !/환영/.test(n.t); }) : [];
+    // 시안에서만: 연극 모집 광고에 예시 포스터 (실제 서버에서는 주보 만들기에서 넣은 포스터만)
+    if (!CLOUD) L.forEach(function (n) { if (!n.poster && /스크루테이프/.test(n.t)) n.poster = '../app/sian-poster.jpg'; });
+    return L;
   }
   function lines(body) { return String(body || '').split('\n').map(function (l) { return l.trim().replace(/^(?:[-•·]|\*(?!\*))\s*/, ''); }).filter(Boolean); }
   function inl(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'); }
@@ -624,7 +627,7 @@
   function news(q) {
     var tab = ['jubo', 'mission', 'family'].indexOf(q.tab) >= 0 ? q.tab : 'notice';   // 사진 칸은 빼고 선교 소식을 넣음 (나연 2026-11-25)
     renderTop({ title: '교회 소식', bell: true });
-    var html = '<div class="chips">' + [['notice', '광고'], ['jubo', '주보'], ['mission', '선교 소식'], ['family', '교우 동정']].map(function (t) { return '<a class="chip' + (t[0] === tab ? ' on' : '') + '" href="#/news?tab=' + t[0] + '">' + t[1] + '</a>'; }).join('') + '</div>';
+    var html = '<div class="chips">' + [['notice', '광고'], ['jubo', '주보'], ['family', '교우 동정'], ['mission', '선교 소식']].map(function (t) { return '<a class="chip' + (t[0] === tab ? ' on' : '') + '" href="#/news?tab=' + t[0] + '">' + t[1] + '</a>'; }).join('') + '</div>';
     var b = BULLETINS[0];
     if (tab === 'notice') {
       html += bulletinNews().map(function (n, i) {
