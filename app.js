@@ -428,10 +428,22 @@
     var evs = upcoming(), byDay = [];   // 같은 날 일정은 한 줄로 묶음
     evs.forEach(function (e) { var g = byDay[byDay.length - 1]; if (g && g.date === e.date) g.items.push(e); else byDay.push({ date: e.date, items: [e] }); });
     var cut = new Date(); cut.setDate(cut.getDate() + 14); cut = dayKey(cut);   // 2주 안은 바로, 그 뒤는 「더보기」 (나연 2026-11-26)
+    // 일정 종류별 작은 회색 아이콘 + 날짜 칸 색 (나연 2026-11-26: 「둘 다 해 봐」)
+    var EVT = [['special', /축제|성탄|부활|추수|연극|행사|수련회|특별|세례|임직/], ['pray', /기도/], ['music', /찬양|중창|성가|찬양대/], ['serve', /청소|봉사|섬김|식사|주차/], ['mission', /전도|선교|노방/]];
+    var EVI = {
+      pray: '<path d="M12 20s-7-4.4-7-9.5A4 4 0 0 1 12 8a4 4 0 0 1 7 2.5C19 15.6 12 20 12 20z"/>',
+      music: '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>',
+      serve: '<path d="M3 21h18M6 21V10l6-5 6 5v11M10 21v-6h4v6"/>',
+      mission: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+      special: '<path d="m12 3 2.6 5.6 6 .8-4.4 4.2 1.1 6L12 16.8 6.7 19.6l1.1-6L3.4 9.4l6-.8z"/>',
+      meet: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M15 14.2c3 0 6 1.8 6 5.8"/>',
+    };
+    function evType(e) { if (!e.weekly && !EVT.slice(1).some(function (x) { return x[1].test(e.title); })) return 'special'; var m = EVT.filter(function (x) { return x[1].test(e.title); })[0]; return m ? m[0] : 'meet'; }
+    function evIco(t) { return '<svg class="ev-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + EVI[t] + '</svg>'; }
     var evRow = function (g) {
-      var d = new Date(g.date + 'T00:00:00'), sp = g.items.some(function (e) { return !e.weekly; });
-      return '<a class="ev' + (sp ? ' special' : '') + '" href="' + g.items[0].url + '"><div class="day"><b>' + d.getDate() + '</b><small>' + (d.getMonth() + 1) + '월 ' + WEEK[d.getDay()] + '</small></div><div class="ev-list">' +
-        g.items.map(function (e) { return '<div><b class="t">' + (e.weekly ? '' : '🎉 ') + esc(e.title) + '</b><span class="sub">' + esc(e.sub) + '</span></div>'; }).join('') + '</div></a>';
+      var d = new Date(g.date + 'T00:00:00'), sp = g.items.some(function (e) { return evType(e) === 'special'; }), t0 = sp ? 'special' : evType(g.items[0]);
+      return '<a class="ev' + (sp ? ' special' : '') + ' ev-t-' + t0 + '" href="' + g.items[0].url + '"><div class="day"><b>' + d.getDate() + '</b><small>' + (d.getMonth() + 1) + '월 ' + WEEK[d.getDay()] + '</small></div><div class="ev-list">' +
+        g.items.map(function (e) { var ty = evType(e); return '<div class="ev-i-' + ty + '"><b class="t">' + evIco(ty) + esc(e.title) + '</b><span class="sub">' + esc(e.sub) + '</span></div>'; }).join('') + '</div></a>';
     };
     var near = byDay.slice(0, 3), far = byDay.slice(3);   // 3줄만 바로, 나머지는 「더보기」 (나연 2026-11-26)
     var ev = near.map(evRow).join('') + (far.length ? '<details class="ev-more"><summary>더보기 · 일정 ' + far.reduce(function (s, g) { return s + g.items.length; }, 0) + '개 더</summary>' + far.map(evRow).join('') + '</details>' : '');
@@ -448,7 +460,7 @@
       readingCard() +
       homeGroup() +
       homeFamily() +
-      (ev ? '<div class="card"><div class="h2" style="margin-bottom:4px">다가오는 일정</div>' + ev + '</div>' : '') +
+      (ev ? '<div class="card ev-card ev-colors"><div class="h2" style="margin-bottom:4px">다가오는 일정</div>' + ev + '</div>' : '') +
       (b ? '<a class="card home-jubo" href="#/news?tab=jubo"><span class="hj-ic">📰</span><span class="hj-tx"><b>' + md(b.date) + ' 주보</b><small>' + esc(b.title || '') + (bulletinNews().length ? ' · 교회 소식 ' + bulletinNews().length + '개' : '') + '</small></span><span class="hj-go">보기 ›</span></a>' : '') +
       (S.me && S.me.approved && challengeNow() ? '<a class="card green" href="#/talk/prayer?p=vow&c=thanks" style="display:flex;align-items:center;gap:12px"><span style="font-size:1.6rem">🌾</span><div><b>감사 기도 챌린지로 함께해요</b><div class="sub" style="color:#55705f">' + (thanksDays()[dayKey(new Date())] ? '오늘 감사 기도를 드렸어요 ✓' : challengeNow().title + ' · ' + md(challengeNow().to) + '까지') + '</div></div></a>' : '');
   }

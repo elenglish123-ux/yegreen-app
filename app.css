@@ -528,3 +528,13 @@ img.flag { display: inline-block; margin-right: 4px; } .sec-title b:has(img.flag
 .fam-tx b { font-size: .95rem; }
 .fam-tx small { font-size: .78rem; color: #6f6a60; }
 .fam-tx em { font-style: normal; font-size: .76rem; font-weight: 700; color: var(--green-d); }
+/* 일정 종류: 작은 회색 아이콘(ev-icons) · 날짜 칸 색(ev-colors) (2026-11-26) */
+.ev-ico { display: none; width: 15px; height: 15px; color: #9a948a; vertical-align: -2px; margin-right: 5px; flex: 0 0 auto; }
+.ev-card.ev-icons .ev-ico { display: inline-block; }
+.ev-card.ev-colors .ev .day { border-radius: 12px; padding: 6px 4px; border-right: 0; }
+.ev-card.ev-colors .ev-t-pray .day { background: #f1ecf8; } .ev-card.ev-colors .ev-t-pray .day b { color: #5b4a8a; }
+.ev-card.ev-colors .ev-t-serve .day { background: #eaf5ee; } .ev-card.ev-colors .ev-t-serve .day b { color: #2f6b4f; }
+.ev-card.ev-colors .ev-t-music .day { background: #fdf0f2; } .ev-card.ev-colors .ev-t-music .day b { color: #a3455a; }
+.ev-card.ev-colors .ev-t-mission .day { background: #eaf2fb; } .ev-card.ev-colors .ev-t-mission .day b { color: #2b6a9e; }
+.ev-card.ev-colors .ev-t-special .day { background: #fff1e6; } .ev-card.ev-colors .ev-t-special .day b { color: #c9502a; }
+.ev-card.ev-colors .ev-t-meet .day { background: #f4f1ea; }
