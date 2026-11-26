@@ -553,3 +553,4 @@ img.flag { display: inline-block; margin-right: 4px; } .sec-title b:has(img.flag
 .ev-card .ev-list .t { font-size: .95rem; }
 .ev-card .ev-list .sub { font-size: .78rem; }
 .hr-del { font: inherit; font-size: .74rem; background: #fff; border: 1px solid #e3e0d8; border-radius: 999px; padding: 2px 8px; cursor: pointer; color: #6f6a60; margin: 2px; }
+.hr-row { min-width: 0; } .hr-it { min-width: 0; } .hr-it b { white-space: normal; word-break: keep-all; line-height: 1.25; text-align: center; } .hr-row[style*="repeat(4"] .hr-it b { font-size: .76rem; } .hr-row[style*="repeat(4"] .hr-it { padding: 8px 2px; }
