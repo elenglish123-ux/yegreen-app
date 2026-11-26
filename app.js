@@ -13,6 +13,10 @@
   // 감사 챌린지는 기간 동안만 열림 — 새 챌린지는 여기에 한 줄 추가
   var CHALLENGES = [{ title: '추수감사 감사 챌린지', from: '2026-11-09', to: '2026-11-22' }];
   // 선교 소식 (앱에서만, 나라 이름만 — 선교사 이름은 안전 때문에 쓰지 않음)
+  // 선교지 국기 (나연 2026-11-26: 지구 모양 대신 나라 국기)
+  // 이모티콘 국기는 윈도 컴퓨터에서 글자로 보여서 국기 그림(flagcdn.com, 무료)을 씀
+  var FLAGS = { '인도': 'in', '필리핀': 'ph', '파푸아뉴기니': 'pg', '파퓨아뉴기니': 'pg', '일본': 'jp', '북한': 'kp' };
+  function flagOf(name) { var c = FLAGS[String(name).trim()]; return c ? '<img class="flag" src="https://flagcdn.com/w40/' + c + '.png" alt="' + esc(name) + ' 국기" loading="lazy">' : '<span class="flag-ic">' + (/선교회/.test(name) ? '🕊️' : '🌏') + '</span>'; }
   var MISSIONS = [
     ['인도', '선교사 후원'], ['필리핀', '선교사 후원'], ['파푸아뉴기니', '선교사 후원'], ['일본', '선교사 후원'],
     ['북한', '한국성결교회와 협력'], ['오픈도어선교회', '박해받는 교회 후원'],
@@ -199,7 +203,49 @@
   });
 
   // ---------- 홈 ----------
+  // 다가오는 일정을 주보 그대로 (나연 2026-11-26): 주일예배·오후 모임·주중 예배·모임 안내(이번 주 반복) + 소식에 날짜가 있는 행사
   function upcoming() {
+    var b = BULLETINS[0];
+    if (!b || !(b.weekday || b.meetings || b.worship)) return upcomingOld();
+    var now = new Date(); now.setHours(0, 0, 0, 0);
+    var DAY = { '주일': 0, '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
+    var out = [];
+    function nextOf(days) {   // 오늘부터 가장 가까운 그 요일
+      var best = null;
+      days.forEach(function (w) { var d = new Date(now); d.setDate(d.getDate() + (w - d.getDay() + 7) % 7); if (!best || d < best) best = d; });
+      return best;
+    }
+    function daysIn(txt) {   // "화–금 오전 5:30" "수요일 오후 7:30" "주일 오후 2:30"
+      var m = String(txt).match(/^\s*(주일|[일월화수목금토])(?:요일)?\s*[–~-]\s*(주일|[일월화수목금토])(?:요일)?/);
+      if (m) { var a = DAY[m[1]], z = DAY[m[2]], r = []; for (var i = a; ; i = (i + 1) % 7) { r.push(i); if (i === z) break; } return { days: r, rest: txt.slice(m[0].length).trim(), label: m[1] + '–' + m[2] }; }
+      m = String(txt).match(/^\s*(주일|[일월화수목금토])(?:요일)?/);
+      return m ? { days: [DAY[m[1]]], rest: txt.slice(m[0].length).trim(), label: '' } : null;
+    }
+    function weekly(title, when, url) {
+      var p = daysIn(when); if (!p) return;
+      out.push({ date: dayKey(nextOf(p.days)), title: title, sub: (p.label ? p.label + ' ' : '') + p.rest, url: url, weekly: true });
+    }
+    var W = b.worship || {};
+    if (W.times) weekly('주일예배', W.times, '#/worship');
+    if (W.aftTitle) weekly(W.aftTitle, W.aftTime || '주일', '#/talk/group');
+    (b.weekday || []).forEach(function (w) { if (w.n && w.t) weekly(w.n, w.t, '#/worship'); });
+    lines(b.meetings).forEach(function (l) { var m = l.match(/^\[([^\]]+)\]\s*(.*)$/); if (m) weekly(m[1], m[2], '#/news?tab=jubo'); });
+    // 소식에 날짜가 적힌 행사 (예: 12월 25일(금) 11시 성탄절 예배)
+    var y0 = Number(b.date.slice(0, 4)), m0 = Number(b.date.slice(5, 7));
+    (b.news || []).forEach(function (n) {
+      var src = lines(n.b).concat([n.t]), hit = null;
+      src.some(function (l) { var m = l.match(/(\d{1,2})월\s?(\d{1,2})일(?:\s*\((.)\))?/); if (m) { hit = { m: +m[1], d: +m[2], line: l }; return true; } return false; });
+      if (!hit) return;
+      var y = hit.m < m0 ? y0 + 1 : y0, dt = new Date(y, hit.m - 1, hit.d);
+      out.push({ date: dayKey(dt), title: n.t.replace(/\s*안내$/, ''), sub: hit.line.replace(/^[^:：]{1,6}[:：]\s*/, '').replace(/(\d{1,2})월\s?(\d{1,2})일(\s*\(.\))?\s*/, '').trim() || n.t, url: '#/news?tab=jubo' });
+    });
+    var today = dayKey(now), week = new Date(now); week.setDate(week.getDate() + 6);
+    var until = new Date(now); until.setDate(until.getDate() + 45);
+    return out.filter(function (e) { return e.date >= today && (e.weekly ? e.date <= dayKey(week) : e.date <= dayKey(until)); })
+      .sort(function (a, c) { return a.date < c.date ? -1 : a.date > c.date ? 1 : mins(a.sub) - mins(c.sub); });
+    function mins(s) { var m = String(s).match(/(오전|오후)?\s*(\d{1,2})(?::(\d{2}))?\s*시?/); if (!m) return 9999; var h = +m[2] % 12 + (m[1] === '오후' ? 12 : 0); return h * 60 + (+m[3] || 0); }
+  }
+  function upcomingOld() {
     var today = dayKey(new Date());
     var list = [
       { date: '2026-11-22', title: '추수감사주일', sub: '감사주간 11.9 ~ 11.21', url: '#/news' },
@@ -354,7 +400,7 @@
       // 뒷면(표지 쪽)·교회 안내도 다 펼쳐서 (나연 2026-11-25)
       sec('🕐 예배 시간', (F.times1 || F.times2 || F.times3 ? rows([F.times1, F.times2, F.times3].filter(Boolean).join('\n')) : '')) +
       sec('🌿 예그린 비전', F.vision ? '<div class="jvision">' + lines(F.vision).map(function (l) { var x = l.split('|'); return '<div><b>' + esc((x[0] || '').trim()) + '</b><span>' + esc((x[1] || '').trim()) + '</span></div>'; }).join('') + '</div>' : '') +
-      sec('🌏 함께하는 선교지', F.missions ? '<div class="jmis">' + lines(F.missions).map(function (l) { var x = l.split(/\s+-\s+/); return '<div>' + (x[1] ? '<b>' + esc(x[0]) + '</b> ' + esc(x[1]) : '<b>' + esc(x[0]) + '</b>') + '</div>'; }).join('') + '</div>' : '') +
+      sec('🌏 함께하는 선교지', F.missions ? '<div class="jmis">' + lines(F.missions).map(function (l) { var x = l.split(/\s+-\s+/); return '<div>' + flagOf(x[0]) + ' ' + (x[1] ? '<b>' + esc(x[0]) + '</b> ' + esc(x[1]) : '<b>' + esc(x[0]) + '</b>') + '</div>'; }).join('') + '</div>' : '') +
       sec('🙋 새가족 등록 안내', F.newcomer ? '<div class="jflow">' + lines(F.newcomer).map(function (l) { return '<span>' + esc(l) + '</span>'; }).join('<i>›</i>') + '</div>' : '') +
       sec('👥 선교회 안내', F.groups ? rows(F.groups) : '') +
       sec('📍 오시는 길', ul([F.address, F.directions].filter(Boolean).join('\n'))) +
@@ -364,9 +410,12 @@
     setTimeout(gpRemind, 0);   // 목자: 주일 지나 기도제목 안 올렸으면 알림
     renderTop({ brand: true, bell: true });
     var s = (MEDIA.sunday || [])[0];
-    var ev = upcoming().map(function (e) {
-      var d = new Date(e.date + 'T00:00:00');
-      return '<a class="ev" href="' + e.url + '"><div class="day"><b>' + d.getDate() + '</b><small>' + (d.getMonth() + 1) + '월 ' + WEEK[d.getDay()] + '</small></div><div><b class="t">' + esc(e.title) + '</b><div class="sub">' + esc(e.sub) + '</div></div></a>';
+    var evs = upcoming(), byDay = [];   // 같은 날 일정은 한 줄로 묶음
+    evs.forEach(function (e) { var g = byDay[byDay.length - 1]; if (g && g.date === e.date) g.items.push(e); else byDay.push({ date: e.date, items: [e] }); });
+    var ev = byDay.map(function (g) {
+      var d = new Date(g.date + 'T00:00:00'), sp = g.items.some(function (e) { return !e.weekly; });
+      return '<a class="ev' + (sp ? ' special' : '') + '" href="' + g.items[0].url + '"><div class="day"><b>' + d.getDate() + '</b><small>' + (d.getMonth() + 1) + '월 ' + WEEK[d.getDay()] + '</small></div><div class="ev-list">' +
+        g.items.map(function (e) { return '<div><b class="t">' + (e.weekly ? '' : '🎉 ') + esc(e.title) + '</b><span class="sub">' + esc(e.sub) + '</span></div>'; }).join('') + '</div></a>';
     }).join('');
     var news = bulletinNews().slice(0, 2).map(function (n, i) {
       return '<a href="#/news/' + i + '" style="display:block;padding:6px 0;font-size:.98rem">· ' + inl(n.t) + '</a>';
@@ -1839,7 +1888,7 @@
   function missionBody() {   // 소식 › 선교 소식 칩에서도 씀
     return '<div class="card green"><div class="h2" style="color:var(--green-d)">함께하는 선교</div><p class="sub" style="color:#55705f;margin-top:4px">선교지 소식과 기도제목은 등록 교인만 보는 앱에만 올려요. 안전을 위해 선교사님 이름은 쓰지 않아요.</p></div>' +
       MISSIONS.map(function (m) {
-        return '<div class="card"><div class="sec-title" style="margin:0 0 6px"><b>🌏 ' + esc(m[0]) + '</b><span class="sub">' + esc(m[1]) + '</span></div>' +
+        return '<div class="card"><div class="sec-title" style="margin:0 0 6px"><b><span class="flag">' + (FLAGS[m[0]] || '🌏') + '</span> ' + esc(m[0]) + '</b><span class="sub">' + esc(m[1]) + '</span></div>' +
           (function () {
             var ns = (S.missionNews || []).filter(function (n) { return n.country === m[0]; });
             return ns.length ? ns.map(function (n) { return '<div class="mnews"><div class="sub" style="font-size:.75rem">' + esc(n.at) + (n.kind === 'pray' ? ' · 🙏 기도제목' : ' · 📮 소식') + '</div><p>' + esc(n.text) + '</p></div>'; }).join('')
