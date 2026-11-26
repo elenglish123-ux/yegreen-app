@@ -517,3 +517,14 @@ img.flag { width: 22px; height: 15px; object-fit: cover; border-radius: 3px; ver
 .hero-peek { display: block; -webkit-line-clamp: unset; } .hero-peek .pk-t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .hero-peek .pk-n { margin-top: 3px; font-size: .8rem; font-weight: 700; color: var(--green-d); }
 /* 위쪽 「예그린교회」 글씨는 딥그린 (나연 2026-11-26) */ .brand { color: var(--green-d); }
 img.flag { display: inline-block; margin-right: 4px; } .sec-title b:has(img.flag) { display: inline-flex; align-items: center; gap: 6px; }
+/* 교우 동정 (2026-11-26) */
+.fam-it { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px dashed #eee9e0; }
+.fam-it:last-child { border-bottom: 0; }
+.fam-ic { flex: 0 0 34px; height: 34px; border-radius: 50%; background: #f6faf7; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; }
+.fam-wed .fam-ic, .fam-baby .fam-ic { background: #fdf1f3; }
+.fam-rip .fam-ic { background: #f1f1f1; }
+.fam-sick .fam-ic { background: #eef4fb; }
+.fam-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.fam-tx b { font-size: .95rem; }
+.fam-tx small { font-size: .78rem; color: #6f6a60; }
+.fam-tx em { font-style: normal; font-size: .76rem; font-weight: 700; color: var(--green-d); }

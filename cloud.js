@@ -251,6 +251,7 @@
     if (member.role === 'pastor') sub('notes', 'pastorNotes', []); else sub('notes', 'pastorNotes', [['uid', '==', uid]]);
     sub('videos', 'groupVideos', []);
     sub('mission', 'missionNews', []);
+    sub('family', 'family', []);   // 교우 동정 (2026-11-26)
     sub('challenges', 'challenges', []);
     sub('groups', 'groups', []);
     sub('reads', 'reads', []);
@@ -295,6 +296,7 @@
     var seen = {};
     S.posts = posts.filter(function (p) { if (seen[p.id]) return false; seen[p.id] = 1; return true; }).sort(byTs);
     S.groupVideos = (cache.videos || []).slice().sort(function (a, b) { return a.week < b.week ? 1 : a.week > b.week ? -1 : byTs(a, b); });
+    S.family = (cache.family || []).slice();
     S.missionNews = (cache.mission || []).slice().sort(byTs).map(function (n) { n.at = n.at || rel(n.ts); return n; });
     S.challenges = (cache.challenges || []).slice().sort(byTs);
     var ms = cache.members || cache.groupMembers || [];
@@ -406,6 +408,8 @@
   YG.delVideo = function (v) { return A.del('groupVideos', v.id); };
   YG.addMission = function (n) { n = Object.assign({}, n); n.ts = now(); return A.add('missionNews', n); };
   YG.delMission = function (n) { return A.del('missionNews', n.id); };
+  YG.addFamily = function (f) { f = Object.assign({}, f); f.ts = now(); return A.add('family', f); };   // 교우 동정
+  YG.delFamily = function (f) { return A.del('family', f.id); };
   YG.addChallenge = function (c) { c = Object.assign({}, c); c.ts = now(); return A.add('challenges', c); };
   YG.closeChallenge = function (c) { return A.update('challenges', c.id, { closed: true }); };
   YG.notice = function (msg, to) { return A.add('notices', { kind: msg.kind || 'notice', title: msg.title, body: msg.body || '', url: msg.url || '#/', to: to || 'all', ts: now(), by: myName() }); };

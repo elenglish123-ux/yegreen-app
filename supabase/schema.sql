@@ -68,6 +68,7 @@ create policy docs_read on public.docs for select using (
     when 'groups' then public.yg_approved()
     when 'groupVideos' then public.yg_approved()
     when 'missionNews' then public.yg_approved()
+    when 'family' then public.yg_approved()   -- 교우 동정 (2026-11-26)
     when 'challenges' then public.yg_approved()
     when 'settings' then public.yg_approved()
     when 'reads' then public.yg_approved()
@@ -209,7 +210,7 @@ begin
     elsif kind = 'delete' then return staff or (leader and o->>'target' = g);
     else return staff; end if;
 
-  elsif c in ('missionNews', 'challenges', 'settings', 'site') then
+  elsif c in ('missionNews', 'family', 'challenges', 'settings', 'site') then
     return staff;
 
   elsif c = 'notices' then

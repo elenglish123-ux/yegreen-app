@@ -38,12 +38,12 @@
       ],
       posts: [
         { id: 'p0', notice: true, cat: 'thanks', scope: 'all', author: '교회 공지', text: '11월 9일부터 21일까지 감사주간이에요. 감사일기에 오늘의 감사를 적고 나눠 주세요.', at: '공지', count: 0, reacted: false, comments: [] },
-        { id: 'p1', cat: 'pray', scope: 'all', author: '예시 성도', text: '(예시 글) 이번 주 수술을 앞둔 어머니를 위해 함께 기도해 주세요.', at: '어제', count: 12, reacted: false, comments: [{ author: '예시 성도', text: '어머님 위해 기도할게요 🙏' }] },
-        { id: 'p2', cat: 'thanks', scope: 'all', author: '예시 성도', text: '(예시 글) 오랜만에 온 가족이 함께 예배드릴 수 있어서 감사했어요.', at: '2일 전', count: 9, reacted: false, comments: [] },
-        { id: 'g1', cat: 'pray', scope: 'group', group: null, author: '예시 목장 식구', text: '(예시 글) 다음 주 면접이 있어요. 준비한 만큼 잘 말할 수 있도록 기도 부탁드려요.', at: '어제', count: 6, reacted: false, comments: [] },
-        { id: 'g2', cat: 'group', scope: 'group', group: null, author: '예시 목자', text: '(예시 글) 지난 모임 때 나눈 말씀이 한 주 내내 힘이 됐어요.', at: '3일 전', count: 5, reacted: false, comments: [] },
+        { id: 'p1', cat: 'pray', scope: 'all', author: '김바울', text: '이번 주 수술을 앞둔 어머니를 위해 함께 기도해 주세요.', at: '어제', count: 12, reacted: false, comments: [{ author: '전나연', text: '어머님 위해 기도할게요 🙏' }] },
+        { id: 'p2', cat: 'thanks', scope: 'all', author: '김바울', text: '오랜만에 온 가족이 함께 예배드릴 수 있어서 감사했어요.', at: '2일 전', count: 9, reacted: false, comments: [] },
+        { id: 'g1', cat: 'pray', scope: 'group', group: null, author: '전나연', text: '다음 주 면접이 있어요. 준비한 만큼 잘 말할 수 있도록 기도 부탁드려요.', at: '어제', count: 6, reacted: false, comments: [] },
+        { id: 'g2', cat: 'group', scope: 'group', group: null, author: '김바울', text: '지난 모임 때 나눈 말씀이 한 주 내내 힘이 됐어요.', at: '3일 전', count: 5, reacted: false, comments: [] },
       ],
-      meeting: { text: '(예시) 이번 주 금요일 저녁 7:30 · 목장 모임', going: null },
+      meeting: { text: '이번 주 금요일 저녁 7:30 · 목장 모임', going: null },
       diary: {},
       newcomer: null,
       sent: [],
@@ -310,7 +310,7 @@
     var lead = amLeaderOf(S.me.group) && (CLOUD || !!dg);
     var miss = lead && !gpOf(S.me.group, gpPrevWeek());
     return '<a class="card home-group" href="' + (miss ? '#/talk/group?gpw=' + gpPrevWeek() : '#/talk/group') + '"><span class="hg-ic">🏡</span><span class="hg-tx"><b>' + esc(S.me.group) + '</b><small>' +
-      [meet ? '모임 ' + esc(meet) : '', v ? '🎬 이번 주 목장 영상' : ''].filter(Boolean).join(' · ') + '</small>' +
+      [meet ? '모임 ' + esc(meet) : ''].filter(Boolean).join(' · ') + '</small>' +
       (miss ? '<em>⏰ 지난주 목장 기도제목을 아직 안 올렸어요</em>' : '') + '</span><span class="hj-go">›</span></a>';
   }
   function bulletinNews() {
@@ -449,6 +449,7 @@
       homeRoutine() +
       readingCard() +
       homeGroup() +
+      homeFamily() +
       (ev ? '<div class="card"><div class="h2" style="margin-bottom:4px">다가오는 일정</div>' + ev + '</div>' : '') +
       (b ? '<a class="card home-jubo" href="#/news?tab=jubo"><span class="hj-ic">📰</span><span class="hj-tx"><b>' + md(b.date) + ' 주보</b><small>' + esc(b.title || '') + (bulletinNews().length ? ' · 교회 소식 ' + bulletinNews().length + '개' : '') + '</small></span><span class="hj-go">보기 ›</span></a>' : '') +
       (S.me && S.me.approved && challengeNow() ? '<a class="card green" href="#/talk/prayer?p=vow&c=thanks" style="display:flex;align-items:center;gap:12px"><span style="font-size:1.6rem">🌾</span><div><b>감사 기도 챌린지로 함께해요</b><div class="sub" style="color:#55705f">' + (thanksDays()[dayKey(new Date())] ? '오늘 감사 기도를 드렸어요 ✓' : challengeNow().title + ' · ' + md(challengeNow().to) + '까지') + '</div></div></a>' : '');
@@ -483,8 +484,8 @@
     if (CLOUD || S.graceSeed || !s) return;
     S.graceSeed = 1;
     S.posts.push(
-      { id: 'gs1', cat: 'grace', vid: s.videoId, scope: 'all', author: '예시 집사', text: '(예시) 「범사에 감사하라」는 말씀이 이번 주 내내 마음에 남았어요. 불평이 나올 때마다 감사 한 가지를 먼저 찾아보기로 했어요.', at: '어제', count: 8, reacted: false, comments: [] },
-      { id: 'gs2', cat: 'grace', vid: s.videoId, scope: 'all', author: '예시 청년', text: '(예시) 감사가 환경이 아니라 하나님을 바라보는 데서 나온다는 말씀이 좋았어요. 적용: 매일 밤 감사 세 줄 쓰기!', at: '2일 전', count: 5, reacted: false, comments: [] });
+      { id: 'gs1', cat: 'grace', vid: s.videoId, scope: 'all', author: '전나연', text: '「범사에 감사하라」는 말씀이 이번 주 내내 마음에 남았어요. 불평이 나올 때마다 감사 한 가지를 먼저 찾아보기로 했어요.', at: '어제', count: 8, reacted: false, comments: [] },
+      { id: 'gs2', cat: 'grace', vid: s.videoId, scope: 'all', author: '김바울', text: '감사가 환경이 아니라 하나님을 바라보는 데서 나온다는 말씀이 좋았어요. 적용: 매일 밤 감사 세 줄 쓰기!', at: '2일 전', count: 5, reacted: false, comments: [] });
     save();
   }
   function graceBox(cur) {
@@ -546,9 +547,9 @@
 
   // ---------- 소식 ----------
   function news(q) {
-    var tab = q.tab === 'jubo' || q.tab === 'mission' ? q.tab : 'notice';   // 사진 칸은 빼고 선교 소식을 넣음 (나연 2026-11-25)
+    var tab = ['jubo', 'mission', 'family'].indexOf(q.tab) >= 0 ? q.tab : 'notice';   // 사진 칸은 빼고 선교 소식을 넣음 (나연 2026-11-25)
     renderTop({ title: '교회 소식', bell: true });
-    var html = '<div class="chips">' + [['notice', '광고'], ['jubo', '주보'], ['mission', '선교 소식']].map(function (t) { return '<a class="chip' + (t[0] === tab ? ' on' : '') + '" href="#/news?tab=' + t[0] + '">' + t[1] + '</a>'; }).join('') + '</div>';
+    var html = '<div class="chips">' + [['notice', '광고'], ['jubo', '주보'], ['mission', '선교 소식'], ['family', '교우 동정']].map(function (t) { return '<a class="chip' + (t[0] === tab ? ' on' : '') + '" href="#/news?tab=' + t[0] + '">' + t[1] + '</a>'; }).join('') + '</div>';
     var b = BULLETINS[0];
     if (tab === 'notice') {
       html += bulletinNews().map(function (n, i) {
@@ -559,7 +560,7 @@
     } else if (tab === 'jubo') {
       html += b ? juboText(b) : '<p class="empty">아직 올라온 주보가 없어요.</p>';
     } else {
-      html += missionBody();   // 선교 소식 (홈 바로가기에서 옮김, 나연 2026-11-25)
+      html += tab === 'family' ? familyBody() : missionBody();   // 선교 소식 · 교우 동정
     }
     if (!S.alerts.notice) html += '<button class="card green" data-toggle-alert="notice" style="display:flex;justify-content:space-between;align-items:center;width:100%"><b style="color:var(--green-d)">🔔 새 소식 알림 받기</b><span class="tg"></span></button>';
     return html;
@@ -857,13 +858,12 @@
         '<div class="gpick">' + DEMO_GROUPS.map(function (g) { return '<button class="gpick-b" data-pickg="' + esc(g.name) + '"><b>🏡 ' + esc(g.name) + '</b><span>목자 ' + esc(g.leader) + ' · ' + (g.members.length + 1) + '명</span><small>' + esc(g.meet) + '</small></button>'; }).join('') + '</div></div>';
     }
     var dg = demoGroup(S.me.group) || { leader: '예시 목자', meet: S.meeting.text, members: ['예시 식구 1', '예시 식구 2', '예시 식구 3'] };
-    var m = S.meeting, going = m.going, meetText = m.custom ? m.text : '(예시) 이번 주 ' + dg.meet;
+    var m = S.meeting, going = m.going, meetText = m.custom ? m.text : '이번 주 ' + dg.meet;
     var posts = S.posts.filter(function (p) { return p.scope === 'group' && p.cat !== 'gpray' && canSee(p); });   // 목장 기도제목은 위 카드에서만
     var members = [dg.leader + ' (목자)', S.me.name].concat(dg.members);
     return '<div class="card group-card"><div class="sub" style="color:#cfe3d6">우리 목장 · 예시</div><div class="big">' + esc(S.me.group) + '</div><div style="font-size:.9rem;opacity:.85">목자 ' + esc(dg.leader) + ' · 식구 ' + members.length + '명 · 우리 목장 사람만 볼 수 있어요</div>' +
         '<button class="gpick-leave" data-leaveg>다른 목장 둘러보기 ›</button></div>' +
       gpCard(S.me.group, [dg.leader].concat(S.me.name && S.me.name !== dg.leader ? [S.me.name] : [], dg.members), q, dg.leader) +   // 목자님 줄도 맨 앞에
-      gvCard() +
       '<div class="card meet"><div style="font-size:.8rem;font-weight:800;color:#a07d2c">📌 목장 모임 · 목자가 올려요</div><b style="font-size:1.05rem">' + esc(meetText) + '</b>' +
         '<div class="row" style="margin-top:10px"><button class="btn small' + (going === true ? '' : ' ghost') + '" data-rsvp="yes">참석' + (going === true ? ' ✓' : '') + '</button><button class="btn small' + (going === false ? '' : ' ghost') + '" data-rsvp="no">불참' + (going === false ? ' ✓' : '') + '</button></div>' +
         '<div class="sub" style="margin-top:6px">참석 ' + (3 + (going === true ? 1 : 0)) + ' · 불참 ' + (1 + (going === false ? 1 : 0)) + '</div></div>' +
@@ -879,7 +879,6 @@
     var amLeader = S.me.role !== 'member';
     return '<div class="card group-card"><div class="sub" style="color:#cfe3d6">우리 목장</div><div class="big">' + esc(S.me.group) + '</div><div style="font-size:.9rem;opacity:.85">' + (leaderName ? '목자 ' + esc(leaderName) + ' · ' : '') + '식구 ' + members.length + '명 · 우리 목장 사람만 볼 수 있어요</div></div>' +
       gpCard(S.me.group, (function (ns) { return leaderName && ns.indexOf(leaderName) >= 0 ? [leaderName].concat(ns.filter(function (n) { return n !== leaderName; })) : ns; })(members.map(function (x) { return x.name; })), q, leaderName) +
-      gvCard() +
       '<div class="card meet"><div style="font-size:.8rem;font-weight:800;color:#a07d2c">📌 목장 모임 · 목자가 올려요</div>' +
         (m.text ? '<b style="font-size:1.05rem">' + esc(m.text) + '</b>' +
           '<div class="row" style="margin-top:10px"><button class="btn small' + (going === true ? '' : ' ghost') + '" data-rsvp="yes">참석' + (going === true ? ' ✓' : '') + '</button><button class="btn small' + (going === false ? '' : ' ghost') + '" data-rsvp="no">불참' + (going === false ? ' ✓' : '') + '</button></div>' +
@@ -1046,20 +1045,20 @@
     if (CLOUD || S.prayerSeed) return;
     S.prayerSeed = 1;
     S.posts.push(
-      { id: 'h1', cat: 'pray', head: 'help', scope: 'group', group: null, author: '예시 목장 식구', text: '(예시) 다음 주 이사를 해요. 좋은 이웃을 만나고 아이들이 새 학교에 잘 적응하도록 도와주세요.', at: '오늘', count: 4, reacted: false, comments: [] },
-      { id: 'h2', cat: 'pray', head: 'inter', scope: 'all', author: '예시 성도', text: '(예시) 투병 중인 친구 ○○를 위해 기도해요. 치료가 잘 되고 마음에 평안이 있기를.', at: '어제', count: 11, reacted: false, comments: [] },
-      { id: 'h3', cat: 'pray', head: 'thanks', scope: 'all', author: '예시 청년', text: '(예시) 취업 소식 기다리던 것, 오늘 합격했어요! 함께 기도해 주신 분들 감사해요.', at: '2일 전', count: 15, reacted: false, comments: [], answered: 1 });
+      { id: 'h1', cat: 'pray', head: 'help', scope: 'group', group: null, author: '전나연', text: '다음 주 이사를 해요. 좋은 이웃을 만나고 아이들이 새 학교에 잘 적응하도록 도와주세요.', at: '오늘', count: 4, reacted: false, comments: [] },
+      { id: 'h2', cat: 'pray', head: 'inter', scope: 'all', author: '김바울', text: '투병 중인 친구 ○○를 위해 기도해요. 치료가 잘 되고 마음에 평안이 있기를.', at: '어제', count: 11, reacted: false, comments: [] },
+      { id: 'h3', cat: 'pray', head: 'thanks', scope: 'all', author: '전나연', text: '취업 소식 기다리던 것, 오늘 합격했어요! 함께 기도해 주신 분들 감사해요.', at: '2일 전', count: 15, reacted: false, comments: [], answered: 1 });
     save();
   }
   function prayerSeed2() {   // 시안: 열람 범위마다 예시 하나씩 (나연 요청 2026-11-25)
     if (CLOUD || S.prayerSeed2) return;
     S.prayerSeed2 = 1;
     S.posts.push(
-      { id: 'h4', cat: 'pray', head: 'hard', scope: 'pastor', author: S.me.name, mine: true, text: '(예시) 목사님, 요즘 회사 일로 마음이 많이 지쳐 있어요. 주일에 잠깐 이야기 나눌 수 있을까요?', at: '오늘', count: 0, reacted: false, comments: [] },
-      { id: 'h5', cat: 'pray', head: 'inter', scope: 'group', group: null, author: '예시 목장 식구', text: '(예시) 이번 주 목장 모임에 처음 오시는 새가족이 편안하게 마음 열 수 있도록 함께 기도해 주세요.', at: '오늘', count: 2, reacted: false, comments: [] },
-      { id: 'h6', cat: 'pray', head: 'joy', scope: 'all', author: '예시 권사', text: '(예시) 성탄절 새생명축제에 초대할 이웃 한 사람을 주님께서 보여 주세요. 주님 기뻐하실 선물을 드리고 싶어요.', at: '오늘', count: 7, reacted: false, comments: [] });
+      { id: 'h4', cat: 'pray', head: 'hard', scope: 'pastor', author: S.me.name, mine: true, text: '목사님, 요즘 회사 일로 마음이 많이 지쳐 있어요. 주일에 잠깐 이야기 나눌 수 있을까요?', at: '오늘', count: 0, reacted: false, comments: [] },
+      { id: 'h5', cat: 'pray', head: 'inter', scope: 'group', group: null, author: '김바울', text: '이번 주 목장 모임에 처음 오시는 새가족이 편안하게 마음 열 수 있도록 함께 기도해 주세요.', at: '오늘', count: 2, reacted: false, comments: [] },
+      { id: 'h6', cat: 'pray', head: 'joy', scope: 'all', author: '전나연', text: '성탄절 새생명축제에 초대할 이웃 한 사람을 주님께서 보여 주세요. 주님 기뻐하실 선물을 드리고 싶어요.', at: '오늘', count: 7, reacted: false, comments: [] });
     var l = prayers();
-    if (!l.some(function (x) { return x.id === 'qex'; })) { l.push({ id: 'qex', head: 'review', text: '(예시) 하나님, 오늘 아이에게 짜증을 많이 냈어요. 내일은 한 번 더 참고 안아 주는 부모가 되게 해 주세요.', at: md(dayKey(new Date())), day: '' }); savePrayers(l); }
+    if (!l.some(function (x) { return x.id === 'qex'; })) { l.push({ id: 'qex', head: 'review', text: '하나님, 오늘 아이에게 짜증을 많이 냈어요. 내일은 한 번 더 참고 안아 주는 부모가 되게 해 주세요.', at: md(dayKey(new Date())), day: '' }); savePrayers(l); }
     save();
   }
   function prayerSeed3() {   // 시안: 진행 막대가 채워진 챌린지 예시 2개 (나연 요청 2026-11-25)
@@ -1067,8 +1066,8 @@
     S.prayerSeed3 = 1;
     function ago(n) { var d = new Date(); d.setDate(d.getDate() - n); return dayKey(d); }
     var l = prayers();
-    l.push({ id: 'qv1', head: 'vow', text: '(예시) 가족 구원을 위한 40일 작정 기도', at: md(ago(12)), day: ago(12), vow: { kind: 'vow', name: '', days: 40, mins: 30, start: ago(12) } },
-      { id: 'qv2', head: 'vow', text: '(예시) 21일 동안 날마다 감사 세 가지 찾기', at: md(ago(16)), day: ago(16), vow: { kind: 'thanks', name: '', days: 21, mins: 0, start: ago(16) } });
+    l.push({ id: 'qv1', head: 'vow', text: '가족 구원을 위한 40일 작정 기도', at: md(ago(12)), day: ago(12), vow: { kind: 'vow', name: '', days: 40, mins: 30, start: ago(12) } },
+      { id: 'qv2', head: 'vow', text: '21일 동안 날마다 감사 세 가지 찾기', at: md(ago(16)), day: ago(16), vow: { kind: 'thanks', name: '', days: 21, mins: 0, start: ago(16) } });
     savePrayers(l);
     S.vowDone = S.vowDone || {};
     var a = {}, b = {};
@@ -1563,8 +1562,8 @@
     if (CLOUD || S.wordSeed) return;
     S.wordSeed = 1;
     S.posts.push(
-      { id: 'w1', cat: 'word', verse: '요한복음 8:32', scope: 'all', author: '예시 성도', text: '(예시) 진리를 알지니 진리가 너희를 자유롭게 하리라. 오늘은 미루던 사과를 먼저 하기로 했어요.', at: '오늘', count: 6, reacted: false, comments: [] },
-      { id: 'w2', cat: 'word', verse: '요한복음 6장', scope: 'group', group: null, author: '예시 목장 식구', text: '(예시) 오병이어. 작은 것이라도 주님 손에 드리면 넉넉해진다는 걸 다시 배웠어요.', at: '어제', count: 3, reacted: false, comments: [] });
+      { id: 'w1', cat: 'word', verse: '요한복음 8:32', scope: 'all', author: '김바울', text: '진리를 알지니 진리가 너희를 자유롭게 하리라. 오늘은 미루던 사과를 먼저 하기로 했어요.', at: '오늘', count: 6, reacted: false, comments: [] },
+      { id: 'w2', cat: 'word', verse: '요한복음 6장', scope: 'group', group: null, author: '전나연', text: '오병이어. 작은 것이라도 주님 손에 드리면 넉넉해진다는 걸 다시 배웠어요.', at: '어제', count: 3, reacted: false, comments: [] });
     save();
   }
   // ---------- 큐티 (나연 2026-11-25): 큐티인 책에 쓰고 사진 찍어 올리는 방식 ----------
@@ -1605,13 +1604,13 @@
       var c = document.createElement('canvas'); c.width = 600; c.height = 800; var g = c.getContext('2d');
       g.fillStyle = '#fbf7ee'; g.fillRect(0, 0, 600, 800); g.strokeStyle = '#d9cfbc';
       for (var y = 120; y < 780; y += 44) { g.beginPath(); g.moveTo(40, y); g.lineTo(560, y); g.stroke(); }
-      g.fillStyle = color; g.font = 'bold 30px sans-serif'; g.fillText('QT  (예시)', 40, 80);
+      g.fillStyle = color; g.font = 'bold 30px sans-serif'; g.fillText('QT · 큐티인', 40, 80);
       g.fillStyle = '#3b3b3b'; g.font = '24px sans-serif'; lines.forEach(function (t, i) { g.fillText(t, 48, 112 + 44 * (i + 1)); });
       return c.toDataURL('image/jpeg', 0.6);
     }
     S.posts.push(
-      { id: 'qt1', cat: 'qt', scope: 'qt', author: '예시 권사', text: '(예시) 오늘 말씀 앞에서 내 고집을 내려놓아요.', img: fake(['본문 요약 …', '마음에 남은 말씀 …', '오늘 적용: 먼저 사과하기', '기도: 주님 겸손하게 해 주세요'], '#2f6b4f'), at: '오늘', count: 5, reacted: false, comments: [] },
-      { id: 'qt2', cat: 'qt', scope: 'all', author: '예시 청년', text: '', img: fake(['오늘 본문을 읽고 …', '나에게 하시는 말씀 …', '적용: 출근길에 감사 3가지'], '#b5542a'), at: '오늘', count: 3, reacted: false, comments: [] });
+      { id: 'qt1', cat: 'qt', scope: 'qt', author: '김바울', text: '오늘 말씀 앞에서 내 고집을 내려놓아요.', img: fake(['본문 요약 …', '마음에 남은 말씀 …', '오늘 적용: 먼저 사과하기', '기도: 주님 겸손하게 해 주세요'], '#2f6b4f'), at: '오늘', count: 5, reacted: false, comments: [] },
+      { id: 'qt2', cat: 'qt', scope: 'all', author: '전나연', text: '', img: fake(['오늘 본문을 읽고 …', '나에게 하시는 말씀 …', '적용: 출근길에 감사 3가지'], '#b5542a'), at: '오늘', count: 3, reacted: false, comments: [] });
     save();
   }
   function qtRoom() {
@@ -1914,7 +1913,7 @@
           (function () {
             var ns = (S.missionNews || []).filter(function (n) { return n.country === m[0]; });
             return ns.length ? ns.map(function (n) { return '<div class="mnews"><div class="sub" style="font-size:.75rem">' + esc(n.at) + (n.kind === 'pray' ? ' · 🙏 기도제목' : ' · 📮 소식') + '</div><p>' + esc(n.text) + '</p></div>'; }).join('')
-              : '<p class="sub">(예시) 선교지에서 소식이 오면 교회가 이곳에 올리고, 기도제목을 함께 나눠요.</p>';
+              : '<p class="sub">선교지에서 소식이 오면 교회가 이곳에 올리고, 기도제목을 함께 나눠요.</p>';
           })() +
           '<span class="rx">🙏 기도할게요</span></div>';
       }).join('');
@@ -2001,9 +2000,9 @@
     ['jubo', '📰', '주보·광고', '주보 프로그램에서 온 주보를 앱에 공개', ['pastor', 'admin']],
     ['challenge', '🌾', '감사 챌린지', '챌린지 이름과 기간을 정해 열고 닫기', ['pastor', 'admin']],
     ['mission', '🌏', '선교 소식', '나라별 소식·기도제목 올리기', ['pastor', 'admin']],
+    ['family', '🤝', '교우 동정', '결혼·출산·소천·입원 소식 올리기', ['pastor', 'admin']],
     ['groups', '🏠', '목장 관리', '목장 만들기, 목자 정하기, 식구 배정', ['pastor', 'admin']],
     ['reports', '🚩', '나눔 관리', '신고된 글 확인 · 숨기기 · 지우기', ['pastor', 'admin']],
-    ['gvideo', '🎬', '목장 영상', '이번 주 목장 영상 링크와 나눔 질문', ['pastor', 'admin', 'leader']],
     ['gpray', '🙏', '목장 기도제목', '목장별로 올라온 중보기도 제목 · 안 올린 목장 알림', ['pastor', 'admin']],
     ['reading', '📖', '성경읽기 현황', '이번 주 함께 읽은 사람 수', ['pastor', 'admin', 'leader']],
     ['people', '👥', '교인 · 권한', '교인 목록, 성도·목자·관리자 권한', ['pastor']],
@@ -2104,6 +2103,73 @@
       }).join('') : '');
   }
 
+  // ---------- 교우 동정 (나연 2026-11-26): 결혼·출산·소천·입원 같은 교인 소식. 관리자·목사님이 올리고 등록 교인만 봄 ----------
+  var FKINDS = [['wed', '💍', '결혼'], ['baby', '👶', '출산'], ['rip', '🕯️', '소천'], ['sick', '🏥', '입원·수술'], ['move', '🏠', '이사·개업'], ['etc', '📌', '알림']];
+  function fkindOf(k) { return FKINDS.filter(function (x) { return x[0] === k; })[0] || FKINDS[5]; }
+  function familySeed() {
+    if (CLOUD || S.familySeed) return;
+    S.familySeed = 1;
+    function d(n) { var x = new Date(); x.setDate(x.getDate() + n); return dayKey(x); }
+    S.family = [
+      { id: 'f1', kind: 'wed', text: '김바울 형제 · 전나연 자매 결혼', date: d(9), place: '오후 1시 · 예그린교회 본당', ts: Date.now() - 1 },
+      { id: 'f2', kind: 'rip', text: '전나연 성도 조모님 소천', date: d(-1), place: '발인 ' + md(d(1)) + ' · 인천 서구 장례식장', pray: true, ts: Date.now() - 2 },
+      { id: 'f3', kind: 'baby', text: '김바울 · 전나연 가정 둘째 출산 (아들)', date: d(-3), place: '산모와 아기 모두 건강해요', ts: Date.now() - 3 },
+      { id: 'f4', kind: 'sick', text: '김바울 성도 무릎 수술', date: d(2), place: '빠른 회복을 위해 기도해 주세요', pray: true, ts: Date.now() - 4 },
+    ];
+    save();
+  }
+  function familyList() { familySeed(); return (S.family || []).slice().sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); }); }
+  function familyRow(f) {
+    var k = fkindOf(f.kind);
+    return '<div class="fam-it fam-' + esc(f.kind) + '"><span class="fam-ic">' + k[1] + '</span><span class="fam-tx"><b>' + esc(f.text) + '</b><small>' + esc(k[2]) + (f.date ? ' · ' + md(f.date) + ' (' + WEEK[new Date(f.date + 'T00:00:00').getDay()] + ')' : '') + (f.place ? ' · ' + esc(f.place) : '') + '</small>' +
+      (f.pray ? '<em>🙏 함께 기도해 주세요</em>' : '') + '</span></div>';
+  }
+  function homeFamily() {   // 홈: 최근 교우 동정 3개
+    if (!S.me || !S.me.approved) return '';
+    var until = new Date(); until.setDate(until.getDate() - 21);
+    var list = familyList().filter(function (f) { return !f.date || f.date >= dayKey(until); }).slice(0, 3);
+    if (!list.length) return '';
+    return '<div class="card home-family"><div class="sec-title" style="margin:0 0 4px"><b>🤝 교우 동정</b><a href="#/news?tab=family">전체</a></div>' + list.map(familyRow).join('') + '</div>';
+  }
+  function familyBody() {   // 소식 › 교우 동정
+    var list = familyList();
+    return '<div class="card green"><div class="h2" style="color:var(--green-d)">교우 동정</div><p class="sub" style="color:#55705f;margin-top:4px">기쁜 일은 함께 축하하고, 슬픈 일과 아픈 일은 함께 기도해요. 등록 교인만 볼 수 있어요.</p></div>' +
+      (list.length ? '<div class="card">' + list.map(familyRow).join('') + '</div>' : '<p class="empty">아직 올라온 교우 동정이 없어요.</p>');
+  }
+  function adminFamily() {   // 운영자: 교우 동정 올리기
+    adminTop(1);
+    var list = familyList();
+    return '<form class="card" id="famForm" style="display:flex;flex-direction:column;gap:10px"><b>교우 동정 올리기</b>' +
+        '<div class="chips" id="famKind" style="margin:0;flex-wrap:wrap;overflow:visible">' + FKINDS.map(function (k, i) { return '<button type="button" class="chip' + (i === 0 ? ' on' : '') + '" data-v="' + k[0] + '">' + k[1] + ' ' + k[2] + '</button>'; }).join('') + '</div>' +
+        '<label class="field"><span>내용</span><input name="text" maxlength="60" required placeholder="예: 김바울 형제 · 전나연 자매 결혼"></label>' +
+        '<label class="field"><span>날짜</span><input name="date" type="date"></label>' +
+        '<label class="field"><span>장소·안내 (선택)</span><input name="place" maxlength="60" placeholder="예: 오후 1시 · 예그린교회 본당 / 발인 12월 1일"></label>' +
+        '<label class="check"><input type="checkbox" name="pray">🙏 「함께 기도해 주세요」 붙이기</label>' +
+        '<div class="note">⚠ 본인이나 가족이 알려도 된다고 한 소식만 올려 주세요. 병명 같은 자세한 내용은 적지 않아요.</div>' +
+        '<button class="btn">올리기</button></form>' +
+      (list.length ? '<div class="sec-title"><b>올린 교우 동정 ' + list.length + '</b></div>' + list.map(function (f) { return '<div class="card">' + familyRow(f) + '<button class="btn small ghost" data-famdel="' + esc(f.id) + '" style="margin-top:6px">지우기</button></div>'; }).join('') : '');
+  }
+  function bindFamily() {
+    var f = $('#famForm');
+    if (f) {
+      $('#famKind').onclick = function (e) { var b = e.target.closest('[data-v]'); if (!b) return; $('#famKind').querySelectorAll('.chip').forEach(function (c) { c.classList.toggle('on', c === b); }); };
+      f.onsubmit = function (e) {
+        e.preventDefault();
+        var doc = { kind: $('#famKind .on').dataset.v, text: f.text.value.trim(), date: f.date.value || '', place: f.place.value.trim(), pray: f.pray.checked };
+        if (!doc.text) return;
+        if (CLOUD) { put(YG.addFamily(doc), '교우 동정을 올렸어요'); f.reset(); return; }
+        doc.id = 'f' + Date.now(); doc.ts = Date.now(); S.family = [doc].concat(S.family || []); save(); toast('교우 동정을 올렸어요'); route();
+      };
+    }
+    document.querySelectorAll('[data-famdel]').forEach(function (b) {
+      b.onclick = function () {
+        if (!confirm('이 교우 동정을 지울까요?')) return;
+        var x = (S.family || []).filter(function (y) { return y.id === b.dataset.famdel; })[0]; if (!x) return;
+        if (CLOUD) { put(YG.delFamily(x), '지웠어요'); return; }
+        S.family = S.family.filter(function (y) { return y !== x; }); save(); route();
+      };
+    });
+  }
   function adminGroups() {
     adminTop(1);
     var leaders = [''].concat(S.people.filter(function (x) { return x.role === 'leader'; }).map(function (x) { return x.name; }));
@@ -2184,6 +2250,7 @@
       case 'jubo': return adminJubo();
       case 'challenge': return adminChallenge();
       case 'mission': return adminMission();
+      case 'family': return adminFamily();
       case 'groups': return adminGroups();
       case 'reports': return adminReports();
       case 'reading': return adminReading();
@@ -2276,6 +2343,7 @@
   }
   function bindAdminAll() {
     bindGpAdmin();
+    bindFamily();
     if (CLOUD) return bindAdminCloud();
     bindAdmin();
     var on = function (sel, fn) { document.querySelectorAll(sel).forEach(function (b) { b.onclick = function (e) { fn(b, e); }; }); };
