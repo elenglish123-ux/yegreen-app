@@ -74,7 +74,7 @@
     try {
       if (!CLOUD) return localStorage.setItem(KEY, JSON.stringify(S));
       // 서버 모드: 이 기기에는 개인 것만 저장 (공유 데이터는 서버가 매번 다시 채움)
-      var keep = {}; ['firstRun', 'big', 'alerts', 'diary', 'readDone', 'gvSeen', 'notifRead', 'vowDone', 'thanksDays'].forEach(function (k) { keep[k] = S[k]; });
+      var keep = {}; ['firstRun', 'big', 'alerts', 'diary', 'readDone', 'gvSeen', 'notifRead', 'vowDone', 'thanksDays', 'routine', 'sermonDone', 'vowMin'].forEach(function (k) { keep[k] = S[k]; });
       localStorage.setItem(KEY + '-cloud', JSON.stringify(keep));
     } catch (e) {}
   }
@@ -296,21 +296,32 @@
     return '<a class="hero-peek" href="#/sermons?v=' + s.videoId + '&g=1">' + (last
       ? '<div class="pk-t"><b>' + esc(last.author || '') + '</b> ' + esc(String(last.text || '').replace(/^\(예시\)\s*/, '').slice(0, 80)) + '</div><div class="pk-n">💬 ' + g.people + '명이 은혜를 나눴어요 ›</div>'
       : '이 말씀으로 받은 은혜를 처음 나눠 주세요 ✍️') + '</a>';
-  }  function homeRoutine() {   // 오늘의 신앙 루틴: 성경읽기 · 필사 · 기도
-    if (!S.me || !S.me.approved) return '';
-    var today = dayKey(new Date());
-    var read = !!(S.readDone && S.readDone[today]);
-    var pil = !!qtDays()[today];
-    var vows = myVows().filter(function (x) { return !x.done && vowInfo(x).active; });
-    var vowOn = vows.filter(function (x) { return vowInfo(x).todayOn; }).length;
-    var prayed = prayers().some(function (x) { return x.day === today; }) || S.posts.some(function (p) { return p.mine && p.cat === 'pray' && p.ts && dayKey(new Date(p.ts)) === today; }) || (S.vowMin && Object.keys(S.vowMin).some(function (k) { return S.vowMin[k][today]; }));
-    var pray = vows.length ? { on: vowOn >= vows.length, label: '🏁 기도 챌린지', sub: '오늘 ' + vowOn + '/' + vows.length, url: '#/talk/prayer?t=ch' } : { on: !!prayed, label: '🙏 오늘의 기도', sub: prayed ? '드렸어요' : '한 줄 기도', url: '#/talk/prayer' };
-    var list = [{ on: read, label: '📖 성경읽기', sub: read ? '읽었어요' : '오늘 말씀', url: '#/talk/bible?s=read' }, { on: pil, label: '✍️ 필사', sub: pil ? '올렸어요' : '큐티인', url: '#/talk/bible?s=pil' }, pray];
-    var n = list.filter(function (x) { return x.on; }).length;
-    return '<div class="card home-routine"><div class="sec-title" style="margin:0 0 8px"><b>⭐ 오늘의 신앙 루틴</b><span class="sub">' + (n === 3 ? '오늘 다 했어요 🙌' : '오늘 ' + n + '/3') + '</span></div><div class="hr-row">' +
-      list.map(function (x) { return '<a class="hr-it' + (x.on ? ' on' : '') + '" href="' + x.url + '"><i>' + (x.on ? '✓' : '') + '</i><b>' + x.label + '</b><small>' + esc(x.sub) + '</small></a>'; }).join('') + '</div></div>';
+  }  // 오늘의 신앙 루틴: 각자 고르는 칸 (나연 2026-11-26). 기본 = 성경읽기 · 오늘의 기도 · 이번 주 말씀
+  var ROUTINES = [['read', '📖 성경읽기'], ['pray', '🙏 오늘의 기도'], ['sermon', '▶️ 이번 주 말씀'], ['grace', '💬 은혜 나누기'], ['thanks', '🌾 감사 한 가지'], ['pil', '✍️ 필사']];
+  function routineOf(id) {
+    var today = dayKey(new Date()), s = (MEDIA.sunday || [])[0];
+    if (id === 'read') { var r = !!(S.readDone && S.readDone[today]); return { on: r, label: '📖 성경읽기', sub: r ? '읽었어요' : '오늘 말씀', url: '#/talk/bible?s=read' }; }
+    if (id === 'pil') { var q = !!qtDays()[today]; return { on: q, label: '✍️ 필사', sub: q ? '올렸어요' : '큐티인', url: '#/talk/bible?s=pil' }; }
+    if (id === 'pray') {
+      var vows = myVows().filter(function (x) { return !x.done && vowInfo(x).active; }), vowOn = vows.filter(function (x) { return vowInfo(x).todayOn; }).length;
+      var prayed = prayers().some(function (x) { return x.day === today; }) || S.posts.some(function (p) { return p.mine && p.cat === 'pray' && p.ts && dayKey(new Date(p.ts)) === today; }) || (S.vowMin && Object.keys(S.vowMin).some(function (k) { return S.vowMin[k][today]; }));
+      return vows.length ? { on: vowOn >= vows.length, label: '🏁 기도 챌린지', sub: '오늘 ' + vowOn + '/' + vows.length, url: '#/talk/prayer?t=ch' } : { on: !!prayed, label: '🙏 오늘의 기도', sub: prayed ? '드렸어요' : '한 줄 기도', url: '#/talk/prayer' };
+    }
+    if (id === 'sermon') { var h = !!(s && S.sermonDone && S.sermonDone[s.videoId]); return { on: h, label: '▶️ 이번 주 말씀', sub: h ? '들었어요' : '설교 듣기', url: s ? '#/sermons?v=' + s.videoId : '#/sermons' }; }
+    if (id === 'grace') { var g = !!s && (graces().some(function (x) { return x.vid === s.videoId; }) || S.posts.some(function (p) { return p.mine && p.cat === 'grace' && p.vid === s.videoId; })); return { on: g, label: '💬 은혜 나누기', sub: g ? '나눴어요' : '이번 주', url: s ? '#/sermons?v=' + s.videoId + '&g=1' : '#/sermons' }; }
+    if (id === 'thanks') { var th = !!(S.thanksDays && S.thanksDays[today]); return { on: th, label: '🌾 감사 한 가지', sub: th ? '드렸어요' : '감사 기도', url: '#/talk/prayer?p=thanks' }; }
+    return null;
   }
-  function homeGroup() {   // 우리 목장 한 줄 (+ 목자님: 기도제목 안 올렸으면 알림)
+  function myRoutine() { var r = (S.routine || []).filter(function (id) { return ROUTINES.some(function (x) { return x[0] === id; }); }); return r.length ? r : ['read', 'pray', 'sermon']; }
+  function homeRoutine() {
+    if (!S.me || !S.me.approved) return '';
+    var ids = myRoutine(), list = ids.map(routineOf).filter(Boolean), n = list.filter(function (x) { return x.on; }).length;
+    var edit = S.routineEdit ? '<div class="hr-edit"><div class="sub" style="font-size:.8rem;margin-bottom:6px">나에게 맞는 칸을 2~4개 골라 주세요</div><div class="chips" style="margin:0;flex-wrap:wrap;overflow:visible">' +
+      ROUTINES.map(function (x) { return '<button type="button" class="chip' + (ids.indexOf(x[0]) >= 0 ? ' on' : '') + '" data-rtog="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div><button class="btn small" data-rdone style="margin-top:8px">완료</button></div>' : '';
+    return '<div class="card home-routine"><div class="sec-title" style="margin:0 0 8px"><b>⭐ 오늘의 신앙 루틴</b><span class="sub">' + (n === list.length ? '다 했어요 🙌' : n + '/' + list.length) + ' · <button class="hr-set" data-redit>⚙ 바꾸기</button></span></div>' +
+      edit + '<div class="hr-row" style="grid-template-columns:repeat(' + list.length + ',1fr)">' +
+      list.map(function (x) { return '<a class="hr-it' + (x.on ? ' on' : '') + '" href="' + x.url + '"><i>' + (x.on ? '✓' : '') + '</i><b>' + x.label + '</b><small>' + esc(x.sub) + '</small></a>'; }).join('') + '</div></div>';
+  }  function homeGroup() {   // 우리 목장 한 줄 (+ 목자님: 기도제목 안 올렸으면 알림)
     if (!S.me || !S.me.approved || !S.me.group) return '';
     var dg = !CLOUD && demoGroup(S.me.group);
     var meet = CLOUD ? (S.meeting && S.meeting.text) : (S.meeting && S.meeting.custom ? S.meeting.text : dg ? dg.meet : '');
@@ -377,6 +388,9 @@
       (p ? '<p class="sub" style="margin-top:8px;font-size:.78rem">장을 누르면 대한성서공회 개역개정 성경이 열려요.</p>' : '') + '</div>';
   }
   function bindHome() {
+    var re = $('[data-redit]'); if (re) re.onclick = function () { S.routineEdit = !S.routineEdit; save(); route(); };
+    document.querySelectorAll('[data-rtog]').forEach(function (b) { b.onclick = function () { var r = myRoutine().slice(), id = b.dataset.rtog, i = r.indexOf(id); if (i >= 0) { if (r.length <= 2) { toast('2개 이상 골라 주세요'); return; } r.splice(i, 1); } else { if (r.length >= 4) { toast('4개까지 고를 수 있어요'); return; } r.push(id); } S.routine = ROUTINES.map(function (x) { return x[0]; }).filter(function (k) { return r.indexOf(k) >= 0; }); save(); route(); }; });
+    var rd = $('[data-rdone]'); if (rd) rd.onclick = function () { S.routineEdit = false; save(); route(); };
     document.querySelectorAll('[data-nhide]').forEach(function (x) { x.onclick = function () { S.noticeHidden = S.noticeHidden || {}; S.noticeHidden[x.dataset.nhide] = 1; save(); route(); }; });
     var b = $('[data-readdone]');
     if (b) b.onclick = function () { if (toggleRead(dayKey(new Date()))) toast('오늘 성경읽기를 마쳤어요 📖'); };
@@ -471,7 +485,7 @@
       readingCard() +
       homeGroup() +
       homeFamily() +
-      (ev ? '<div class="card ev-card ev-colors"><div class="h2" style="margin-bottom:4px">다가오는 일정</div>' + ev + '</div>' : '') +
+      (ev ? '<div class="card ev-card ev-colors"><div class="sec-title" style="margin:0 0 4px"><b>🗓 다가오는 일정</b><a href="#/news?tab=jubo">주보</a></div>' + ev + '</div>' : '') +
       (b ? '<a class="card home-jubo" href="#/news?tab=jubo"><span class="hj-ic">📰</span><span class="hj-tx"><b>' + md(b.date) + ' 주보</b><small>' + esc(b.title || '') + (bulletinNews().length ? ' · 교회 소식 ' + bulletinNews().length + '개' : '') + '</small></span><span class="hj-go">보기 ›</span></a>' : '') +
       (S.me && S.me.approved && challengeNow() ? '<a class="card green" href="#/talk/prayer?p=vow&c=thanks" style="display:flex;align-items:center;gap:12px"><span style="font-size:1.6rem">🌾</span><div><b>감사 기도 챌린지로 함께해요</b><div class="sub" style="color:#55705f">' + (thanksDays()[dayKey(new Date())] ? '오늘 감사 기도를 드렸어요 ✓' : challengeNow().title + ' · ' + md(challengeNow().to) + '까지') + '</div></div></a>' : '');
   }
@@ -488,7 +502,8 @@
       '<input id="sq" placeholder="제목·본문으로 찾기" hidden>';
     if (cur) {
       html += '<div class="player"><iframe src="https://www.youtube.com/embed/' + cur.videoId + '?rel=0&playsinline=1" title="' + esc(cur.title) + '" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>' +
-        '<div>' + (cur.series ? '<div class="label">' + esc(cur.series) + '</div>' : '') + '<div class="h1">' + esc(cur.title) + '</div><div class="sub">' + [md(cur.date), cur.passage, cur.preacher].filter(Boolean).map(esc).join(' · ') + '</div></div>' + graceBox(cur);
+        '<div>' + (cur.series ? '<div class="label">' + esc(cur.series) + '</div>' : '') + '<div class="h1">' + esc(cur.title) + '</div><div class="sub">' + [md(cur.date), cur.passage, cur.preacher].filter(Boolean).map(esc).join(' · ') + '</div></div>' +
+        (S.me && S.me.approved ? '<button class="btn small' + (S.sermonDone && S.sermonDone[cur.videoId] ? '' : ' ghost') + '" data-sdone="' + esc(cur.videoId) + '" style="align-self:flex-start">' + (S.sermonDone && S.sermonDone[cur.videoId] ? '✓ 이 말씀 들었어요' : '▶️ 다 들었어요') + '</button>' : '') + graceBox(cur);
     }
     html += '<div class="vlist" id="vlist">' + list.map(function (i) {
       return '<a class="vrow' + (cur && i.videoId === cur.videoId ? ' on' : '') + '" href="#/sermons?kind=' + kind + '&v=' + i.videoId + '" data-s="' + esc((i.title + ' ' + (i.passage || '')).toLowerCase()) + '"><div class="thumb" style="background-image:url(' + thumb(i.videoId) + ')"></div><div><b>' + esc(i.title) + '</b><div class="sub">' + [md(i.date), i.passage].filter(Boolean).map(esc).join(' · ') + '</div></div></a>';
@@ -556,6 +571,7 @@
     });
   }
   function bindSermons() {
+    var sd = $('[data-sdone]'); if (sd) sd.onclick = function () { S.sermonDone = S.sermonDone || {}; var v = sd.dataset.sdone; if (S.sermonDone[v]) delete S.sermonDone[v]; else S.sermonDone[v] = dayKey(new Date()); save(); route(); if (S.sermonDone[v]) toast('이번 주 말씀을 들었어요 ▶️'); };   // 신앙 루틴 「이번 주 말씀」
     var b = $('[data-search]'), input = $('#sq');
     bindGrace();
     if (!b) return;

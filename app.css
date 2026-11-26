@@ -542,3 +542,13 @@ img.flag { display: inline-block; margin-right: 4px; } .sec-title b:has(img.flag
 /* 날짜 칸 색은 3가지만 (나연 2026-11-26): 특별 행사 연주황 · 기도 연보라 · 나머지 모임 연초록 */
 .ev-card.ev-colors .ev-t-serve .day, .ev-card.ev-colors .ev-t-music .day, .ev-card.ev-colors .ev-t-mission .day, .ev-card.ev-colors .ev-t-meet .day { background: #eaf5ee; }
 .ev-card.ev-colors .ev-t-serve .day b, .ev-card.ev-colors .ev-t-music .day b, .ev-card.ev-colors .ev-t-mission .day b, .ev-card.ev-colors .ev-t-meet .day b { color: #2f6b4f; }
+.hr-set { font: inherit; font-size: .76rem; font-weight: 700; color: var(--green-d); background: #eef5f0; border: 0; border-radius: 999px; padding: 3px 9px; cursor: pointer; } .hr-edit { background: #f6faf7; border-radius: 12px; padding: 10px; margin-bottom: 10px; } .hr-row { grid-template-columns: repeat(3, 1fr); }
+/* 다가오는 일정 카드를 교우 동정과 같은 크기로 (나연 2026-11-26) */
+.ev-card .ev { padding: 9px 0; gap: 10px; align-items: flex-start; }
+.ev-card .ev + .ev { border-top: 1px dashed #eee9e0; }
+.ev-card .day { width: 38px; padding: 4px 2px !important; border-right: 0; border-radius: 10px; }
+.ev-card .day b { font-size: 1rem; line-height: 1.15; }
+.ev-card .day small { font-size: .6rem; display: block; }
+.ev-card .ev-list { padding-top: 2px; gap: 2px; }
+.ev-card .ev-list .t { font-size: .95rem; }
+.ev-card .ev-list .sub { font-size: .78rem; }
