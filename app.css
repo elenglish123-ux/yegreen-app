@@ -597,4 +597,9 @@ button.rx { cursor: pointer; font-family: inherit; }
 .sg-pick { display: flex; flex-wrap: wrap; gap: 6px; }
 .sg-pick label { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 16px; font-size: .84rem; background: #fff; cursor: pointer; }
 .sg-pick label.on { background: var(--green-l); border-color: var(--green); color: var(--green-d); font-weight: 700; }
-.sg-pick input { width: auto; margin: 0; }
+.sg-pick input { width: auto; margin: 0; }.sg-item { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
+.sg-item .sg-ic { flex: none; width: 46px; height: 46px; border-radius: 14px; background: #eef4f0; display: grid; place-items: center; font-size: 1.5rem; }
+.sg-item .sg-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.sg-item .sg-tx b { font-size: 1.02rem; }
+.sg-item .sg-tx small { color: #888; font-size: .78rem; }
+.sg-item .sg-tx em { font-style: normal; font-size: .8rem; font-weight: 700; color: var(--green-d); }

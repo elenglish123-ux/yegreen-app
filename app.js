@@ -769,7 +769,7 @@
     if (p.scope === 'group' && p.group === null && !CLOUD) return true;   // 시안 예시 목장 글은 목장을 안 골라도 보이게
     if (p.scope === 'group') return !!S.me.group &&(p.group === null || p.group === S.me.group);
     if (p.scope === 'pastor') return !!p.mine || (CLOUD ? S.me.role === 'pastor' : !!S.admin && S.adminRole === 'pastor');   // 시안에서도 목사님 역할이면 보임
-    if (p.scope === 'sg') return isStaffMe() || (S.me.sgs || []).indexOf(p.group) >= 0;   // 소그룹 글
+    if (p.scope === 'sg') return isStaffMe() || (S.me.sgs || []).indexOf(p.group) >= 0;   // 소모임 글
     if (p.scope === 'qt') return !CLOUD || !!S.me.qt || S.me.role === 'admin' || S.me.role === 'pastor';   // 큐티 모임 (목장과 따로)
     return true;
   }
@@ -931,7 +931,7 @@
       };
     });
   }
-  function groupRoom(q) { return sgChips(q) + (q.sg ? sgRoom(q.sg) : groupRoom0(q)); }   // 소그룹 칩 (2026-11-27)
+  function groupRoom(q) { return sgChips(q) + (q.sg != null ? (q.sg ? sgRoom(q.sg) : sgList()) : groupRoom0(q)); }   // 소모임 (2026-11-27)
   function groupRoom0(q) {
     if (!S.me.group && CLOUD) {
       return '<div class="card" style="text-align:center;padding:26px 18px"><div style="font-size:2rem">🏠</div><div class="h2">아직 목장이 정해지지 않았어요</div><p class="sub" style="margin-top:6px">' + APPROVER + '이 목장을 정해 드리면 이곳에서 목장 식구들과 나눌 수 있어요.</p></div>';
@@ -972,18 +972,21 @@
       (posts.map(function (p) { return postCard(p, true); }).join('') || '<p class="empty">목장에 첫 나눔을 남겨 보세요.</p>') +
       '<details class="card"><summary style="font-weight:700;cursor:pointer">👥 목장 식구 ' + members.length + '명 보기</summary><div class="members">' + members.map(function (n) { return '<span>' + esc(n.name) + '</span>'; }).join('') + '</div></details>';
   }
-  // ================= 소그룹 (나연 2026-11-27) =================
+  // ================= 소모임 (나연 2026-11-27) =================
   // 목장과 따로 여러 개에 들 수 있는 모임: 새신자반 · 목자학교 · 여선교회 등. 교회(관리자)가 만들고 식구를 넣음.
-  // 소그룹방: 소개 · 교육 영상(보고 나서 질문에 답하기) · 소그룹 나눔. 답변은 쓴 사람 · 담당자 · 목사님/관리자만 봐요.
-  var SG_KINDS = [['newcomer', '🌱', '새신자'], ['school', '📚', '양육·학교'], ['mission', '🙌', '선교회'], ['etc', '👥', '기타 모임']];
-  function sgKind(k) { return SG_KINDS.filter(function (x) { return x[0] === k; })[0] || SG_KINDS[3]; }
+  // 소모임방: 소개 · 교육 영상(보고 나서 질문에 답하기) · 소모임 나눔. 답변은 쓴 사람 · 담당자 · 목사님/관리자만 봐요.
+  var SG_KINDS = [['newcomer', '🌱', '새신자'], ['school', '📚', '양육·훈련'], ['committee', '📋', '위원회'], ['dept', '🏛', '부서'], ['sunday', '🧒', '주일학교'], ['mission', '🙌', '선교회'], ['etc', '👥', '기타 모임']];
+  function sgKind(k) { return SG_KINDS.filter(function (x) { return x[0] === k; })[0] || SG_KINDS[SG_KINDS.length - 1]; }
   function sgSeed() {   // 시안 예시 (실제 서버에서는 관리자가 만든 것만)
     if (CLOUD) { S.sgroups = S.sgroups || []; S.lessons = S.lessons || []; S.answers = S.answers || []; return; }
-    if (S.sgSeed !== 2) {
+    if (S.sgSeed !== 3) {
       var vid = ((MEDIA.sunday || [])[0] || {}).videoId || '', vid2 = ((MEDIA.sunday || [])[1] || {}).videoId || vid, vid3 = ((MEDIA.sunday || [])[2] || {}).videoId || vid;
       S.sgroups = [
         { id: '새신자반', name: '새신자반', kind: 'newcomer', leader: '김은혜', desc: '처음 오신 분과 함께 4주 동안 신앙의 기초를 배워요. 영상을 보고 질문에 답해 주세요.', names: ['김은혜', '박하늘', '서지안', '홍새벽'] },
         { id: '목자학교', name: '목자학교', kind: 'school', leader: '정바울', desc: '목자로 섬길 분들을 위한 훈련 모임이에요.', names: ['정바울', '이다정', '최선한'] },
+        { id: '기획위원회', name: '기획위원회', kind: 'committee', leader: '박한결', desc: '교회 행사와 사역을 함께 계획해요.', names: ['박한결', '이다정', '김은혜'] },
+        { id: '재정부', name: '재정부', kind: 'dept', leader: '최선한', desc: '헌금과 교회 살림을 맡아요. 재정부 식구만 볼 수 있어요.', names: ['최선한', '안요셉'] },
+        { id: '주일학교', name: '주일학교', kind: 'sunday', leader: '이다정', desc: '유치부·아동부·청소년부 선생님 모임이에요.', names: ['이다정', '고은찬', '길도현'] },
         { id: '1여선교회', name: '1여선교회', kind: 'mission', leader: '윤미소', desc: '20~59년생 여선교회 모임이에요.', names: ['윤미소', '한지혜', '우채원'] },
       ];
       S.lessons = [
@@ -992,11 +995,11 @@
         { id: 'l3', sg: '새신자반', no: 3, title: '교회는 어떤 곳인가요?', url: vid3 ? 'https://youtu.be/' + vid3 : '', note: '', qs: ['예그린교회에서 함께하고 싶은 모임이 있나요?'] },
       ];
       S.answers = [{ id: 'l1_demo', sg: '새신자반', lesson: 'l1', uid: 'demo', name: '박하늘', watched: true, a: ['하나님은 나를 먼저 찾아오시는 분이라는 말이 남았어요.', '멀리 계신 분인 줄 알았어요.', '이번 주도 함께해 주세요.'], at: '어제', reply: '하늘 성도님, 나눠 주셔서 고마워요. 다음 주에 같이 이야기해요 🙂', replyBy: '김은혜' }];
-      S.sgSeed = 2; save();
+      S.sgSeed = 3; save();
     }
-    if (S.me && !S.me.sgs) { S.me.sgs = ['새신자반']; save(); }   // 시안: 처음엔 새신자반 식구로
+    if (S.me && S.me.sgsV !== 3) { S.me.sgs = ['새신자반', '주일학교', '기획위원회']; S.me.sgsV = 3; save(); }   // 시안: 예시로 세 모임 식구
   }
-  function mySgs() {   // 내가 들어갈 수 있는 소그룹 (목사님·관리자는 전부)
+  function mySgs() {   // 내가 들어갈 수 있는 소모임 (목사님·관리자는 전부)
     sgSeed();
     return (S.sgroups || []).filter(function (g) { return isStaffMe() || (S.me.sgs || []).indexOf(g.name) >= 0; });
   }
@@ -1005,21 +1008,34 @@
   function lessonsOf(name) { return (S.lessons || []).filter(function (l) { return l.sg === name; }).sort(function (a, b) { return (a.no || 0) - (b.no || 0); }); }
   function myAnswer(lid) { var me = CLOUD ? S.me.uid : 'me'; return (S.answers || []).filter(function (a) { return a.lesson === lid && a.uid === me; })[0] || null; }
   function ytId(u) { var m = String(u || '').match(/(?:youtu\.be\/|v=|embed\/|shorts\/|live\/)([\w-]{11})/); return m ? m[1] : ''; }
-  // 목장방 맨 위: 우리 목장 + 내 소그룹 칩
+  // 목장방 맨 위: 「우리 목장」 · 「소모임」 칩 두 개만 (나연 2026-11-27)
   function sgChips(q) {
     var list = mySgs(); if (!list.length) return '';
-    return '<div class="chips sg-chips"><a class="chip' + (q.sg ? '' : ' on') + '" href="#/talk/group">🏡 ' + esc(S.me.group || '우리 목장') + '</a>' +
-      list.map(function (g) { return '<a class="chip' + (q.sg === g.name ? ' on' : '') + '" href="#/talk/group?sg=' + encodeURIComponent(g.name) + '">' + sgKind(g.kind)[1] + ' ' + esc(g.name) + '</a>'; }).join('') + '</div>';
+    var inSg = q.sg != null;
+    return '<div class="chips sg-chips"><a class="chip' + (inSg ? '' : ' on') + '" href="#/talk/group">🏡 ' + esc(S.me.group || '우리 목장') + '</a>' +
+      '<a class="chip' + (inSg ? ' on' : '') + '" href="#/talk/group?sg=">👥 소모임 ' + list.length + '</a></div>';
+  }
+  // 소모임 목록: 내가 속한 모임 카드 (목사님·관리자는 전부)
+  function sgList() {
+    var list = mySgs();
+    if (!list.length) return '<p class="empty">아직 들어간 소모임이 없어요. 교회가 소모임에 넣어 드리면 여기에 보여요.</p>';
+    return list.map(function (g) {
+      var K = sgKind(g.kind), ls = lessonsOf(g.name), done = ls.filter(function (l) { var a = myAnswer(l.id); return a && a.a && a.a.some(Boolean); }).length;
+      var np = S.posts.filter(function (p) { return p.scope === 'sg' && p.group === g.name && canSee(p); }).length;
+      var st = ls.length ? '📺 교육 영상 ' + ls.length + '강 · 답변 ' + done + '/' + ls.length : np ? '💬 나눔 ' + np + '개' : '';
+      return '<a class="card sg-item" href="#/talk/group?sg=' + encodeURIComponent(g.name) + '"><span class="sg-ic">' + K[1] + '</span><span class="sg-tx"><b>' + esc(g.name) + '</b><small>' + K[2] + (g.leader ? ' · 담당 ' + esc(g.leader) : '') + ' · 식구 ' + (g.names || []).length + '명</small>' +
+        (st ? '<em>' + st + '</em>' : '') + '</span><span class="hj-go">›</span></a>';
+    }).join('') + (isStaffMe() ? '<p class="sub" style="text-align:center">목사님·관리자에게는 모든 소모임이 보여요. 만들기와 식구 넣기는 관리자 화면 › 소모임에서 해요.</p>' : '');
   }
   function sgRoom(name) {
     var g = sgOf(name);
-    if (!g || mySgs().indexOf(g) < 0) return '<p class="empty">이 소그룹에 들어갈 수 없어요.</p>';
+    if (!g || mySgs().indexOf(g) < 0) return '<p class="empty">이 소모임에 들어갈 수 없어요.</p>';
     var K = sgKind(g.kind), lead = sgLeadMe(g), ls = lessonsOf(g.name);
     var done = ls.filter(function (l) { var a = myAnswer(l.id); return a && a.a && a.a.some(Boolean); }).length;
     var posts = S.posts.filter(function (p) { return p.scope === 'sg' && p.group === g.name && canSee(p); });
     var names = g.names || [];
-    return '<div class="card group-card sg-card"><div class="sub" style="color:#cfe3d6">' + K[1] + ' ' + K[2] + ' 소그룹</div><div class="big">' + esc(g.name) + '</div>' +
-        '<div style="font-size:.9rem;opacity:.85">' + (g.leader ? '담당 ' + esc(g.leader) + ' · ' : '') + '식구 ' + names.length + '명 · 소그룹 식구만 볼 수 있어요</div>' +
+    return '<div class="card group-card sg-card"><div class="sub" style="color:#cfe3d6">' + K[1] + ' ' + K[2] + ' 소모임</div><div class="big">' + esc(g.name) + '</div>' +
+        '<div style="font-size:.9rem;opacity:.85">' + (g.leader ? '담당 ' + esc(g.leader) + ' · ' : '') + '식구 ' + names.length + '명 · 소모임 식구만 볼 수 있어요</div>' +
         (g.desc ? '<p style="margin-top:8px;font-size:.92rem;opacity:.95">' + esc(g.desc) + '</p>' : '') + '</div>' +
       (ls.length || lead ? '<div class="card"><div class="sec-title" style="margin:0 0 6px"><b>📺 교육 영상</b><span class="sub">' + (ls.length ? '답변 ' + done + '/' + ls.length : '') + '</span></div>' +
         (ls.length ? '<div class="sg-prog"><i style="width:' + Math.round(done / ls.length * 100) + '%"></i></div>' : '') +
@@ -1030,7 +1046,7 @@
         }).join('') || '<p class="sub">아직 올린 영상이 없어요.</p>') +
         (lead ? '<a class="btn small ghost" style="margin-top:10px" href="#/lesson/new?sg=' + encodeURIComponent(g.name) + '">＋ 교육 영상 올리기</a>' : '') + '</div>' : '') +
       '<div class="sec-title"><b>💬 ' + esc(g.name) + ' 나눔</b><a href="#/write?to=sg&sg=' + encodeURIComponent(g.name) + '">글쓰기 ✎</a></div>' +
-      (posts.map(function (p) { return postCard(p, true); }).join('') || '<p class="empty">소그룹에 첫 나눔을 남겨 보세요.</p>') +
+      (posts.map(function (p) { return postCard(p, true); }).join('') || '<p class="empty">소모임에 첫 나눔을 남겨 보세요.</p>') +
       (names.length ? '<details class="card"><summary style="font-weight:700;cursor:pointer">👥 식구 ' + names.length + '명 보기</summary><div class="members">' + names.map(function (n) { return '<span>' + esc(n) + (n === g.leader ? ' (담당)' : '') + '</span>'; }).join('') + '</div></details>' : '');
   }
   // 교육 영상 한 편: 영상 → 「다 봤어요」 → 질문에 답하기 · 담당자는 모든 답변 보고 답글
@@ -1075,7 +1091,7 @@
       '<label class="field"><span>영상 링크 (유튜브 「공유」 → 링크 복사 · 「일부 공개」 영상도 돼요)</span><input name="url" type="url" value="' + esc(l ? l.url : '') + '" placeholder="https://youtu.be/..."></label>' +
       '<label class="field"><span>짧은 안내 (선택)</span><input name="note" maxlength="100" value="' + esc(l ? l.note || '' : '') + '"></label>' +
       [0, 1, 2, 3, 4].map(function (i) { return '<label class="field"><span>질문 ' + (i + 1) + (i ? ' (선택)' : '') + '</span><input name="q' + i + '" maxlength="100"' + (i ? '' : ' required') + ' value="' + esc(qs[i] || '') + '"></label>'; }).join('') +
-      (l ? '' : '<label class="check"><input type="checkbox" name="push" checked>소그룹 식구에게 알림 보내기</label>') +
+      (l ? '' : '<label class="check"><input type="checkbox" name="push" checked>소모임 식구에게 알림 보내기</label>') +
       '<button class="btn">' + (l ? '고치기' : '올리기') + '</button>' + (l ? '<button type="button" class="btn ghost" data-lsdel="' + esc(l.id) + '">이 영상 지우기</button>' : '') + '</form>';
   }
   function bindLesson() {
@@ -1128,7 +1144,7 @@
       S.lessons = S.lessons.filter(function (x) { return x !== l; }); save(); location.hash = back;
     };
   }
-  // 관리자: 소그룹 만들기 · 담당자 · 식구 넣기
+  // 관리자: 소모임 만들기 · 담당자 · 식구 넣기
   function adminSgroups() {
     adminTop(1); sgSeed();
     var people = (S.people || []).slice().sort(function (a, b) { return a.name < b.name ? -1 : 1; });
@@ -1138,13 +1154,13 @@
         '<label class="field" style="margin-top:10px"><span>소개</span><input data-sgdesc="' + gi + '" maxlength="80" value="' + esc(g.desc || '') + '"></label>' +
         '<label class="field"><span>담당자 (교육 영상을 올리고 답변을 봐요)</span><select data-sglead="' + gi + '"><option value="">정하지 않음</option>' + people.map(function (p) { return '<option value="' + esc(p.id || p.name) + '"' + (p.name === g.leader ? ' selected' : '') + '>' + esc(p.name) + (p.group ? ' · ' + esc(p.group) : '') + '</option>'; }).join('') + '</select></label>' +
         '<div class="sub" style="font-weight:700;margin:8px 0 4px">식구 고르기</div><div class="sg-pick">' + people.map(function (p) { var on = names.indexOf(p.name) >= 0; return '<label class="' + (on ? 'on' : '') + '"><input type="checkbox" data-sgmem="' + gi + '" value="' + esc(p.id || p.name) + '"' + (on ? ' checked' : '') + '>' + esc(p.name) + '</label>'; }).join('') + '</div>' +
-        '<button class="btn small ghost" style="margin-top:10px" data-sgdel="' + gi + '">이 소그룹 지우기</button></details>';
+        '<button class="btn small ghost" style="margin-top:10px" data-sgdel="' + gi + '">이 소모임 지우기</button></details>';
     }).join('') +
-      '<form class="card" id="sgForm" style="display:flex;flex-direction:column;gap:10px"><b>＋ 새 소그룹 만들기</b>' +
+      '<form class="card" id="sgForm" style="display:flex;flex-direction:column;gap:10px"><b>＋ 새 소모임 만들기</b>' +
         '<label class="field"><span>이름</span><input name="n" required maxlength="20" placeholder="예: 새신자반, 목자학교, 2여선교회"></label>' +
         '<label class="field"><span>종류</span><select name="k">' + SG_KINDS.map(function (k) { return '<option value="' + k[0] + '">' + k[1] + ' ' + k[2] + '</option>'; }).join('') + '</select></label>' +
         '<label class="field"><span>소개 (선택)</span><input name="d" maxlength="80"></label><button class="btn">만들기</button></form>' +
-      '<p class="sub">한 사람이 여러 소그룹에 들 수 있어요. 소그룹 식구는 나눔 › 목장방 맨 위 칩에서 들어가요.</p>';
+      '<p class="sub">한 사람이 여러 소모임에 들 수 있어요. 소모임 식구는 나눔 › 목장방 맨 위 칩에서 들어가요.</p>';
   }
   function bindSgAdmin() {
     var f = $('#sgForm');
@@ -1177,7 +1193,7 @@
     document.querySelectorAll('[data-sgdel]').forEach(function (b) {
       b.onclick = function () {
         var g = S.sgroups[b.dataset.sgdel];
-        if (!confirm('「' + g.name + '」 소그룹을 지울까요? 교육 영상과 답변은 남지만 더 이상 들어갈 수 없어요.')) return;
+        if (!confirm('「' + g.name + '」 소모임을 지울까요? 교육 영상과 답변은 남지만 더 이상 들어갈 수 없어요.')) return;
         if (CLOUD) { put(YG.delSgroup(g), '지웠어요'); return; }
         S.sgroups = S.sgroups.filter(function (x) { return x !== g; }); save(); route();
       };
@@ -2245,7 +2261,7 @@
     ['mission', '🌏', '선교 소식', '나라별 소식·기도제목 올리기', ['pastor', 'admin']],
     ['family', '🤝', '교우 동정', '결혼·출산·소천·입원 소식 올리기', ['pastor', 'admin']],
     ['groups', '🏠', '목장 관리', '목장 만들기, 목자 정하기, 식구 배정', ['pastor', 'admin']],
-    ['sgroups', '🌱', '소그룹', '새신자반·목자학교·선교회 만들기, 담당자·식구 정하기', ['pastor', 'admin']],
+    ['sgroups', '👥', '소모임', '새신자반·목자학교·위원회·부서·주일학교 만들기, 담당자·식구 정하기', ['pastor', 'admin']],
     ['reports', '🚩', '나눔 관리', '신고된 글 확인 · 숨기기 · 지우기', ['pastor', 'admin']],
     ['gpray', '🙏', '목장 기도제목', '목장별로 올라온 중보기도 제목 · 안 올린 목장 알림', ['pastor', 'admin']],
     ['reading', '📖', '성경읽기 현황', '이번 주 함께 읽은 사람 수', ['pastor', 'admin', 'leader']],
@@ -2655,7 +2671,7 @@
       case 'news': tab = 2; html = p[1] != null ? newsDetail(Number(p[1])) : news(r.q); break;
       case 'talk': tab = 3; html = talk(p[1], r.q); after = function () { bindGate(); bindTalk(); }; break;
       case 'write': tab = -1; html = write(r.q); after = bindWrite; break;
-      case 'lesson': tab = 3; html = lesson(decodeURIComponent(p[1] || ''), r.q); after = bindLesson; break;   // 소그룹 교육 영상
+      case 'lesson': tab = 3; html = lesson(decodeURIComponent(p[1] || ''), r.q); after = bindLesson; break;   // 소모임 교육 영상
       case 'post': tab = -1; html = post(p[1]); after = function () { bindPost(p[1]); }; break;
       case 'more': tab = 4; html = more(); after = bindMore; break;
       case 'about': tab = 4; html = about(); break;
